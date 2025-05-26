@@ -1,9 +1,9 @@
 class LoginResponse {
-  final String username;
-  final String firstname;
-  final String lastname;
-  final String userrole;
-  final String company;
+  final String username; // Usuario que inicio sesion
+  final String firstname; // Primer nombre del usuario que inicio sesion
+  final String lastname; // Apellido del usuario que inicio sesion
+  final String userrole; // Rol del usuario que inicio sesion
+  final String company; // Nombre de la compañia a la que se inicio sesion
 
   LoginResponse({
     required this.username,
