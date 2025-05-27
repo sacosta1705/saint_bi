@@ -1,7 +1,10 @@
+// lib/services/saint_api.dart
+
 import 'dart:convert';
-import 'dart:developer' as developer;
-import 'package:flutter/widgets.dart';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:saint_bi/models/invoice.dart';
+import 'package:saint_bi/services/saint_api_exceptions.dart';
 
 class SaintApi {
   final String apikey = 'B5D31933-C996-476C-B116-EF212A41479A';
@@ -17,20 +20,6 @@ class SaintApi {
     final String basicauth = 'Basic ${base64Encode(utf8.encode(credentials))}';
     final Uri loginUrl = Uri.parse('$baseurl/v1/main/login');
 
-    developer.log('Attempting login...', name: 'SaintApi.login');
-    developer.log('URL: ${loginUrl.toString()}', name: 'SaintApi.login');
-    developer.log('Method: POST', name: 'SaintApi.login');
-    developer.log('Headers: {', name: 'SaintApi.login');
-    developer.log('  Content-Type: application/json', name: 'SaintApi.login');
-    developer.log('  Authorization: $basicauth', name: 'SaintApi.login');
-    developer.log('  x-api-key: $apikey', name: 'SaintApi.login');
-    developer.log('  x-api-id: ${apiid.toString()}', name: 'SaintApi.login');
-    developer.log('}', name: 'SaintApi.login');
-    developer.log(
-      'Body: ${jsonEncode({'terminal': terminal})}',
-      name: 'SaintApi.login',
-    );
-
     try {
       final response = await http.post(
         loginUrl,
@@ -43,118 +32,71 @@ class SaintApi {
         body: jsonEncode({'terminal': terminal}),
       );
 
-      developer.log(
-        'Login Response Status Code: ${response.statusCode}',
-        name: 'SaintApi.login',
-      );
-      developer.log(
-        'Login Response Headers: ${response.headers}',
-        name: 'SaintApi.login',
-      );
-      developer.log(
-        'Login Response Body: ${response.body}',
-        name: 'SaintApi.login',
-      );
-
       if (response.statusCode == 200) {
         final authtoken = response.headers['pragma'];
         if (authtoken != null && authtoken.isNotEmpty) {
-          developer.log(
-            'Login successful. Pragma token: $authtoken',
-            name: 'SaintApi.login',
-          );
           return authtoken;
         } else {
-          developer.log(
-            'Login successful, but Pragma token is missing or empty.',
-            name: 'SaintApi.login',
-            error: "Pragma token nulo o vacío",
+          throw AuthenticationException(
+            "Token Pragma nulo o vacío después del login.",
           );
-          debugPrint('Status code (int): ${response.statusCode}');
-          debugPrint('Response body for missing pragma: ${response.body}');
-          return null;
         }
-      } else {
-        developer.log(
-          'Login failed. Status Code: ${response.statusCode}',
-          name: 'SaintApi.login',
-          error: response.body,
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AuthenticationException(
+          'Credenciales inválidas, API Key/ID incorrecta o acceso denegado.',
         );
-        return null;
+      } else {
+        throw UnknownApiExpection('Error desconocido durante el login.');
       }
-    } catch (e, stackTrace) {
-      developer.log(
-        'Exception during login',
-        name: 'SaintApi.login',
-        error: e,
-        stackTrace: stackTrace,
+    } on http.ClientException catch (e) {
+      throw NetworkException("Error de red durante el login: ${e.toString()}");
+    } on SocketException catch (e) {
+      throw NetworkException(
+        "Error de conexión durante el login: ${e.toString()}",
       );
-      return null;
+    } catch (e) {
+      throw UnknownApiExpection(
+        'Excepción no controlada durante el login: ${e.toString()}',
+      );
     }
   }
 
-  Future<int?> getInvoiceCount({
+  Future<List<Invoice>> getInvoices({
     required String baseUrl,
     required String authtoken,
   }) async {
     final Uri uri = Uri.parse('$baseUrl/v1/adm/invoices');
 
-    developer.log(
-      'Attempting to get invoice count...',
-      name: 'SaintApi.getInvoiceCount',
-    );
-    developer.log('URL: ${uri.toString()}', name: 'SaintApi.getInvoiceCount');
-    developer.log('Method: GET', name: 'SaintApi.getInvoiceCount');
-    developer.log(
-      'Headers: { pragma: $authtoken }',
-      name: 'SaintApi.getInvoiceCount',
-    );
-
     try {
       final response = await http.get(uri, headers: {'pragma': authtoken});
 
-      developer.log(
-        'GetInvoiceCount Response Status Code: ${response.statusCode}',
-        name: 'SaintApi.getInvoiceCount',
-      );
-      developer.log(
-        'GetInvoiceCount Response Body: ${response.body}',
-        name: 'SaintApi.getInvoiceCount',
-      );
-
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        developer.log(
-          'Invoice count received: ${data.length}',
-          name: 'SaintApi.getInvoiceCount',
-        );
-        return data.length;
+        return data.map((jsonItem) => Invoice.fromJson(jsonItem)).toList();
+      } else if (response.statusCode == 403) {
+        throw SessionExpiredException("Sesión expirada o acceso negado.");
       } else {
-        developer.log(
-          'Failed to get invoice count. Status Code: ${response.statusCode}',
-          name: 'SaintApi.getInvoiceCount',
-          error: response.body,
+        throw UnknownApiExpection(
+          'Error desconocido al obtener facturas (${response.statusCode}).',
         );
-        if (response.statusCode == 403) {
-          developer.log(
-            'Error 403: Sesion vencida.',
-            name: 'SaintApi.getInvoiceCount',
-          );
-          throw Exception('Sesion expirada.');
-        }
-        return null;
       }
-    } catch (e, stackTrace) {
-      developer.log(
-        'Exception during getInvoiceCount',
-        name: 'SaintApi.getInvoiceCount',
-        error: e,
-        stackTrace: stackTrace,
+    } on http.ClientException catch (e) {
+      throw NetworkException(
+        "Error de red al obtener facturas: ${e.toString()}",
       );
-      if (e.toString().contains('Sesion expirada.')) {
-        rethrow;
-      }
-      return null;
+    } on SocketException catch (e) {
+      throw NetworkException(
+        "Error de conexión al obtener facturas: ${e.toString()}",
+      );
+    } on FormatException catch (e) {
+      throw UnknownApiExpection(
+        'Error al procesar la respuesta del servidor (JSON inválido): ${e.toString()}',
+      );
+    } catch (e) {
+      if (e is SaintApiExceptions) rethrow;
+      throw UnknownApiExpection(
+        'Excepción no controlada al obtener facturas: ${e.toString()}',
+      );
     }
   }
 }

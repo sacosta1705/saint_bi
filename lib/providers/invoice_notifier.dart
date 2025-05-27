@@ -1,191 +1,206 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+
 import 'package:saint_bi/services/saint_api.dart';
+import 'package:saint_bi/models/invoice.dart';
+import 'package:saint_bi/models/invoice_summary.dart';
+import 'package:saint_bi/services/saint_api_exceptions.dart';
+
+const String _uiAuthErrorMessage =
+    'Error de autenticacion. Revise el usuario y clave.';
+const String _uiSessionExpiredMessage =
+    'Sesion expirada. Intentando re-autenticar...';
+const String _uiGenericErrorMessage = 'Error al comunicarse con el servidor.';
+const String _uiNetworkErrorMessage =
+    'Error de red. Verifique su conexion a internet.';
 
 class InvoiceNotifier extends ChangeNotifier {
   final SaintApi _api = SaintApi();
 
-  int _invoiceCount = 0;
+  InvoiceSummary _invoiceSummary = InvoiceSummary();
   bool _isLoading = false;
   String? _errorMsg;
   String? _authtoken;
   Timer? _timer;
+  bool _isReAuthenticating = false;
 
   final String _baseurl = 'http://64.135.37.214:6163/api';
   final String _username = '001';
   final String _password = '12345';
   final String _terminal = 'simple bi';
+  final int _pollingIntervalSeconds = 60;
 
-  int get invoiceCount => _invoiceCount;
+  InvoiceSummary get invoiceSummary => _invoiceSummary;
   bool get isLoading => _isLoading;
   String? get errorMsg => _errorMsg;
   bool get isAuthenticated => _authtoken != null && _authtoken!.isNotEmpty;
+  int get pollingIntervalSeconds => _pollingIntervalSeconds;
 
   InvoiceNotifier() {
-    developer.log(
-      'InvoiceNotifier initialized. Calling fetchInitialData...',
-      name: 'InvoiceNotifier',
-    );
+    developer.log('Inicializando notifier...', name: 'InvoiceNotifier');
     fetchInitialData();
   }
 
   Future<void> fetchInitialData() async {
-    developer.log('fetchInitialData called.', name: 'InvoiceNotifier'); //
     _isLoading = true;
     _errorMsg = null;
-    _authtoken = null;
+
+    if (!_isReAuthenticating) {
+      _authtoken = null;
+    }
+
+    _invoiceSummary = InvoiceSummary();
     _stopPolling();
+
     notifyListeners();
 
-    developer.log(
-      'Attempting login with: username: $_username, terminal: $_terminal',
-      name: 'InvoiceNotifier',
-    );
-    _authtoken = await _api.login(
-      baseurl: _baseurl,
-      username: _username,
-      password: _password,
-      terminal: _terminal,
-    );
+    try {
+      _authtoken = await _api.login(
+        baseurl: _baseurl,
+        username: _username,
+        password: _password,
+        terminal: _terminal,
+      );
 
-    if (isAuthenticated) {
-      developer.log(
-        'Login successful. Pragma token stored: $_authtoken. Fetching initial invoice count...',
-        name: 'InvoiceNotifier',
-      );
-      await _fetchInvoiceCount(isInitialFetch: true); //
-      if (_errorMsg == null) {
-        developer.log(
-          'Initial invoice count successful. Starting polling.',
-          name: 'InvoiceNotifier',
-        );
-        _startPollingInvoices();
+      if (isAuthenticated) {
+        _isReAuthenticating = false;
+        await _fetchSummaryData(isInitialFetch: true);
+
+        if (_errorMsg == null) {
+          _startPollingInvoices();
+        }
       } else {
-        developer.log(
-          'Initial invoice count failed. Polling NOT started.',
-          name: 'InvoiceNotifier',
-          error: _errorMsg,
-        );
+        _errorMsg = _uiAuthErrorMessage;
       }
-    } else {
-      _errorMsg = 'Error de autenticacion. Revisa logs de SaintApi.login.'; //
-      developer.log(
-        'Login failed in InvoiceNotifier.',
-        name: 'InvoiceNotifier',
-        error: _errorMsg,
-      );
+    } on AuthenticationException catch (e) {
+      _errorMsg = _uiAuthErrorMessage;
+      developer.log(e.toString());
+    } on NetworkException catch (e) {
+      _errorMsg = _uiNetworkErrorMessage;
+      developer.log(e.toString());
+    } on UnknownApiExpection catch (e) {
+      _errorMsg = _uiGenericErrorMessage;
+      developer.log(e.toString());
+    } catch (e) {
+      _errorMsg = _uiGenericErrorMessage;
+      developer.log(e.toString());
     }
 
     _isLoading = false;
+    _isReAuthenticating = false;
     notifyListeners();
   }
 
-  Future<void> _fetchInvoiceCount({bool isInitialFetch = false}) async {
-    developer.log(
-      '_fetchInvoiceCount called. isInitialFetch: $isInitialFetch',
-      name: 'InvoiceNotifier',
-    );
+  Future<void> _fetchSummaryData({bool isInitialFetch = false}) async {
     if (!isAuthenticated) {
-      _errorMsg = 'No autenticado. No se puede obtener datos.'; //
-      developer.log(_errorMsg!, name: 'InvoiceNotifier', error: _errorMsg);
-      if (isInitialFetch) notifyListeners();
+      _errorMsg = 'No autenticado. No se puede obtener datos.';
+      if (isInitialFetch || _isReAuthenticating) _isLoading = false;
+      _isReAuthenticating = false;
+      notifyListeners();
       return;
     }
 
-    if (isInitialFetch) {
+    if (isInitialFetch && !_isReAuthenticating) {
       _isLoading = true;
-    }
-
-    if (_errorMsg != 'Sesion expirada o acceso negado.') {
       _errorMsg = null;
+      notifyListeners();
+    } else if (!_isReAuthenticating) {
+      _errorMsg = null;
+      notifyListeners();
     }
 
-    developer.log(
-      'Fetching invoice count using Pragma: $_authtoken',
-      name: 'InvoiceNotifier',
-    );
     try {
-      final count = await _api.getInvoiceCount(
+      final List<Invoice> invoices = await _api.getInvoices(
         baseUrl: _baseurl,
         authtoken: _authtoken!,
       );
 
-      if (count != null) {
-        if (_invoiceCount != count) {
-          _invoiceCount = count;
-          developer.log(
-            'Invoice count updated to: $_invoiceCount',
-            name: 'InvoiceNotifier',
-          );
+      double tmpTotalSales = 0;
+      double tmpTotalReturns = 0;
+      double tmpTotalTax = 0;
+      int tmpSalesCount = 0;
+      int tmpReturnsCount = 0;
+
+      for (var invoice in invoices) {
+        if (invoice.type == 'A') {
+          tmpTotalSales += invoice.amount;
+          tmpTotalTax += invoice.amounttax;
+          tmpSalesCount++;
+        } else if (invoice.type == 'B') {
+          tmpTotalReturns += invoice.amount;
+          tmpTotalTax += invoice.amounttax;
+          tmpReturnsCount++;
         }
-        _errorMsg = null;
-      } else {
-        if (isInitialFetch || _errorMsg == null) {
-          _errorMsg = 'No se pudo obtener el conteo de facturas.';
-        }
-        developer.log(_errorMsg!, name: 'InvoiceNotifier', error: _errorMsg);
       }
-    } on Exception catch (e, stackTrace) {
-      developer.log(
-        'Exception during _fetchInvoiceCount',
-        name: 'InvoiceNotifier',
-        error: e,
-        stackTrace: stackTrace,
-      );
-      if (e.toString().contains('Sesion expirada.')) {
-        _errorMsg =
-            'Sesion expirada o acceso negado. Intentando re-autenticar...';
-        developer.log(_errorMsg!, name: 'InvoiceNotifier', error: _errorMsg);
-        notifyListeners();
-        _stopPolling();
-        await Future.delayed(const Duration(seconds: 1));
-        await fetchInitialData();
-        return;
-      } else {
-        if (isInitialFetch || _errorMsg == null) {
-          _errorMsg =
-              'Error al obtener conteo de facturas: ${e.toString().substring(0, (e.toString().length > 100) ? 100 : e.toString().length)}...'; //
-        }
-        developer.log(
-          'Otro error al obtener conteo',
-          name: 'InvoiceNotifier',
-          error: _errorMsg,
+
+      if (_invoiceSummary.totalSales != tmpTotalSales ||
+          _invoiceSummary.totalReturns != tmpTotalReturns ||
+          _invoiceSummary.totalTax != tmpTotalTax ||
+          _invoiceSummary.salesCount != tmpSalesCount ||
+          _invoiceSummary.returnsCount != tmpReturnsCount) {
+        _invoiceSummary = InvoiceSummary(
+          totalSales: tmpTotalSales,
+          totalReturns: tmpTotalReturns,
+          totalTax: tmpTotalTax,
+          salesCount: tmpSalesCount,
+          returnsCount: tmpReturnsCount,
         );
       }
-    } finally {
-      if (isInitialFetch) {
+
+      _errorMsg = null;
+      _isReAuthenticating = false;
+    } on SessionExpiredException catch (e) {
+      developer.log(e.toString());
+      if (_isReAuthenticating) {
+        _errorMsg = _uiAuthErrorMessage;
+        _stopPolling();
         _isLoading = false;
+        _isReAuthenticating = false;
+        notifyListeners();
+        return;
       }
+
+      _errorMsg = _uiSessionExpiredMessage;
+      _isReAuthenticating = true;
       notifyListeners();
+      _stopPolling();
+      await Future.delayed(const Duration(seconds: 1));
+      await fetchInitialData();
+      return;
+    } on NetworkException catch (e) {
+      _errorMsg = _uiNetworkErrorMessage;
+      developer.log(e.toString());
+    } on AuthenticationException catch (e) {
+      _errorMsg = _uiAuthErrorMessage;
+      developer.log(e.toString());
+    } on UnknownApiExpection catch (e) {
+      _errorMsg = _uiGenericErrorMessage;
+      developer.log(e.toString());
+    } catch (e) {
+      _errorMsg = _uiGenericErrorMessage;
+      developer.log(e.toString());
+    } finally {
+      if (!_isReAuthenticating) {
+        if (isInitialFetch) _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
   void _startPollingInvoices() {
     _stopPolling();
     if (isAuthenticated) {
-      developer.log(
-        'Starting polling timer. Interval: 15 seconds.',
-        name: 'InvoiceNotifier',
-      );
-      _timer = Timer.periodic(const Duration(seconds: 60), (timer) {
-        developer.log(
-          'Polling tick - calling _fetchInvoiceCount.',
-          name: 'InvoiceNotifier',
-        );
-        _fetchInvoiceCount(); //
+      _timer = Timer.periodic(Duration(seconds: _pollingIntervalSeconds), (
+        timer,
+      ) {
+        _fetchSummaryData(); //
       });
-    } else {
-      developer.log(
-        'Not authenticated. Polling not started.',
-        name: 'InvoiceNotifier',
-      );
     }
   }
 
   void _stopPolling() {
     if (_timer != null && _timer!.isActive) {
-      developer.log('Stopping polling timer.', name: 'InvoiceNotifier'); //
       _timer!.cancel();
       _timer = null;
     }
@@ -193,11 +208,7 @@ class InvoiceNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
-    developer.log(
-      'InvoiceNotifier disposed. Stopping polling.',
-      name: 'InvoiceNotifier',
-    ); //
-    _stopPolling(); //
+    _stopPolling();
     super.dispose();
   }
 }

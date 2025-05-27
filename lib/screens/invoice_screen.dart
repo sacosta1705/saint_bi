@@ -1,6 +1,29 @@
+// lib/screens/invoice_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:saint_bi/providers/invoice_notifier.dart'; // Ajusta la ruta si es necesario
+import 'package:saint_bi/providers/invoice_notifier.dart';
+
+const String _screenTitleText = 'Resumen de Ventas Saint BI 📊';
+const String _reloadDataTooltipText = 'Recargar Datos';
+const String _connectingApiText = "Conectando con la API...";
+const String _errorStateTitleText = "Error";
+const String _defaultUiErrorText = "Ha ocurrido un error inesperado.";
+const String _connectionInstructionsText =
+    "Verifique su conexión y la configuración del servidor.";
+const String _tryConnectButtonLabel = 'Intentar Conectar / Reintentar';
+const String _summaryCardTitleText = 'Resumen de Transacciones de Venta';
+const String _totalSalesLabelText = 'Total Ventas';
+const String _totalReturnsLabelText = 'Total Devoluciones';
+const String _totalTaxesLabelText = 'Total Impuestos';
+const String _invoicesCountSuffixText = 'facturas';
+const String _returnsCountSuffixText = 'notas';
+const String _updatingDataText = "Actualizando...";
+const String _liveDataText = "Datos en vivo.";
+const String _pollingIntervalSuffixText = "seg.";
+const String _warningTitleText = 'Advertencia';
+const String _reAuthenticatingMessageFromNotifier =
+    'Sesión expirada. Intentando re-autenticar...';
 
 class InvoiceScreen extends StatefulWidget {
   const InvoiceScreen({super.key});
@@ -13,24 +36,260 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   @override
   void initState() {
     super.initState();
-    // Iniciar la carga de datos cuando el widget se construye por primera vez
-    // Usamos addPostFrameCallback para asegurarnos de que el context esté disponible
-    // y evitar errores si se llama a notifyListeners durante la construcción.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Puedes decidir si quieres iniciar la carga automáticamente o con un botón.
-      // Para este ejemplo, iniciaremos con un botón en la UI si no está autenticado.
-      // Si quieres cargar automáticamente:
-      // Provider.of<InvoiceNotifier>(context, listen: false).fetchInitialData();
-    });
+  }
+
+  Widget _buildDataRow(
+    String label,
+    String value, {
+    Color valueColor = Colors.black87,
+    double fontSize = 20,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(fontSize: fontSize, color: Colors.grey.shade700),
+              textAlign: TextAlign.start,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+                color: valueColor,
+              ),
+              textAlign: TextAlign.end,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingState({String message = _connectingApiText}) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const CircularProgressIndicator(),
+        const SizedBox(height: 20),
+        Text(message, style: const TextStyle(fontSize: 16)),
+      ],
+    );
+  }
+
+  Widget _buildErrorState(InvoiceNotifier notifier, BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(25.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            color: Colors.red.shade700,
+            size: 70,
+          ),
+          const SizedBox(height: 25),
+          Text(
+            _errorStateTitleText,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.red.shade800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            notifier.errorMsg ?? _defaultUiErrorText,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.red.shade700),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            _connectionInstructionsText,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          const SizedBox(height: 35),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.refresh),
+            label: const Text(_tryConnectButtonLabel),
+            onPressed: notifier.isLoading
+                ? null
+                : () {
+                    notifier.fetchInitialData();
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              textStyle: const TextStyle(fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataDisplay(InvoiceNotifier notifier, BuildContext context) {
+    final summary = notifier.invoiceSummary;
+    final pollingInterval = notifier.pollingIntervalSeconds;
+    final String liveDataMessage =
+        "$_liveDataText Actualizando cada $pollingInterval $_pollingIntervalSuffixText";
+
+    String statusMessage = liveDataMessage;
+    Color statusMessageColor = Colors.green;
+    FontStyle statusMessageFontStyle = FontStyle.normal;
+
+    if (notifier.errorMsg != null) {
+      if (notifier.errorMsg == _reAuthenticatingMessageFromNotifier) {
+        statusMessage = notifier.errorMsg!;
+        statusMessageColor = Colors.orange.shade800;
+        statusMessageFontStyle = FontStyle.italic;
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (notifier.errorMsg != null &&
+              notifier.isAuthenticated &&
+              !notifier.isLoading &&
+              notifier.errorMsg != _reAuthenticatingMessageFromNotifier)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade400),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange.shade800,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '$_warningTitleText: ${notifier.errorMsg}',
+                      style: TextStyle(
+                        color: Colors.orange.shade900,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          Card(
+            elevation: 5,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 20.0,
+                horizontal: 15.0,
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    _summaryCardTitleText,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 25),
+                  _buildDataRow(
+                    '$_totalSalesLabelText (${summary.salesCount} $_invoicesCountSuffixText):',
+                    summary.totalSales.toStringAsPrecision(2),
+                    valueColor: Colors.green.shade700,
+                    fontSize: 18,
+                  ),
+                  const SizedBox(height: 5),
+                  _buildDataRow(
+                    '$_totalReturnsLabelText (${summary.returnsCount} $_returnsCountSuffixText):',
+                    summary.totalReturns.toStringAsPrecision(2),
+                    valueColor: Colors.red.shade600,
+                    fontSize: 18,
+                  ),
+                  const Divider(
+                    height: 35,
+                    thickness: 1,
+                    indent: 10,
+                    endIndent: 10,
+                  ),
+                  _buildDataRow(
+                    _totalTaxesLabelText,
+                    summary.totalTax.toStringAsPrecision(2),
+                    valueColor: Theme.of(context).primaryColorDark,
+                    fontSize: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 25),
+
+          if (notifier.isLoading &&
+              notifier.isAuthenticated &&
+              notifier.errorMsg != _reAuthenticatingMessageFromNotifier)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  _updatingDataText,
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+              ],
+            )
+          else if (notifier.isAuthenticated ||
+              notifier.errorMsg == _reAuthenticatingMessageFromNotifier)
+            Text(
+              statusMessage,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: statusMessageColor,
+                fontStyle: statusMessageFontStyle,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Facturas Saint - En Vivo 📊'),
+        title: const Text(_screenTitleText),
         actions: [
-          // Botón de recarga manual
           Consumer<InvoiceNotifier>(
             builder: (context, notifier, child) {
               return IconButton(
@@ -38,10 +297,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 onPressed: notifier.isLoading
                     ? null
                     : () {
-                        // Deshabilita si ya está cargando
                         notifier.fetchInitialData();
                       },
-                tooltip: 'Recargar Datos',
+                tooltip: _reloadDataTooltipText,
               );
             },
           ),
@@ -50,157 +308,32 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       body: Center(
         child: Consumer<InvoiceNotifier>(
           builder: (context, notifier, child) {
-            // Estado de Carga Inicial (antes del primer intento de login)
             if (notifier.isLoading &&
-                !notifier.isAuthenticated &&
-                notifier.invoiceCount == 0) {
-              return const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text("Conectando con la API..."),
-                ],
+                ((!notifier.isAuthenticated && notifier.errorMsg == null) ||
+                    (notifier.errorMsg ==
+                            _reAuthenticatingMessageFromNotifier &&
+                        notifier.invoiceSummary.salesCount == 0 &&
+                        notifier.invoiceSummary.returnsCount == 0))) {
+              return _buildLoadingState(
+                message:
+                    notifier.errorMsg == _reAuthenticatingMessageFromNotifier
+                    ? _reAuthenticatingMessageFromNotifier
+                    : _connectingApiText,
               );
             }
 
-            // Si no está autenticado (después del intento inicial o si falló)
-            if (!notifier.isAuthenticated) {
-              return Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.red.shade700,
-                      size: 60,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      notifier.errorMsg ??
-                          'No se ha podido conectar con el servidor API.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.red.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      "Asegúrate de haber configurado correctamente la URL base, credenciales y que el Saint Sync Server esté accesible.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.login),
-                      label: const Text('Intentar Conectar / Autenticar'),
-                      onPressed: notifier.isLoading
-                          ? null
-                          : () {
-                              notifier.fetchInitialData();
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              );
+            if (!notifier.isAuthenticated &&
+                notifier.errorMsg != null &&
+                notifier.errorMsg != _reAuthenticatingMessageFromNotifier) {
+              return _buildErrorState(notifier, context);
             }
 
-            // Autenticado y mostrando datos
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  // Mensaje de error/advertencia durante el polling (si no es un error de autenticación)
-                  if (notifier.errorMsg != null &&
-                      notifier.isAuthenticated &&
-                      !notifier.isLoading)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange.shade300),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.orange.shade700,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Advertencia: ${notifier.errorMsg}',
-                              style: TextStyle(
-                                color: Colors.orange.shade800,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+            if (notifier.isAuthenticated ||
+                notifier.errorMsg == _reAuthenticatingMessageFromNotifier) {
+              return _buildDataDisplay(notifier, context);
+            }
 
-                  const Text(
-                    'Número Total de Facturas de Venta Registradas:',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 22, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '${notifier.invoiceCount}',
-                    style: TextStyle(
-                      fontSize: 72,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).primaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Indicador sutil de que el polling está activo y cargando en segundo plano
-                  if (notifier.isLoading &&
-                      notifier.isAuthenticated &&
-                      notifier.invoiceCount > 0)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2.0),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          "Actualizando...",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    )
-                  else if (notifier
-                      .isAuthenticated) // Para mostrar cuándo fue la última vez que se intentó (incluso si hubo error no fatal)
-                    Text(
-                      "Datos en vivo. Actualizando periódicamente.",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.green.shade700,
-                      ),
-                    ),
-                ],
-              ),
-            );
+            return _buildErrorState(notifier, context);
           },
         ),
       ),
