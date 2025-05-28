@@ -26,7 +26,8 @@ class InvoiceNotifier extends ChangeNotifier {
   Timer? _timer; //
   bool _isReAuthenticating = false; //
 
-  // Credenciales y configuración (sin cambios)
+  DateTime? _selectedDate;
+
   final String _baseurl = 'http://64.135.37.214:6163/api'; //
   final String _username = '001'; //
   final String _password = '12345'; //
@@ -38,9 +39,11 @@ class InvoiceNotifier extends ChangeNotifier {
   String? get errorMsg => _errorMsg; //
   bool get isAuthenticated => _authtoken != null && _authtoken!.isNotEmpty; //
   int get pollingIntervalSeconds => _pollingIntervalSeconds; //
+  DateTime? get selectedDate => _selectedDate;
 
   InvoiceNotifier() {
     debugPrint('Inicializando InvoiceNotifier...'); //
+    _selectedDate = DateTime.now(); //
     fetchInitialData(); //
   }
 
@@ -64,6 +67,24 @@ class InvoiceNotifier extends ChangeNotifier {
     debugPrint('Error manejado: $message');
   }
 
+  Future<void> filterByDate(DateTime? date) async {
+    _selectedDate = date; //
+    _isLoading = true; //
+    _errorMsg = null; //
+    _invoiceSummary = InvoiceSummary(); //
+    _stopPolling(); //
+    notifyListeners(); //
+
+    if (!isAuthenticated) {
+      debugPrint('No autenticado. Re-autenticando');
+      await fetchInitialData();
+    } else {
+      debugPrint('Autenticando. Obteniendo datos filtrados...');
+      await _fetchSummaryData(isInitialFetch: true);
+      if (isAuthenticated && _errorMsg == null) _startPollingInvoices();
+    }
+  }
+
   Future<void> fetchInitialData() async {
     debugPrint(
       'Iniciando fetchInitialData. Estado actual: isLoading=$_isLoading, isReAuthenticating=$_isReAuthenticating, errorMsg=$_errorMsg',
@@ -71,16 +92,11 @@ class InvoiceNotifier extends ChangeNotifier {
 
     _isLoading = true;
     if (!_isReAuthenticating) {
-      // Si no estamos en medio de una re-autenticación, es un inicio fresco o un refresh manual
       _errorMsg = null;
-      _authtoken = null; // Limpiar token para forzar nuevo login
-      _invoiceSummary = InvoiceSummary(); // Resetear resumen para la UI
+      _authtoken = null;
+      _invoiceSummary = InvoiceSummary();
       _stopPolling();
     } else {
-      // Si _isReAuthenticating es true, _errorMsg ya debería ser _uiSessionExpiredMessage.
-      // No limpiamos _errorMsg aquí para que la UI pueda mostrar "Re-autenticando..."
-      // El token no se limpia, se reusará el intento de login.
-      // _invoiceSummary se resetea para mostrar carga limpia.
       _invoiceSummary = InvoiceSummary();
     }
     notifyListeners();
@@ -188,18 +204,13 @@ class InvoiceNotifier extends ChangeNotifier {
       return;
     }
 
-    // Si es un fetch de polling y había un error no relacionado con sesión, limpiarlo
-    // para indicar que se está reintentando.
     if (!isInitialFetch &&
         _errorMsg != null &&
         _errorMsg != _uiSessionExpiredMessage) {
       _errorMsg = null;
-      notifyListeners(); // Actualizar UI para quitar error viejo durante el reintento de polling
+      notifyListeners();
     }
 
-    // isLoading se maneja en fetchInitialData para la carga inicial.
-    // Para polling, la UI puede mostrar un indicador sutil si se desea, pero no es un _isLoading principal.
-    // Si es un fetch inicial post-login, isLoading ya es true.
     debugPrint(
       'Iniciando _fetchSummaryData (isInitialFetch: $isInitialFetch). Token: ${_authtoken?.substring(0, 10)}...',
     );
@@ -213,6 +224,21 @@ class InvoiceNotifier extends ChangeNotifier {
         '_fetchSummaryData: Recibidas ${allInvoices.length} facturas de la API.',
       );
 
+      List<Invoice> invoicesToProcess = allInvoices;
+      if (_selectedDate != null) {
+        invoicesToProcess = allInvoices.where((invoice) {
+          try {
+            DateTime invoiceDate = DateTime.parse(invoice.date);
+            return invoiceDate.year == _selectedDate!.year &&
+                invoiceDate.month == _selectedDate!.month &&
+                invoiceDate.day == _selectedDate!.day;
+          } catch (e) {
+            debugPrint('Error parseando fecha de factura: ${e.toString()}');
+            return false;
+          }
+        }).toList();
+      }
+
       double tmpTotalSales = 0;
       double tmpTotalReturns = 0;
       double tmpTotalTax = 0;
@@ -224,7 +250,7 @@ class InvoiceNotifier extends ChangeNotifier {
       Set<String> returnedDocNumbers = {};
 
       // 1. Separar facturas y registrar los codigos de las devoluciones
-      for (var invoice in allInvoices) {
+      for (var invoice in invoicesToProcess) {
         if (invoice.type == 'A') {
           salesInvoices.add(invoice);
         } else if (invoice.type == 'B') {
@@ -259,17 +285,13 @@ class InvoiceNotifier extends ChangeNotifier {
         returnsCount: tmpReturnsCount,
       ); //
 
-      // Limpiar error solo si el error actual no es el de intento de re-autenticación.
       if (_errorMsg != _uiSessionExpiredMessage) {
         _errorMsg = null;
       }
-      // _isReAuthenticating se limpiará en fetchInitialData si la re-autenticación fue exitosa.
-      // Aquí, si llegamos sin SessionExpiredException, el ciclo de re-auth (si lo hubo) terminó.
       _isReAuthenticating = false;
     } on SessionExpiredException catch (e, stackTrace) {
       debugPrint('_fetchSummaryData: Sesión Expirada: ${e.toString()}');
       if (_isReAuthenticating) {
-        // Ya estábamos re-autenticando y falló de nuevo con sesión expirada. Tratar como Auth error.
         _handleError(
           _uiAuthErrorMessage,
           isInitialFetch,
