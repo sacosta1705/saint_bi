@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 
 import 'package:saint_bi/services/saint_api.dart';
@@ -7,52 +6,83 @@ import 'package:saint_bi/models/invoice.dart';
 import 'package:saint_bi/models/invoice_summary.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
 
+// Constantes para mensajes de UI (sin cambios)
 const String _uiAuthErrorMessage =
-    'Error de autenticacion. Revise el usuario y clave.';
+    'Error de autenticacion. Revise el usuario y clave.'; //
 const String _uiSessionExpiredMessage =
-    'Sesion expirada. Intentando re-autenticar...';
-const String _uiGenericErrorMessage = 'Error al comunicarse con el servidor.';
+    'Sesion expirada. Intentando re-autenticar...'; //
+const String _uiGenericErrorMessage =
+    'Error al comunicarse con el servidor.'; //
 const String _uiNetworkErrorMessage =
-    'Error de red. Verifique su conexion a internet.';
+    'Error de red. Verifique su conexion a internet.'; //
 
 class InvoiceNotifier extends ChangeNotifier {
-  final SaintApi _api = SaintApi();
+  final SaintApi _api = SaintApi(); //
 
-  InvoiceSummary _invoiceSummary = InvoiceSummary();
-  bool _isLoading = false;
-  String? _errorMsg;
-  String? _authtoken;
-  Timer? _timer;
-  bool _isReAuthenticating = false;
+  InvoiceSummary _invoiceSummary = InvoiceSummary(); //
+  bool _isLoading = false; //
+  String? _errorMsg; //
+  String? _authtoken; //
+  Timer? _timer; //
+  bool _isReAuthenticating = false; //
 
-  final String _baseurl = 'http://64.135.37.214:6163/api';
-  final String _username = '001';
-  final String _password = '12345';
-  final String _terminal = 'simple bi';
-  final int _pollingIntervalSeconds = 60;
+  // Credenciales y configuración (sin cambios)
+  final String _baseurl = 'http://64.135.37.214:6163/api'; //
+  final String _username = '001'; //
+  final String _password = '12345'; //
+  final String _terminal = 'simple bi'; //
+  final int _pollingIntervalSeconds = 9999; //
 
-  InvoiceSummary get invoiceSummary => _invoiceSummary;
-  bool get isLoading => _isLoading;
-  String? get errorMsg => _errorMsg;
-  bool get isAuthenticated => _authtoken != null && _authtoken!.isNotEmpty;
-  int get pollingIntervalSeconds => _pollingIntervalSeconds;
+  InvoiceSummary get invoiceSummary => _invoiceSummary; //
+  bool get isLoading => _isLoading; //
+  String? get errorMsg => _errorMsg; //
+  bool get isAuthenticated => _authtoken != null && _authtoken!.isNotEmpty; //
+  int get pollingIntervalSeconds => _pollingIntervalSeconds; //
 
   InvoiceNotifier() {
-    developer.log('Inicializando notifier...', name: 'InvoiceNotifier');
-    fetchInitialData();
+    debugPrint('Inicializando InvoiceNotifier...'); //
+    fetchInitialData(); //
+  }
+
+  void _handleError(
+    String message,
+    bool isInitialFetchContext, {
+    bool isAuthenticationIssue = false,
+    dynamic error,
+    StackTrace? stackTrace,
+  }) {
+    _errorMsg = message;
+    if (isAuthenticationIssue) {
+      _authtoken = null; // Invalidar token si es un problema de autenticación
+      debugPrint('Token invalidado debido a error de autenticación.');
+    }
+
+    _isLoading = false; // Siempre se termina la carga, ya sea con éxito o error
+    _isReAuthenticating =
+        false; // Se termina el intento de re-autenticación (si lo hubo)
+
+    debugPrint('Error manejado: $message');
   }
 
   Future<void> fetchInitialData() async {
+    debugPrint(
+      'Iniciando fetchInitialData. Estado actual: isLoading=$_isLoading, isReAuthenticating=$_isReAuthenticating, errorMsg=$_errorMsg',
+    );
+
     _isLoading = true;
-    _errorMsg = null;
-
     if (!_isReAuthenticating) {
-      _authtoken = null;
+      // Si no estamos en medio de una re-autenticación, es un inicio fresco o un refresh manual
+      _errorMsg = null;
+      _authtoken = null; // Limpiar token para forzar nuevo login
+      _invoiceSummary = InvoiceSummary(); // Resetear resumen para la UI
+      _stopPolling();
+    } else {
+      // Si _isReAuthenticating es true, _errorMsg ya debería ser _uiSessionExpiredMessage.
+      // No limpiamos _errorMsg aquí para que la UI pueda mostrar "Re-autenticando..."
+      // El token no se limpia, se reusará el intento de login.
+      // _invoiceSummary se resetea para mostrar carga limpia.
+      _invoiceSummary = InvoiceSummary();
     }
-
-    _invoiceSummary = InvoiceSummary();
-    _stopPolling();
-
     notifyListeners();
 
     try {
@@ -61,59 +91,126 @@ class InvoiceNotifier extends ChangeNotifier {
         username: _username,
         password: _password,
         terminal: _terminal,
+      ); //
+      debugPrint(
+        'Login API call completed. Token: ${(_authtoken ?? "").isNotEmpty ? "OBTENIDO" : "NO OBTENIDO"}',
       );
 
+      _isReAuthenticating =
+          false; // Ya sea éxito o fallo del login, el intento de re-autenticación (si lo hubo) ha terminado.
+
       if (isAuthenticated) {
-        _isReAuthenticating = false;
-        await _fetchSummaryData(isInitialFetch: true);
+        _errorMsg =
+            null; // Login exitoso, limpiar cualquier mensaje de error previo.
+        debugPrint('Login exitoso, procediendo a _fetchSummaryData');
+        await _fetchSummaryData(
+          isInitialFetch: true,
+        ); // Tratar como carga inicial de datos post-login
 
         if (_errorMsg == null) {
+          // Solo iniciar polling si fetchSummaryData fue completamente exitoso
+          debugPrint(
+            'fetchInitialData: _fetchSummaryData exitoso, iniciando polling.',
+          );
           _startPollingInvoices();
+        } else {
+          debugPrint(
+            'fetchInitialData: _fetchSummaryData falló después de login exitoso. Error: $_errorMsg',
+          );
+          _stopPolling(); // No iniciar polling si hubo error post-login
         }
       } else {
-        _errorMsg = _uiAuthErrorMessage;
+        // Esto teóricamente no debería pasar si _api.login lanza AuthenticationException en fallo.
+        _handleError(
+          _uiAuthErrorMessage,
+          true,
+          isAuthenticationIssue: true,
+          error: "Token nulo o vacío post-login sin excepción previa.",
+        );
+        _stopPolling();
       }
-    } on AuthenticationException catch (e) {
-      _errorMsg = _uiAuthErrorMessage;
-      developer.log(e.toString());
-    } on NetworkException catch (e) {
-      _errorMsg = _uiNetworkErrorMessage;
-      developer.log(e.toString());
-    } on UnknownApiExpection catch (e) {
-      _errorMsg = _uiGenericErrorMessage;
-      developer.log(e.toString());
-    } catch (e) {
-      _errorMsg = _uiGenericErrorMessage;
-      developer.log(e.toString());
+    } on AuthenticationException catch (e, stackTrace) {
+      _handleError(
+        _uiAuthErrorMessage,
+        true,
+        isAuthenticationIssue: true,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      _stopPolling();
+    } on NetworkException catch (e, stackTrace) {
+      _handleError(
+        _uiNetworkErrorMessage,
+        true,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      _stopPolling();
+    } on UnknownApiExpection catch (e, stackTrace) {
+      _handleError(
+        _uiGenericErrorMessage,
+        true,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      _stopPolling();
+    } catch (e, stackTrace) {
+      _handleError(
+        _uiGenericErrorMessage,
+        true,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      _stopPolling();
+    } finally {
+      // isLoading debería haber sido seteado a false por _handleError en caso de error,
+      // o por _fetchSummaryData en caso de éxito.
+      if (_isLoading) {
+        // Si por alguna razón sigue true (ej. _fetchSummaryData no lo cambió)
+        _isLoading = false;
+      }
+      _isReAuthenticating = false; // Asegurar que este flag se limpie
+      notifyListeners();
+      debugPrint(
+        'fetchInitialData finalizado. Estado: isLoading=$_isLoading, errorMsg=$_errorMsg',
+      );
     }
-
-    _isLoading = false;
-    _isReAuthenticating = false;
-    notifyListeners();
   }
 
   Future<void> _fetchSummaryData({bool isInitialFetch = false}) async {
     if (!isAuthenticated) {
-      _errorMsg = 'No autenticado. No se puede obtener datos.';
-      if (isInitialFetch || _isReAuthenticating) _isLoading = false;
-      _isReAuthenticating = false;
-      notifyListeners();
+      _handleError(
+        'No autenticado. No se puede obtener datos de facturas.',
+        isInitialFetch,
+        isAuthenticationIssue: true,
+        error: "Intento de fetch sin token.",
+      );
       return;
     }
 
-    if (isInitialFetch && !_isReAuthenticating) {
-      _isLoading = true;
+    // Si es un fetch de polling y había un error no relacionado con sesión, limpiarlo
+    // para indicar que se está reintentando.
+    if (!isInitialFetch &&
+        _errorMsg != null &&
+        _errorMsg != _uiSessionExpiredMessage) {
       _errorMsg = null;
-      notifyListeners();
-    } else if (!_isReAuthenticating) {
-      _errorMsg = null;
-      notifyListeners();
+      notifyListeners(); // Actualizar UI para quitar error viejo durante el reintento de polling
     }
+
+    // isLoading se maneja en fetchInitialData para la carga inicial.
+    // Para polling, la UI puede mostrar un indicador sutil si se desea, pero no es un _isLoading principal.
+    // Si es un fetch inicial post-login, isLoading ya es true.
+    debugPrint(
+      'Iniciando _fetchSummaryData (isInitialFetch: $isInitialFetch). Token: ${_authtoken?.substring(0, 10)}...',
+    );
 
     try {
       final List<Invoice> invoices = await _api.getInvoices(
         baseUrl: _baseurl,
         authtoken: _authtoken!,
+      ); //
+      debugPrint(
+        '_fetchSummaryData: Recibidas ${invoices.length} facturas de la API.',
       );
 
       double tmpTotalSales = 0;
@@ -123,92 +220,143 @@ class InvoiceNotifier extends ChangeNotifier {
       int tmpReturnsCount = 0;
 
       for (var invoice in invoices) {
+        // Aquí podrías añadir validaciones adicionales del objeto invoice si es necesario
+        // Por ejemplo, si Invoice.fromJson puede devolver un objeto "inválido" en lugar de lanzar error.
         if (invoice.type == 'A') {
-          tmpTotalSales += invoice.amount;
-          tmpTotalTax += invoice.amounttax;
-          tmpSalesCount++;
+          //
+          tmpTotalSales += invoice.amount; //
+          tmpTotalTax += invoice.amounttax; //
+          tmpSalesCount++; //
         } else if (invoice.type == 'B') {
-          tmpTotalReturns += invoice.amount;
-          tmpTotalTax += invoice.amounttax;
-          tmpReturnsCount++;
+          //
+          tmpTotalReturns += invoice.amount; //
+          tmpTotalTax += invoice
+              .amounttax; // Asumiendo que el impuesto de las devoluciones también se suma al total general de impuestos. Ajustar si la lógica de negocio es diferente.
+          tmpReturnsCount++; //
         }
       }
+      debugPrint(
+        '_fetchSummaryData: Totales calculados - Ventas=$tmpTotalSales (Count:$tmpSalesCount), Dev=$tmpTotalReturns (Count:$tmpReturnsCount), Imp=$tmpTotalTax',
+      );
 
-      if (_invoiceSummary.totalSales != tmpTotalSales ||
-          _invoiceSummary.totalReturns != tmpTotalReturns ||
-          _invoiceSummary.totalTax != tmpTotalTax ||
-          _invoiceSummary.salesCount != tmpSalesCount ||
-          _invoiceSummary.returnsCount != tmpReturnsCount) {
-        _invoiceSummary = InvoiceSummary(
-          totalSales: tmpTotalSales,
-          totalReturns: tmpTotalReturns,
-          totalTax: tmpTotalTax,
-          salesCount: tmpSalesCount,
-          returnsCount: tmpReturnsCount,
-        );
+      _invoiceSummary = InvoiceSummary(
+        totalSales: tmpTotalSales,
+        totalReturns: tmpTotalReturns,
+        totalTax: tmpTotalTax,
+        salesCount: tmpSalesCount,
+        returnsCount: tmpReturnsCount,
+      ); //
+
+      // Limpiar error solo si el error actual no es el de intento de re-autenticación.
+      if (_errorMsg != _uiSessionExpiredMessage) {
+        _errorMsg = null;
       }
-
-      _errorMsg = null;
+      // _isReAuthenticating se limpiará en fetchInitialData si la re-autenticación fue exitosa.
+      // Aquí, si llegamos sin SessionExpiredException, el ciclo de re-auth (si lo hubo) terminó.
       _isReAuthenticating = false;
-    } on SessionExpiredException catch (e) {
-      developer.log(e.toString());
+    } on SessionExpiredException catch (e, stackTrace) {
+      debugPrint('_fetchSummaryData: Sesión Expirada: ${e.toString()}');
       if (_isReAuthenticating) {
-        _errorMsg = _uiAuthErrorMessage;
+        // Ya estábamos re-autenticando y falló de nuevo con sesión expirada. Tratar como Auth error.
+        _handleError(
+          _uiAuthErrorMessage,
+          isInitialFetch,
+          isAuthenticationIssue: true,
+          error: e,
+          stackTrace: stackTrace,
+        );
         _stopPolling();
-        _isLoading = false;
-        _isReAuthenticating = false;
-        notifyListeners();
-        return;
+        return; // Salir, _handleError ya notificó y actualizó isLoading.
       }
-
+      // Primera vez que se detecta sesión expirada en este ciclo de fetch.
       _errorMsg = _uiSessionExpiredMessage;
       _isReAuthenticating = true;
-      notifyListeners();
+      notifyListeners(); // Notificar para mostrar "Re-autenticando..."
+
       _stopPolling();
       await Future.delayed(const Duration(seconds: 1));
-      await fetchInitialData();
+      await fetchInitialData(); // Esto intentará loguearse y luego hacer fetchSummaryData de nuevo.
+      // No necesitamos más lógica aquí porque fetchInitialData manejará el estado final.
       return;
-    } on NetworkException catch (e) {
-      _errorMsg = _uiNetworkErrorMessage;
-      developer.log(e.toString());
-    } on AuthenticationException catch (e) {
-      _errorMsg = _uiAuthErrorMessage;
-      developer.log(e.toString());
-    } on UnknownApiExpection catch (e) {
-      _errorMsg = _uiGenericErrorMessage;
-      developer.log(e.toString());
-    } catch (e) {
-      _errorMsg = _uiGenericErrorMessage;
-      developer.log(e.toString());
+    } on AuthenticationException catch (e, stackTrace) {
+      _handleError(
+        _uiAuthErrorMessage,
+        isInitialFetch,
+        isAuthenticationIssue: true,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      _stopPolling();
+    } on NetworkException catch (e, stackTrace) {
+      _handleError(
+        _uiNetworkErrorMessage,
+        isInitialFetch,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // No detenemos el polling aquí; podría ser un problema temporal de red.
+    } on UnknownApiExpection catch (e, stackTrace) {
+      _handleError(
+        _uiGenericErrorMessage,
+        isInitialFetch,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      // Errores de parseo de Invoice.fromJson, u otros no esperados.
+      _handleError(
+        _uiGenericErrorMessage,
+        isInitialFetch,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Considera resetear _invoiceSummary si el error es crítico para los datos
+      // _invoiceSummary = InvoiceSummary();
     } finally {
-      if (!_isReAuthenticating) {
-        if (isInitialFetch) _isLoading = false;
-        notifyListeners();
+      // Si isInitialFetch es true, isLoading se manejará al final de fetchInitialData.
+      // Si no es isInitialFetch (es un polling), no hay un _isLoading principal que gestionar aquí.
+      if (isInitialFetch) {
+        _isLoading =
+            false; // La carga inicial de datos (post-login) ha terminado.
       }
+      // _isReAuthenticating debería ser false aquí a menos que se haya lanzado SessionExpiredException y estemos a punto de re-llamar a fetchInitialData.
+      notifyListeners();
+      debugPrint(
+        '_fetchSummaryData finalizado. Estado: isLoading=$_isLoading, errorMsg=$_errorMsg',
+      );
     }
   }
 
   void _startPollingInvoices() {
-    _stopPolling();
+    _stopPolling(); //
     if (isAuthenticated) {
+      //
+      debugPrint('Iniciando polling cada $_pollingIntervalSeconds segundos.');
       _timer = Timer.periodic(Duration(seconds: _pollingIntervalSeconds), (
         timer,
       ) {
-        _fetchSummaryData(); //
+        //
+        debugPrint('Ejecutando fetch por polling...');
+        _fetchSummaryData(isInitialFetch: false); // No es una carga inicial
       });
+    } else {
+      debugPrint('No se inicia polling: no autenticado.');
     }
   }
 
   void _stopPolling() {
     if (_timer != null && _timer!.isActive) {
-      _timer!.cancel();
-      _timer = null;
+      //
+      debugPrint('Deteniendo polling.');
+      _timer!.cancel(); //
+      _timer = null; //
     }
   }
 
   @override
   void dispose() {
-    _stopPolling();
-    super.dispose();
+    debugPrint('Disposing InvoiceNotifier.');
+    _stopPolling(); //
+    super.dispose(); //
   }
 }
