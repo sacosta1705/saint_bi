@@ -1,50 +1,50 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:saint_bi/services/saint_api.dart';
 import 'package:saint_bi/models/invoice.dart';
 import 'package:saint_bi/models/invoice_summary.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
 
-// Constantes para mensajes de UI (sin cambios)
 const String _uiAuthErrorMessage =
-    'Error de autenticacion. Revise el usuario y clave.'; //
+    'Error de autenticacion. Revise el usuario y clave.';
 const String _uiSessionExpiredMessage =
-    'Sesion expirada. Intentando re-autenticar...'; //
-const String _uiGenericErrorMessage =
-    'Error al comunicarse con el servidor.'; //
+    'Sesion expirada. Intentando re-autenticar...';
+const String _uiGenericErrorMessage = 'Error al comunicarse con el servidor.';
 const String _uiNetworkErrorMessage =
-    'Error de red. Verifique su conexion a internet.'; //
+    'Error de red. Verifique su conexion a internet.';
 
 class InvoiceNotifier extends ChangeNotifier {
-  final SaintApi _api = SaintApi(); //
+  final SaintApi _api = SaintApi();
 
-  InvoiceSummary _invoiceSummary = InvoiceSummary(); //
-  bool _isLoading = false; //
-  String? _errorMsg; //
-  String? _authtoken; //
-  Timer? _timer; //
-  bool _isReAuthenticating = false; //
+  InvoiceSummary _invoiceSummary = InvoiceSummary();
+  bool _isLoading = false;
+  String? _errorMsg;
+  String? _authtoken;
+  Timer? _timer;
+  bool _isReAuthenticating = false;
 
-  DateTime? _selectedDate;
+  DateTime? _startDate; // Nuevo: para fecha de inicio del filtro
+  DateTime? _endDate; // Nuevo: para fecha de fin del filtro
 
-  final String _baseurl = 'http://64.135.37.214:6163/api'; //
-  final String _username = '001'; //
-  final String _password = '12345'; //
-  final String _terminal = 'simple bi'; //
-  final int _pollingIntervalSeconds = 9999; //
+  final String _baseurl = 'http://64.135.37.214:6163/api';
+  final String _username = '001';
+  final String _password = '12345';
+  final String _terminal = 'simple bi';
+  final int _pollingIntervalSeconds = 9999;
 
-  InvoiceSummary get invoiceSummary => _invoiceSummary; //
-  bool get isLoading => _isLoading; //
-  String? get errorMsg => _errorMsg; //
-  bool get isAuthenticated => _authtoken != null && _authtoken!.isNotEmpty; //
-  int get pollingIntervalSeconds => _pollingIntervalSeconds; //
-  DateTime? get selectedDate => _selectedDate;
+  InvoiceSummary get invoiceSummary => _invoiceSummary;
+  bool get isLoading => _isLoading;
+  String? get errorMsg => _errorMsg;
+  bool get isAuthenticated => _authtoken != null && _authtoken!.isNotEmpty;
+  int get pollingIntervalSeconds => _pollingIntervalSeconds;
+  DateTime? get startDate => _startDate; // Nuevo getter
+  DateTime? get endDate => _endDate; // Nuevo getter
 
   InvoiceNotifier() {
-    debugPrint('Inicializando InvoiceNotifier...'); //
-    _selectedDate = DateTime.now(); //
-    fetchInitialData(); //
+    debugPrint('Inicializando InvoiceNotifier...');
+    fetchInitialData();
   }
 
   void _handleError(
@@ -56,38 +56,52 @@ class InvoiceNotifier extends ChangeNotifier {
   }) {
     _errorMsg = message;
     if (isAuthenticationIssue) {
-      _authtoken = null; // Invalidar token si es un problema de autenticación
+      _authtoken = null;
       debugPrint('Token invalidado debido a error de autenticación.');
     }
-
-    _isLoading = false; // Siempre se termina la carga, ya sea con éxito o error
-    _isReAuthenticating =
-        false; // Se termina el intento de re-autenticación (si lo hubo)
-
-    debugPrint('Error manejado: $message');
+    _isLoading = false;
+    _isReAuthenticating = false;
+    debugPrint(
+      'Error manejado: $message. Error: $error, StackTrace: $stackTrace',
+    );
   }
 
-  Future<void> filterByDate(DateTime? date) async {
-    _selectedDate = date; //
-    _isLoading = true; //
-    _errorMsg = null; //
-    _invoiceSummary = InvoiceSummary(); //
-    _stopPolling(); //
-    notifyListeners(); //
+  // Modificado para aceptar un rango de fechas
+  Future<void> filterByDateRange(DateTime? start, DateTime? end) async {
+    if (start != null && end != null && end.isBefore(start)) {
+      _errorMsg = "La fecha final no puede ser anterior a la fecha de inicio.";
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    _startDate = start;
+    _endDate = end;
+    _isLoading = true;
+    _errorMsg = null;
+    _invoiceSummary = InvoiceSummary();
+    _stopPolling();
+    notifyListeners();
 
     if (!isAuthenticated) {
-      debugPrint('No autenticado. Re-autenticando');
+      debugPrint(
+        'No autenticado al filtrar por rango. Intentando login completo.',
+      );
       await fetchInitialData();
     } else {
-      debugPrint('Autenticando. Obteniendo datos filtrados...');
+      debugPrint(
+        'Autenticado. Obteniendo datos para el rango: ${_startDate?.toIso8601String()} - ${_endDate?.toIso8601String()}',
+      );
       await _fetchSummaryData(isInitialFetch: true);
-      if (isAuthenticated && _errorMsg == null) _startPollingInvoices();
+      if (isAuthenticated && _errorMsg == null) {
+        _startPollingInvoices();
+      }
     }
   }
 
   Future<void> fetchInitialData() async {
     debugPrint(
-      'Iniciando fetchInitialData. Estado actual: isLoading=$_isLoading, isReAuthenticating=$_isReAuthenticating, errorMsg=$_errorMsg',
+      'Iniciando fetchInitialData. isLoading: $_isLoading, isReAuth: $_isReAuthenticating, error: $_errorMsg, startDate: $_startDate, endDate: $_endDate',
     );
 
     _isLoading = true;
@@ -107,36 +121,29 @@ class InvoiceNotifier extends ChangeNotifier {
         username: _username,
         password: _password,
         terminal: _terminal,
-      ); //
+      );
       debugPrint(
         'Login API call completed. Token: ${(_authtoken ?? "").isNotEmpty ? "OBTENIDO" : "NO OBTENIDO"}',
       );
-
-      _isReAuthenticating =
-          false; // Ya sea éxito o fallo del login, el intento de re-autenticación (si lo hubo) ha terminado.
+      _isReAuthenticating = false;
 
       if (isAuthenticated) {
-        _errorMsg =
-            null; // Login exitoso, limpiar cualquier mensaje de error previo.
+        _errorMsg = null;
         debugPrint('Login exitoso, procediendo a _fetchSummaryData');
-        await _fetchSummaryData(
-          isInitialFetch: true,
-        ); // Tratar como carga inicial de datos post-login
+        await _fetchSummaryData(isInitialFetch: true);
 
         if (_errorMsg == null) {
-          // Solo iniciar polling si fetchSummaryData fue completamente exitoso
           debugPrint(
             'fetchInitialData: _fetchSummaryData exitoso, iniciando polling.',
           );
           _startPollingInvoices();
         } else {
           debugPrint(
-            'fetchInitialData: _fetchSummaryData falló después de login exitoso. Error: $_errorMsg',
+            'fetchInitialData: _fetchSummaryData falló después de login. Error: $_errorMsg',
           );
-          _stopPolling(); // No iniciar polling si hubo error post-login
+          _stopPolling();
         }
       } else {
-        // Esto teóricamente no debería pasar si _api.login lanza AuthenticationException en fallo.
         _handleError(
           _uiAuthErrorMessage,
           true,
@@ -179,16 +186,13 @@ class InvoiceNotifier extends ChangeNotifier {
       );
       _stopPolling();
     } finally {
-      // isLoading debería haber sido seteado a false por _handleError en caso de error,
-      // o por _fetchSummaryData en caso de éxito.
       if (_isLoading) {
-        // Si por alguna razón sigue true (ej. _fetchSummaryData no lo cambió)
         _isLoading = false;
       }
-      _isReAuthenticating = false; // Asegurar que este flag se limpie
+      _isReAuthenticating = false;
       notifyListeners();
       debugPrint(
-        'fetchInitialData finalizado. Estado: isLoading=$_isLoading, errorMsg=$_errorMsg',
+        'fetchInitialData finalizado. isLoading: $_isLoading, error: $_errorMsg',
       );
     }
   }
@@ -196,7 +200,7 @@ class InvoiceNotifier extends ChangeNotifier {
   Future<void> _fetchSummaryData({bool isInitialFetch = false}) async {
     if (!isAuthenticated) {
       _handleError(
-        'No autenticado. No se puede obtener datos de facturas.',
+        'No autenticado. No se puede obtener datos.',
         isInitialFetch,
         isAuthenticationIssue: true,
         error: "Intento de fetch sin token.",
@@ -212,33 +216,75 @@ class InvoiceNotifier extends ChangeNotifier {
     }
 
     debugPrint(
-      'Iniciando _fetchSummaryData (isInitialFetch: $isInitialFetch). Token: ${_authtoken?.substring(0, 10)}...',
+      'Iniciando _fetchSummaryData (isInitialFetch: $isInitialFetch). Token: ${_authtoken?.substring(0, 10)}... Rango Filtro: $_startDate - $_endDate',
     );
 
     try {
       final List<Invoice> allInvoices = await _api.getInvoices(
         baseUrl: _baseurl,
         authtoken: _authtoken!,
-      ); //
+      );
       debugPrint(
         '_fetchSummaryData: Recibidas ${allInvoices.length} facturas de la API.',
       );
 
+      // --- INICIO DEL FILTRADO POR RANGO DE FECHA ---
       List<Invoice> invoicesToProcess = allInvoices;
-      if (_selectedDate != null) {
+      if (_startDate != null || _endDate != null) {
         invoicesToProcess = allInvoices.where((invoice) {
           try {
             DateTime invoiceDate = DateTime.parse(invoice.date);
-            return invoiceDate.year == _selectedDate!.year &&
-                invoiceDate.month == _selectedDate!.month &&
-                invoiceDate.day == _selectedDate!.day;
+            // Normalizar fecha de factura a medianoche para comparación correcta
+            DateTime normalizedInvoiceDate = DateTime(
+              invoiceDate.year,
+              invoiceDate.month,
+              invoiceDate.day,
+            );
+
+            bool isAfterOrOnStartDate = true;
+            if (_startDate != null) {
+              DateTime normalizedStartDate = DateTime(
+                _startDate!.year,
+                _startDate!.month,
+                _startDate!.day,
+              );
+              isAfterOrOnStartDate = !normalizedInvoiceDate.isBefore(
+                normalizedStartDate,
+              );
+            }
+
+            bool isBeforeOrOnEndDate = true;
+            if (_endDate != null) {
+              DateTime normalizedEndDate = DateTime(
+                _endDate!.year,
+                _endDate!.month,
+                _endDate!.day,
+              );
+              isBeforeOrOnEndDate = !normalizedInvoiceDate.isAfter(
+                normalizedEndDate,
+              );
+            }
+            return isAfterOrOnStartDate && isBeforeOrOnEndDate;
           } catch (e) {
-            debugPrint('Error parseando fecha de factura: ${e.toString()}');
+            debugPrint(
+              'Error parseando fecha de factura: ${invoice.date} para filtrado de rango. Error: $e',
+            );
             return false;
           }
         }).toList();
+        String rangeStr =
+            "${_startDate != null ? DateFormat('dd/MM/yy').format(_startDate!) : 'Inicio'} - ${_endDate != null ? DateFormat('dd/MM/yy').format(_endDate!) : 'Fin'}";
+        debugPrint(
+          '_fetchSummaryData: Después de filtrar por rango [$rangeStr], quedan ${invoicesToProcess.length} facturas.',
+        );
+      } else {
+        debugPrint(
+          '_fetchSummaryData: No hay rango de fecha seleccionado, procesando todas las ${allInvoices.length} facturas.',
+        );
       }
+      // --- FIN DEL FILTRADO POR RANGO DE FECHA ---
 
+      // ... (la lógica de cálculo de totales con salesInvoices, returnInvoices, etc. permanece igual pero usa invoicesToProcess)
       double tmpTotalSales = 0;
       double tmpTotalReturns = 0;
       double tmpTotalTax = 0;
@@ -249,8 +295,8 @@ class InvoiceNotifier extends ChangeNotifier {
       List<Invoice> returnInvoices = [];
       Set<String> returnedDocNumbers = {};
 
-      // 1. Separar facturas y registrar los codigos de las devoluciones
       for (var invoice in invoicesToProcess) {
+        // Usar la lista ya filtrada por fecha (o no)
         if (invoice.type == 'A') {
           salesInvoices.add(invoice);
         } else if (invoice.type == 'B') {
@@ -259,7 +305,6 @@ class InvoiceNotifier extends ChangeNotifier {
         }
       }
 
-      // 2. Procesar Ventas
       for (var saleInvoice in salesInvoices) {
         if (!returnedDocNumbers.contains(saleInvoice.docnumber)) {
           tmpTotalSales += saleInvoice.amount;
@@ -267,9 +312,9 @@ class InvoiceNotifier extends ChangeNotifier {
           tmpSalesCount++;
         }
       }
-      // 3. Procesar devoluciones
-      for (var returnedInvoice in returnInvoices) {
-        tmpTotalReturns += returnedInvoice.amount;
+
+      for (var returnInvoice in returnInvoices) {
+        tmpTotalReturns += returnInvoice.amount;
         tmpReturnsCount++;
       }
 
@@ -283,7 +328,7 @@ class InvoiceNotifier extends ChangeNotifier {
         totalTax: tmpTotalTax,
         salesCount: tmpSalesCount,
         returnsCount: tmpReturnsCount,
-      ); //
+      );
 
       if (_errorMsg != _uiSessionExpiredMessage) {
         _errorMsg = null;
@@ -300,17 +345,15 @@ class InvoiceNotifier extends ChangeNotifier {
           stackTrace: stackTrace,
         );
         _stopPolling();
-        return; // Salir, _handleError ya notificó y actualizó isLoading.
+        return;
       }
-      // Primera vez que se detecta sesión expirada en este ciclo de fetch.
       _errorMsg = _uiSessionExpiredMessage;
       _isReAuthenticating = true;
-      notifyListeners(); // Notificar para mostrar "Re-autenticando..."
+      notifyListeners();
 
       _stopPolling();
       await Future.delayed(const Duration(seconds: 1));
-      await fetchInitialData(); // Esto intentará loguearse y luego hacer fetchSummaryData de nuevo.
-      // No necesitamos más lógica aquí porque fetchInitialData manejará el estado final.
+      await fetchInitialData();
       return;
     } on AuthenticationException catch (e, stackTrace) {
       _handleError(
@@ -328,7 +371,6 @@ class InvoiceNotifier extends ChangeNotifier {
         error: e,
         stackTrace: stackTrace,
       );
-      // No detenemos el polling aquí; podría ser un problema temporal de red.
     } on UnknownApiExpection catch (e, stackTrace) {
       _handleError(
         _uiGenericErrorMessage,
@@ -337,41 +379,36 @@ class InvoiceNotifier extends ChangeNotifier {
         stackTrace: stackTrace,
       );
     } catch (e, stackTrace) {
-      // Errores de parseo de Invoice.fromJson, u otros no esperados.
       _handleError(
         _uiGenericErrorMessage,
         isInitialFetch,
         error: e,
         stackTrace: stackTrace,
       );
-      // Considera resetear _invoiceSummary si el error es crítico para los datos
-      // _invoiceSummary = InvoiceSummary();
     } finally {
-      // Si isInitialFetch es true, isLoading se manejará al final de fetchInitialData.
-      // Si no es isInitialFetch (es un polling), no hay un _isLoading principal que gestionar aquí.
       if (isInitialFetch) {
-        _isLoading =
-            false; // La carga inicial de datos (post-login) ha terminado.
+        _isLoading = false;
       }
-      // _isReAuthenticating debería ser false aquí a menos que se haya lanzado SessionExpiredException y estemos a punto de re-llamar a fetchInitialData.
       notifyListeners();
       debugPrint(
-        '_fetchSummaryData finalizado. Estado: isLoading=$_isLoading, errorMsg=$_errorMsg',
+        '_fetchSummaryData finalizado. isLoading: $_isLoading, error: $_errorMsg',
       );
     }
   }
 
   void _startPollingInvoices() {
-    _stopPolling(); //
+    _stopPolling();
     if (isAuthenticated) {
-      //
-      debugPrint('Iniciando polling cada $_pollingIntervalSeconds segundos.');
+      debugPrint(
+        'Iniciando polling cada $_pollingIntervalSeconds segundos. Rango filtro: $_startDate - $_endDate',
+      );
       _timer = Timer.periodic(Duration(seconds: _pollingIntervalSeconds), (
         timer,
       ) {
-        //
-        debugPrint('Ejecutando fetch por polling...');
-        _fetchSummaryData(isInitialFetch: false); // No es una carga inicial
+        debugPrint(
+          'Ejecutando fetch por polling... Rango filtro: $_startDate - $_endDate',
+        );
+        _fetchSummaryData(isInitialFetch: false);
       });
     } else {
       debugPrint('No se inicia polling: no autenticado.');
@@ -380,17 +417,16 @@ class InvoiceNotifier extends ChangeNotifier {
 
   void _stopPolling() {
     if (_timer != null && _timer!.isActive) {
-      //
       debugPrint('Deteniendo polling.');
-      _timer!.cancel(); //
-      _timer = null; //
+      _timer!.cancel();
+      _timer = null;
     }
   }
 
   @override
   void dispose() {
     debugPrint('Disposing InvoiceNotifier.');
-    _stopPolling(); //
-    super.dispose(); //
+    _stopPolling();
+    super.dispose();
   }
 }
