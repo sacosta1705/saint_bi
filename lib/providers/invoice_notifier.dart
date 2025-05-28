@@ -205,12 +205,12 @@ class InvoiceNotifier extends ChangeNotifier {
     );
 
     try {
-      final List<Invoice> invoices = await _api.getInvoices(
+      final List<Invoice> allInvoices = await _api.getInvoices(
         baseUrl: _baseurl,
         authtoken: _authtoken!,
       ); //
       debugPrint(
-        '_fetchSummaryData: Recibidas ${invoices.length} facturas de la API.',
+        '_fetchSummaryData: Recibidas ${allInvoices.length} facturas de la API.',
       );
 
       double tmpTotalSales = 0;
@@ -219,22 +219,34 @@ class InvoiceNotifier extends ChangeNotifier {
       int tmpSalesCount = 0;
       int tmpReturnsCount = 0;
 
-      for (var invoice in invoices) {
-        // Aquí podrías añadir validaciones adicionales del objeto invoice si es necesario
-        // Por ejemplo, si Invoice.fromJson puede devolver un objeto "inválido" en lugar de lanzar error.
+      List<Invoice> salesInvoices = [];
+      List<Invoice> returnInvoices = [];
+      Set<String> returnedDocNumbers = {};
+
+      // 1. Separar facturas y registrar los codigos de las devoluciones
+      for (var invoice in allInvoices) {
         if (invoice.type == 'A') {
-          //
-          tmpTotalSales += invoice.amount; //
-          tmpTotalTax += invoice.amounttax; //
-          tmpSalesCount++; //
+          salesInvoices.add(invoice);
         } else if (invoice.type == 'B') {
-          //
-          tmpTotalReturns += invoice.amount; //
-          tmpTotalTax += invoice
-              .amounttax; // Asumiendo que el impuesto de las devoluciones también se suma al total general de impuestos. Ajustar si la lógica de negocio es diferente.
-          tmpReturnsCount++; //
+          returnInvoices.add(invoice);
+          returnedDocNumbers.add(invoice.docnumber);
         }
       }
+
+      // 2. Procesar Ventas
+      for (var saleInvoice in salesInvoices) {
+        if (!returnedDocNumbers.contains(saleInvoice.docnumber)) {
+          tmpTotalSales += saleInvoice.amount;
+          tmpTotalTax += saleInvoice.amounttax;
+          tmpSalesCount++;
+        }
+      }
+      // 3. Procesar devoluciones
+      for (var returnedInvoice in returnInvoices) {
+        tmpTotalReturns += returnedInvoice.amount;
+        tmpReturnsCount++;
+      }
+
       debugPrint(
         '_fetchSummaryData: Totales calculados - Ventas=$tmpTotalSales (Count:$tmpSalesCount), Dev=$tmpTotalReturns (Count:$tmpReturnsCount), Imp=$tmpTotalTax',
       );

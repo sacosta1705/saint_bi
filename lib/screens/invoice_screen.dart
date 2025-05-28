@@ -42,7 +42,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     String label,
     String value, {
     Color valueColor = Colors.black87,
-    double fontSize = 20,
+    double fontSize = 14,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
@@ -82,7 +82,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       children: [
         const CircularProgressIndicator(),
         const SizedBox(height: 20),
-        Text(message, style: const TextStyle(fontSize: 16)),
+        Text(message, style: const TextStyle(fontSize: 14)),
       ],
     );
   }
@@ -103,7 +103,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             _errorStateTitleText,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 22,
+              fontSize: 14,
               fontWeight: FontWeight.bold,
               color: Colors.red.shade800,
             ),
@@ -112,7 +112,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           Text(
             notifier.errorMsg ?? _defaultUiErrorText,
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, color: Colors.red.shade700),
+            style: TextStyle(fontSize: 14, color: Colors.red.shade700),
           ),
           const SizedBox(height: 20),
           const Text(
@@ -133,7 +133,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               backgroundColor: Theme.of(context).primaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              textStyle: const TextStyle(fontSize: 16),
+              textStyle: const TextStyle(fontSize: 14),
             ),
           ),
         ],
@@ -213,7 +213,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     _summaryCardTitleText,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.black87,
                     ),
@@ -221,16 +221,16 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                   const SizedBox(height: 25),
                   _buildDataRow(
                     '$_totalSalesLabelText (${summary.salesCount} $_invoicesCountSuffixText):',
-                    summary.totalSales.toStringAsPrecision(2),
+                    summary.totalSales.toStringAsFixed(2),
                     valueColor: Colors.green.shade700,
-                    fontSize: 18,
+                    fontSize: 14,
                   ),
                   const SizedBox(height: 5),
                   _buildDataRow(
                     '$_totalReturnsLabelText (${summary.returnsCount} $_returnsCountSuffixText):',
-                    summary.totalReturns.toStringAsPrecision(2),
+                    summary.totalReturns.toStringAsFixed(2),
                     valueColor: Colors.red.shade600,
-                    fontSize: 18,
+                    fontSize: 14,
                   ),
                   const Divider(
                     height: 35,
@@ -240,9 +240,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                   ),
                   _buildDataRow(
                     _totalTaxesLabelText,
-                    summary.totalTax.toStringAsPrecision(2),
+                    summary.totalTax.toStringAsFixed(2),
                     valueColor: Theme.of(context).primaryColorDark,
-                    fontSize: 20,
+                    fontSize: 14,
                   ),
                 ],
               ),
