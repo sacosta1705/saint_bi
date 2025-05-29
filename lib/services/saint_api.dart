@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:saint_bi/models/invoice.dart';
+import 'package:saint_bi/models/invoice_parser.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
 
 class SaintApi {
@@ -132,7 +133,9 @@ class SaintApi {
         List<Invoice> invoices = [];
         for (var jsonItem in data) {
           try {
-            invoices.add(Invoice.fromJson(jsonItem as Map<String, dynamic>));
+            invoices.add(
+              InvoiceParser.fromJson(jsonItem as Map<String, dynamic>),
+            );
           } catch (e) {
             // Loguea el error de parseo para ESTE item, pero continúa con los demás
             debugPrint(

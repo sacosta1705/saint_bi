@@ -6,6 +6,7 @@ import 'package:saint_bi/services/saint_api.dart';
 import 'package:saint_bi/models/invoice.dart';
 import 'package:saint_bi/models/invoice_summary.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
+import 'package:saint_bi/services/invoice_calculator_service.dart';
 
 const String _uiAuthErrorMessage =
     'Error de autenticacion. Revise el usuario y clave.';
@@ -17,6 +18,7 @@ const String _uiNetworkErrorMessage =
 
 class InvoiceNotifier extends ChangeNotifier {
   final SaintApi _api = SaintApi();
+  final InvoiceCalculator _invoiceCalculator = InvoiceCalculator();
 
   InvoiceSummary _invoiceSummary = InvoiceSummary();
   bool _isLoading = false;
@@ -322,12 +324,10 @@ class InvoiceNotifier extends ChangeNotifier {
         '_fetchSummaryData: Totales calculados - Ventas=$tmpTotalSales (Count:$tmpSalesCount), Dev=$tmpTotalReturns (Count:$tmpReturnsCount), Imp=$tmpTotalTax',
       );
 
-      _invoiceSummary = InvoiceSummary(
-        totalSales: tmpTotalSales,
-        totalReturns: tmpTotalReturns,
-        totalTax: tmpTotalTax,
-        salesCount: tmpSalesCount,
-        returnsCount: tmpReturnsCount,
+      _invoiceSummary = _invoiceCalculator.calculateSummary(
+        allInvoices: allInvoices,
+        startDate: _startDate,
+        endDate: _endDate,
       );
 
       if (_errorMsg != _uiSessionExpiredMessage) {
