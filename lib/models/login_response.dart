@@ -1,9 +1,11 @@
+// lib/models/login_response.dart
 class LoginResponse {
-  final String username; // Usuario que inicio sesion
-  final String firstname; // Primer nombre del usuario que inicio sesion
-  final String lastname; // Apellido del usuario que inicio sesion
-  final String userrole; // Rol del usuario que inicio sesion
-  final String company; // Nombre de la compañia a la que se inicio sesion
+  final String username; // API: "user"
+  final String firstname; // API: "firstname"
+  final String lastname; // API: "lastname"
+  final String userrole; // API: "role"
+  final String company; // API: "enterprise"
+  final String? authToken; // NUEVO: Opcional para guardar el token Pragma
 
   LoginResponse({
     required this.username,
@@ -11,15 +13,39 @@ class LoginResponse {
     required this.lastname,
     required this.userrole,
     required this.company,
+    this.authToken, // NUEVO
   });
 
-  factory LoginResponse.fromJson(Map<String, dynamic> json) {
+  factory LoginResponse.fromJson(
+    Map<String, dynamic> json, {
+    String? pragmaToken,
+  }) {
     return LoginResponse(
-      username: json['username'],
-      firstname: json['firstname'],
-      lastname: json['lastname'],
-      userrole: json['userrole'],
-      company: json['company'],
+      username: json['user'] ?? '', // Ajustado a "user"
+      firstname: json['firstname'] ?? '',
+      lastname: json['lastname'] ?? '',
+      userrole: json['role'] ?? '', // Ajustado a "role"
+      company: json['enterprise'] ?? '', // Ajustado a "enterprise"
+      authToken: pragmaToken, // NUEVO: Asignar el token
+    );
+  }
+
+  // Método para copiar con nuevas propiedades (útil)
+  LoginResponse copyWith({
+    String? username,
+    String? firstname,
+    String? lastname,
+    String? userrole,
+    String? company,
+    String? authToken,
+  }) {
+    return LoginResponse(
+      username: username ?? this.username,
+      firstname: firstname ?? this.firstname,
+      lastname: lastname ?? this.lastname,
+      userrole: userrole ?? this.userrole,
+      company: company ?? this.company,
+      authToken: authToken ?? this.authToken,
     );
   }
 }
