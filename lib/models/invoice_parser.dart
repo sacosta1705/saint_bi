@@ -45,18 +45,8 @@ class InvoiceParser {
     String fieldName, {
     String defaultValue = '',
   }) {
-    if (value == null) {
-      debugPrint(
-        'Campo String nulo: "$fieldName". Usando valor por defecto: "$defaultValue"',
-      );
-      return defaultValue;
-    }
-    if (value is String) {
-      return value;
-    }
-    debugPrint(
-      'Tipo inesperado para String "$fieldName": ${value.runtimeType} (Valor: "$value"). Usando toString() y valor por defecto si es necesario.',
-    );
+    if (value == null) return defaultValue;
+    if (value is String) return value;
     return value.toString().isNotEmpty ? value.toString() : defaultValue;
   }
 

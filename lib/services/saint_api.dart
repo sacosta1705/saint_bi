@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:saint_bi/models/invoice.dart';
 import 'package:saint_bi/models/invoice_parser.dart';
+import 'package:saint_bi/models/purchase.dart';
+import 'package:saint_bi/models/purchase_parser.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
 
 class SaintApi {
@@ -99,6 +101,45 @@ class SaintApi {
         //
         'Excepción no controlada durante el login: ${e.toString()}',
       );
+    }
+  }
+
+  Future<List<Purchase>> getPurchases({
+    required String baseUrl,
+    required String authToken,
+  }) async {
+    final Uri uri = Uri.parse('$baseUrl/v1/adm/purchases');
+
+    try {
+      final response = await http.get(uri, headers: {'pragma': authToken});
+      if (response.statusCode == 200) {
+        final String responseBody = utf8.decode(response.bodyBytes);
+        final List<dynamic> data = jsonDecode(responseBody);
+
+        if (data.isEmpty) return [];
+
+        List<Purchase> purchases = [];
+        for (var item in data) {
+          try {
+            purchases.add(
+              PurchaseParser.fromJson(item as Map<String, dynamic>),
+            );
+          } catch (e) {
+            return purchases;
+          }
+        }
+      }
+      if (response.statusCode == 403) {
+        throw SessionExpiredException('Sesion vencida o acceso denegado.');
+      } else {
+        throw UnknownApiExpection(
+          'Error desconocido. (Status: ${response.statusCode})',
+        );
+      }
+    } on http.ClientException catch (e) {
+      throw NetworkException(e.message);
+    } on SocketException catch (e) {
+      throw NetworkException(e.message);
     }
   }
 
