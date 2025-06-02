@@ -26,17 +26,16 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   final _passwordController = TextEditingController();
   final _pollingIntervalController = TextEditingController();
   final _terminalController = TextEditingController();
-  // El _companyNameController ahora se llenará desde la API o será para un "alias" si la API no lo devuelve
-  final _companyNameController = TextEditingController();
+  final _companyNameController =
+      TextEditingController(); // Se llenará desde la API
 
   bool _isEditing = false;
   bool _isLoading = false;
-  String? _errorMessage;
   List<ApiConnection> _savedConnections = [];
-  bool _isCompanyNameFromApi = false; // Para saber si el nombre vino de la API
 
   final SaintApi _saintApi = SaintApi();
-  final DatabaseService _dbService = DatabaseService.instance;
+  final DatabaseService _dbService =
+      DatabaseService.instance; // Uso correcto de la instancia
 
   @override
   void initState() {
@@ -44,8 +43,6 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     if (widget.connectionToEdit != null) {
       _isEditing = true;
       _populateFormForEditing(widget.connectionToEdit!);
-      _isCompanyNameFromApi =
-          true; // Asumimos que el nombre guardado vino de la API
     } else {
       _terminalController.text = 'saint_bi_flutter_app';
       _pollingIntervalController.text = '300';
@@ -59,23 +56,20 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     _passwordController.text = conn.password;
     _pollingIntervalController.text = conn.pollingIntervalSeconds.toString();
     _terminalController.text = conn.terminal;
-    _companyNameController.text = conn
-        .companyName; // Este es el nombre que se guardó (idealmente de la API)
-    _isCompanyNameFromApi =
-        true; // Si estamos editando, el nombre ya fue validado por la API.
+    _companyNameController.text = conn.companyName;
   }
 
   Future<void> _loadSavedConnections() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      _savedConnections = await _dbService.getAllConnections();
+      _savedConnections = await _dbService.getAllConnections(); // Correcto
       _savedConnections.sort(
         (a, b) =>
             a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()),
       );
     } catch (e) {
-      _setErrorMessage('Error al cargar conexiones guardadas: ${e.toString()}');
+      _setErrorMessage('Error al cargar conexiones: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -84,7 +78,6 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   void _setErrorMessage(String? message) {
     if (mounted) {
       setState(() {
-        _errorMessage = message;
         if (message != null && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -112,8 +105,6 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     if (mounted) {
       setState(() {
         _isEditing = false;
-        _isCompanyNameFromApi = false;
-        _errorMessage = null;
       });
     }
   }
@@ -132,18 +123,19 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
       _pollingIntervalController.text.trim(),
     );
     final terminal = _terminalController.text.trim();
-    // El companyNameInput se usa solo si la API no devuelve un nombre de empresa o como alias.
-    // Pero ahora _saintApi.login() devuelve LoginResponse que contiene el companyName.
-    // String companyNameInput = _companyNameController.text.trim();
 
     if (pollingInterval == null || pollingInterval <= 0) {
       _setErrorMessage(
-        'El intervalo de actualización debe ser un número positivo mayor a 0.',
+        'El intervalo de actualización debe ser un número positivo.',
       );
       if (mounted) setState(() => _isLoading = false);
       return;
     }
-    // Ya no es necesario validar companyNameInput aquí si vamos a usar el de la API.
+
+    // Aunque el campo _companyNameController es de solo lectura una vez que se obtiene de la API,
+    // si el usuario está creando una nueva y lo llenó, lo respetamos temporalmente.
+    // La API es la fuente de verdad para el nombre de la empresa.
+    // String companyNameUserInput = _companyNameController.text.trim(); // Ya no es necesario de esta forma
 
     try {
       final LoginResponse? loginResponse = await _saintApi.login(
@@ -157,23 +149,18 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
           loginResponse.authToken == null ||
           loginResponse.authToken!.isEmpty) {
         throw AuthenticationException(
-          'Fallo el inicio de sesión o no se recibió token/datos de empresa.',
+          'Fallo el inicio de sesión o no se recibió token/datos de empresa válidos.',
         );
       }
 
       final String companyNameFromApi = loginResponse.company;
       debugPrint(
-        'Login exitoso. Empresa desde API: $companyNameFromApi, Token: ${loginResponse.authToken}',
+        'Login exitoso. Empresa desde API: "$companyNameFromApi", Token: "${loginResponse.authToken}"',
       );
 
-      // Actualizar el campo _companyNameController con el nombre de la API
-      // y marcar que viene de la API para hacerlo de solo lectura si es necesario.
       if (mounted) {
         _companyNameController.text = companyNameFromApi;
-        setState(() {
-          _isCompanyNameFromApi =
-              true; // El nombre es ahora el validado por la API
-        });
+        setState(() {});
       }
 
       final connection = ApiConnection(
@@ -182,35 +169,33 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         username: username,
         password: password,
         pollingIntervalSeconds: pollingInterval,
-        companyName: companyNameFromApi, // Usar el nombre de la API
+        companyName: companyNameFromApi, // Usar el nombre validado por la API
         terminal: terminal,
       );
 
       final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
 
       if (_isEditing) {
-        // Al editar, el ID ya existe. companyName (que es UNIQUE) podría cambiar si la API lo devuelve diferente
-        // o si el usuario lo cambió Y la API lo valida (menos probable).
-        // Es más seguro que companyName no cambie o se valide que no colisione.
-        // Con ConflictAlgorithm.replace, si el companyName (UNIQUE) ya existe en otra fila, la reemplazaría.
-        // Es mejor verificar primero.
+        // Al editar, companyName (que es UNIQUE) podría cambiar si la API lo devuelve diferente
+        // O si el usuario lo cambió Y la API lo valida (menos probable y complejo).
+        // Es más seguro que companyName (el identificador) no cambie fácilmente o se valide
+        // que el nuevo nombre no colisione.
         final existingByName = await _dbService.getConnectionByCompanyName(
           companyNameFromApi,
-        );
+        ); // Correcto
         if (existingByName != null && existingByName.id != connection.id) {
+          // Hay otra conexión con el mismo nombre de empresa.
           throw Exception(
-            'Ya existe otra conexión guardada para la empresa "$companyNameFromApi".',
+            'Ya existe otra conexión guardada para la empresa "$companyNameFromApi". No se puede actualizar a un nombre duplicado.',
           );
         }
-        await _dbService.updateConnection(connection);
-        notifier.updateConnectionInList(
-          connection,
-        ); // Actualiza en la lista del notifier
+        await _dbService.updateConnection(connection); // Correcto
+        notifier.updateConnectionInList(connection);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Conexión para "${connection.companyName}" actualizada exitosamente.',
+                'Conexión para "${connection.companyName}" actualizada.',
               ),
             ),
           );
@@ -219,29 +204,27 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         // Para nueva conexión, chequear si ya existe por companyName (que es UNIQUE)
         final existingByName = await _dbService.getConnectionByCompanyName(
           companyNameFromApi,
-        );
+        ); // Correcto
         if (existingByName != null) {
           throw Exception(
             'Ya existe una conexión guardada para la empresa "$companyNameFromApi".',
           );
         }
-        await _dbService.insertConnection(connection);
-        notifier.addConnectionToList(
-          connection,
-        ); // Añade a la lista del notifier
+        final newId = await _dbService.insertConnection(connection); // Correcto
+        notifier.addConnectionToList(connection.copyWith(id: newId));
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Conexión para "${connection.companyName}" guardada exitosamente.',
+                'Conexión para "${connection.companyName}" guardada.',
               ),
             ),
           );
         }
       }
 
-      _clearForm(); // Limpia el formulario para la próxima entrada
-      _loadSavedConnections(); // Recarga la lista de conexiones mostradas
+      _clearForm();
+      _loadSavedConnections();
     } on AuthenticationException catch (e) {
       _setErrorMessage('Error de Autenticación: ${e.msg}');
     } on NetworkException catch (e) {
@@ -249,8 +232,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     } on UnknownApiExpection catch (e) {
       _setErrorMessage('Error de API: ${e.msg}');
     } catch (e) {
-      // Captura otras excepciones, incluyendo la de UNIQUE constraint de la DB
-      _setErrorMessage('Error al guardar conexión: ${e.toString()}');
+      _setErrorMessage('Error: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -263,7 +245,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         return AlertDialog(
           title: const Text('Confirmar Eliminación'),
           content: Text(
-            '¿Estás seguro de que quieres eliminar la conexión para "$companyName"?',
+            '¿Estás seguro de eliminar la conexión para "$companyName"?',
           ),
           actions: <Widget>[
             TextButton(
@@ -283,9 +265,9 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     if (confirmed == true) {
       if (mounted) setState(() => _isLoading = true);
       try {
-        await _dbService.deleteConnection(id);
+        await _dbService.deleteConnection(id); // Correcto
         if (_isEditing && widget.connectionToEdit?.id == id) {
-          _clearForm(); // Si se eliminó la que se estaba editando, limpiar el formulario
+          _clearForm();
         }
         if (mounted) {
           Provider.of<InvoiceNotifier>(
@@ -296,9 +278,9 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
             SnackBar(content: Text('Conexión para "$companyName" eliminada.')),
           );
         }
-        _loadSavedConnections(); // Recargar la lista
+        _loadSavedConnections();
       } catch (e) {
-        _setErrorMessage('Error al eliminar conexión: ${e.toString()}');
+        _setErrorMessage('Error al eliminar: ${e.toString()}');
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
@@ -310,7 +292,6 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
       setState(() {
         _isEditing = true;
         _populateFormForEditing(connection);
-        _errorMessage = null;
       });
     }
   }
@@ -335,7 +316,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
           if (_isEditing)
             IconButton(
               icon: const Icon(Icons.add_circle_outline_rounded),
-              tooltip: 'Crear Nueva Conexión (Limpiar Formulario)',
+              tooltip: 'Crear Nueva Conexión',
               onPressed: _isLoading ? null : _clearForm,
             ),
         ],
@@ -353,29 +334,24 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                   children: <Widget>[
                     Text(
                       _isEditing
-                          ? 'Editando: "${widget.connectionToEdit?.companyName}"'
+                          ? 'Editando Conexión Existente'
                           : "Nueva Conexión API",
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // Campo Nombre de Empresa/Conexión
                     TextFormField(
+                      // Campo Nombre de Empresa
                       controller: _companyNameController,
                       readOnly:
-                          _isEditing ||
-                          _isCompanyNameFromApi, // Solo lectura si se edita o si el nombre vino de la API
+                          true, // Se llena desde la API, por lo tanto, es de solo lectura.
                       decoration: InputDecoration(
-                        labelText: _isCompanyNameFromApi
-                            ? 'Nombre de Empresa (desde API)'
-                            : 'Nombre Descriptivo para la Conexión *',
-                        hintText: 'Ej: Mi Empresa Principal',
+                        labelText: 'Nombre de Empresa (obtenido de API)',
+                        hintText: 'Se completará al probar la conexión',
                         border: const OutlineInputBorder(),
-                        filled: _isEditing || _isCompanyNameFromApi,
-                        fillColor: (_isEditing || _isCompanyNameFromApi)
-                            ? Colors.grey.shade200
-                            : null,
+                        filled: true,
+                        fillColor: Colors.grey.shade200,
                         prefixIcon: Icon(
                           Icons.business_center_outlined,
                           color: Theme.of(
@@ -383,45 +359,22 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                           ).inputDecorationTheme.prefixIconColor,
                         ),
                       ),
-                      validator: (value) {
-                        // Solo es obligatorio si NO estamos editando Y el nombre no ha sido poblado por la API aún.
-                        if (!_isEditing &&
-                            !_isCompanyNameFromApi &&
-                            (value == null || value.trim().isEmpty)) {
-                          return 'Ingresa un nombre para identificar esta conexión (se actualizará con el nombre de la API al guardar).';
-                        }
-                        return null;
-                      },
+                      // No se necesita validador si es de solo lectura.
                     ),
-                    if (!_isCompanyNameFromApi &&
-                        !_isEditing) // Mostrar ayuda solo si es nuevo y no se ha obtenido de la API
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          top: 4.0,
-                          left: 12.0,
-                          bottom: 6.0,
-                        ),
-                        child: Text(
-                          "Este nombre es un alias. Se actualizará con el nombre oficial de la empresa desde la API al probar/guardar.",
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.grey.shade600),
-                        ),
-                      ),
                     const SizedBox(height: 12),
-
-                    // Campo URL Base
                     TextFormField(
+                      // Campo URL Base
                       controller: _baseUrlController,
                       decoration: const InputDecoration(
                         labelText: 'URL Base de la API *',
-                        hintText: 'http://tu-servidor.com/api',
+                        hintText: 'ej: http://tu-servidor.com/api',
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.http_rounded),
                       ),
                       keyboardType: TextInputType.url,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Por favor, ingresa la URL base';
+                          return 'Ingresa la URL base';
                         }
                         final uri = Uri.tryParse(value.trim());
                         if (uri == null ||
@@ -429,14 +382,12 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                             (uri.scheme != 'http' && uri.scheme != 'https')) {
                           return 'Ingresa una URL válida (ej: http://...)';
                         }
-                        // La validación de /v1/ se hará al construir la URL completa en SaintApi
                         return null;
                       },
                     ),
                     const SizedBox(height: 12),
-
-                    // Campo Nombre de Usuario
                     TextFormField(
+                      // Campo Nombre de Usuario
                       controller: _usernameController,
                       decoration: const InputDecoration(
                         labelText: 'Nombre de Usuario API *',
@@ -445,15 +396,14 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Por favor, ingresa el nombre de usuario';
+                          return 'Ingresa el nombre de usuario';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 12),
-
-                    // Campo Contraseña
                     TextFormField(
+                      // Campo Contraseña
                       controller: _passwordController,
                       decoration: const InputDecoration(
                         labelText: 'Contraseña API *',
@@ -463,15 +413,14 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       obscureText: true,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Por favor, ingresa la contraseña';
+                          return 'Ingresa la contraseña';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 12),
-
-                    // Campo Intervalo de Actualización
                     TextFormField(
+                      // Campo Intervalo
                       controller: _pollingIntervalController,
                       decoration: const InputDecoration(
                         labelText: 'Intervalo de Actualización (segundos) *',
@@ -485,7 +434,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       ],
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Ingresa el intervalo de actualización';
+                          return 'Ingresa el intervalo';
                         }
                         final interval = int.tryParse(value.trim());
                         if (interval == null || interval <= 0) {
@@ -495,9 +444,8 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       },
                     ),
                     const SizedBox(height: 12),
-
-                    // Campo Terminal
                     TextFormField(
+                      // Campo Terminal
                       controller: _terminalController,
                       decoration: const InputDecoration(
                         labelText: 'Nombre del Terminal *',
@@ -507,15 +455,14 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Por favor, ingresa el nombre del terminal';
+                          return 'Ingresa el nombre del terminal';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 24),
-
-                    // Botón Guardar/Actualizar
                     ElevatedButton.icon(
+                      // Botón Guardar/Actualizar
                       icon: Icon(
                         _isEditing
                             ? Icons.save_alt_rounded
@@ -541,8 +488,8 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                         ),
                       ),
                     ),
-                    // Botón para limpiar formulario y crear nueva (si está editando)
                     if (_isEditing) ...[
+                      // Botón para limpiar formulario si se está editando
                       const SizedBox(height: 10),
                       OutlinedButton.icon(
                         icon: const Icon(
@@ -571,6 +518,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
               const SizedBox(height: 30),
               const Divider(thickness: 1),
               Padding(
+                // Título de la lista de conexiones
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: Text(
                   "Conexiones Guardadas",
@@ -607,7 +555,6 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                     final bool isCurrentlyEditingThis =
                         _isEditing &&
                         widget.connectionToEdit?.id == connection.id;
-                    // Determinar si esta conexión es la activa en el notifier
                     final bool isActiveInNotifier =
                         Provider.of<InvoiceNotifier>(
                           context,
@@ -651,8 +598,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                         leading: Icon(
                           isActiveInNotifier
                               ? Icons.lan_rounded
-                              : Icons
-                                    .link_off_rounded, // Cambia el icono si está activa
+                              : Icons.link_off_rounded,
                           color: isActiveInNotifier
                               ? Theme.of(context).colorScheme.primary
                               : Colors.grey.shade700,
@@ -727,7 +673,6 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                             listen: false,
                           );
                           if (isActiveInNotifier && !notifier.isLoading) {
-                            // Si ya está activa y no está cargando, quizás no hacer nada o solo cerrar.
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
@@ -736,12 +681,9 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                                 duration: const Duration(seconds: 2),
                               ),
                             );
-                            Navigator.of(
-                              context,
-                            ).pop(); // Cierra esta pantalla si se seleccionó la activa
+                            Navigator.of(context).pop();
                             return;
                           }
-                          // Establecer como activa y recargar datos
                           notifier.setActiveConnection(
                             connection,
                             fetchFullData: true,
@@ -754,9 +696,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                               duration: const Duration(seconds: 2),
                             ),
                           );
-                          Navigator.of(
-                            context,
-                          ).pop(); // Cierra esta pantalla y vuelve a la principal
+                          Navigator.of(context).pop();
                         },
                       ),
                     );

@@ -1,5 +1,3 @@
-import 'package:intl/intl.dart';
-
 import 'package:saint_bi/models/purchase.dart';
 import 'package:saint_bi/models/purchase_summary.dart';
 
@@ -49,9 +47,6 @@ class PurchaseCalculatorService {
           return false;
         }
       }).toList();
-
-      String rangeStr =
-          "${startDate != null ? DateFormat('dd/MM/yy').format(startDate) : 'Inicio'} - ${endDate != null ? DateFormat('dd/MM/yy').format(endDate) : 'Fin'}";
     }
 
     double tmpTotalPurchases = 0;

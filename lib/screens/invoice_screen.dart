@@ -2,19 +2,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:saint_bi/models/api_connection.dart'; // NUEVO
+import 'package:saint_bi/models/api_connection.dart';
 import 'package:saint_bi/providers/invoice_notifier.dart';
-import 'package:saint_bi/screens/connection_settings_screen.dart'; // NUEVO
+import 'package:saint_bi/screens/connection_settings_screen.dart';
 
-// Constantes de texto (mantener las existentes, añadir nuevas si es necesario)
+// Constantes de texto para la UI
 const String _screenTitleText = 'Resumen de Ventas Saint BI 📊';
 const String _reloadDataTooltipText = 'Recargar Datos';
-const String _settingsTooltipText = 'Configurar Conexiones'; // NUEVO
+const String _settingsTooltipText = 'Configurar Conexiones';
 const String _connectingApiText = "Conectando con la API...";
-const String _errorStateTitleText = "Error Inesperado"; // Cambiado
+const String _errorStateTitleText = "Error Inesperado";
 const String _defaultUiErrorText = "Ha ocurrido un error inesperado.";
-const String _connectionInstructionsText =
-    "Verifique su conexión y la configuración del servidor.";
 const String _tryConnectButtonLabel = 'Intentar Conectar / Reintentar';
 const String _summaryCardTitleText = 'Resumen de Transacciones de Venta';
 const String _totalSalesLabelText = 'Total Ventas';
@@ -22,25 +20,24 @@ const String _totalReturnsLabelText = 'Total Devoluciones';
 const String _totalTaxesLabelText = 'Total Impuestos';
 const String _invoicesCountSuffixText = 'facturas';
 const String _returnsCountSuffixText = 'notas';
-const String _updatingDataText = "Actualizando datos..."; // Cambiado
+const String _updatingDataText = "Actualizando datos...";
 const String _liveDataText = "Datos en vivo.";
 const String _pollingIntervalSuffixText = "seg.";
 const String _warningTitleText = 'Advertencia';
 const String _reAuthenticatingMessageFromNotifier =
     'Sesión expirada. Intentando re-autenticar...';
-const String _selectDateRangeTooltipText =
-    'Seleccionar Rango de Fechas'; // Cambiado
+const String _selectDateRangeTooltipText = 'Seleccionar Rango de Fechas';
 const String _todayButtonText = 'Hoy';
 const String _clearFilterButtonText = 'Quitar Filtro';
 const String _allDatesText = 'Todas las fechas';
 const String _noConnectionSelectedText = 'Ninguna empresa seleccionada';
-const String _selectCompanyHintText =
-    'Seleccionar Empresa Conectada'; // Cambiado
+const String _selectCompanyHintText = 'Seleccionar Empresa Conectada';
 const String _noConnectionsAvailableText = 'No hay conexiones configuradas.';
-const String _goToSettingsButtonText =
-    'Ir a Configuración de Conexiones'; // Cambiado
+const String _goToSettingsButtonText = 'Ir a Configuración de Conexiones';
 const String _uiNoConnectionSelectedMessage =
     'Seleccione o configure una conexión de empresa.';
+const String _uiNoConnectionsAvailableMessage =
+    'No hay conexiones configuradas. Por favor, añada una.';
 
 class InvoiceScreen extends StatefulWidget {
   const InvoiceScreen({super.key});
@@ -53,9 +50,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   @override
   void initState() {
     super.initState();
-    // Al iniciar la pantalla, pedir al notifier que cargue las conexiones disponibles.
-    // Esto es importante si se navega directamente a esta pantalla.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Al iniciar, refresca la lista de conexiones.
+      // Si hay una conexión activa previa (ej. guardada en SharedPreferences, no implementado aquí),
+      // se podría intentar cargarla. Por ahora, solo refresca la lista.
       Provider.of<InvoiceNotifier>(
         context,
         listen: false,
@@ -75,54 +73,41 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       );
       return;
     }
-    // El resto de la lógica de _pickDateRange se mantiene igual
+
     final DateTimeRange? pickedRange = await showDateRangePicker(
       context: context,
       initialDateRange: (notifier.startDate != null && notifier.endDate != null)
           ? DateTimeRange(start: notifier.startDate!, end: notifier.endDate!)
           : (notifier.startDate != null)
-          ? DateTimeRange(
-              start: notifier.startDate!,
-              end: notifier.startDate!,
-            ) // Si solo hay start, usarlo para ambos
+          ? DateTimeRange(start: notifier.startDate!, end: notifier.startDate!)
           : (notifier.endDate != null)
-          ? DateTimeRange(
-              start: notifier.endDate!,
-              end: notifier.endDate!,
-            ) // Si solo hay end, usarlo para ambos
-          : null, // Si ninguno está definido, no hay rango inicial
-      firstDate: DateTime(1997), // Un año razonable para el inicio de los datos
-      lastDate: DateTime.now().add(
-        const Duration(days: 365),
-      ), // Permitir seleccionar hasta un año en el futuro
+          ? DateTimeRange(start: notifier.endDate!, end: notifier.endDate!)
+          : null,
+      firstDate: DateTime(1997),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
       locale: const Locale('es', 'ES'), // Para formato de calendario en español
-      helpText: 'SELECCIONAR RANGO DE FECHAS',
+      helpText: 'SELECCIONAR RANGO',
       cancelText: 'CANCELAR',
       confirmText: 'APLICAR',
-      errorFormatText: 'Formato de fecha inválido.',
+      errorFormatText: 'Formato inválido.',
       errorInvalidText: 'Fecha fuera de rango.',
-      errorInvalidRangeText: 'Rango de fechas inválido.',
-      fieldStartHintText: 'Fecha de inicio',
-      fieldEndHintText: 'Fecha de fin',
+      errorInvalidRangeText: 'Rango inválido.',
+      fieldStartHintText: 'Inicio',
+      fieldEndHintText: 'Fin',
       fieldStartLabelText: 'Desde',
       fieldEndLabelText: 'Hasta',
       builder: (context, child) {
+        // Usar el tema actual de la aplicación como base para el DatePicker
         return Theme(
-          data: ThemeData.light().copyWith(
-            // Puedes basarlo en el tema actual: Theme.of(context).copyWith(...)
-            colorScheme: ColorScheme.light(
+          data: Theme.of(context).copyWith(
+            // Personalizaciones adicionales si son necesarias, por ejemplo:
+            colorScheme: Theme.of(context).colorScheme.copyWith(
               primary: Theme.of(
                 context,
-              ).primaryColor, // Usa el color primario de tu app
-              onPrimary: Colors.white, // Color del texto sobre el primario
-              surface: Colors.white,
-              onSurface: Colors.black,
+              ).primaryColor, // Asegurar que el primario se use
+              onPrimary: Colors.white, // Texto sobre el primario
             ),
-            buttonTheme: const ButtonThemeData(
-              textTheme: ButtonTextTheme
-                  .primary, // Para que los botones del picker usen el color primario
-            ),
-            dialogBackgroundColor: Colors.white,
+            // Puedes añadir más personalizaciones específicas para el DatePicker aquí
           ),
           child: child!,
         );
@@ -130,11 +115,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     );
 
     if (pickedRange != null) {
-      // Comprobar si el rango realmente cambió para evitar recargas innecesarias
       bool hasChanged =
           (notifier.startDate?.isAtSameMomentAs(pickedRange.start) != true) ||
           (notifier.endDate?.isAtSameMomentAs(pickedRange.end) != true);
-
       if (hasChanged) {
         await notifier.filterByDateRange(pickedRange.start, pickedRange.end);
       }
@@ -144,18 +127,17 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   Widget _buildDataRow(
     String label,
     String value, {
-    Color valueColor = Colors.black87,
+    Color valueColor = Colors.black87, // Default color
     double fontSize = 14,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment:
-            CrossAxisAlignment.start, // Alineación por si el texto es largo
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            flex: 2, // Dar más espacio a la etiqueta si es necesario
+            flex: 2,
             child: Text(
               label,
               style: TextStyle(fontSize: fontSize, color: Colors.grey.shade700),
@@ -164,7 +146,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           ),
           const SizedBox(width: 10),
           Expanded(
-            flex: 3, // Dar más espacio al valor
+            flex: 3,
             child: Text(
               value,
               style: TextStyle(
@@ -185,9 +167,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     required InvoiceNotifier notifier,
   }) {
     String displayMessage = message;
-    // Personalizar mensaje de carga basado en el estado del notifier
     if (notifier.isLoading) {
-      // Doble chequeo, ya que este widget se llama cuando isLoading es true
       if (notifier.errorMsg == _reAuthenticatingMessageFromNotifier) {
         displayMessage = _reAuthenticatingMessageFromNotifier;
       } else if (notifier.activeConnection != null &&
@@ -200,7 +180,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         } else if (notifier.startDate != null) {
           rangeText = "desde ${dateFormat.format(notifier.startDate!)}";
         } else {
-          // Solo endDate
           rangeText = "hasta ${dateFormat.format(notifier.endDate!)}";
         }
         displayMessage =
@@ -210,7 +189,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             "Cargando datos para ${notifier.activeConnection!.companyName}...";
       } else if (notifier.availableConnections.isEmpty &&
           notifier.errorMsg == null) {
-        // Esto es cuando el notifier se inicia y llama a refreshAvailableConnections por primera vez
         displayMessage = "Verificando conexiones guardadas...";
       }
     }
@@ -233,54 +211,75 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   }
 
   Widget _buildErrorState(InvoiceNotifier notifier, BuildContext context) {
-    // Determinar si el error es por falta de configuración de conexiones
     bool noConnectionsConfigured =
         notifier.availableConnections.isEmpty &&
-        notifier.errorMsg == _uiNoConnectionSelectedMessage &&
-        !notifier.isLoading; // Solo si no está cargando la lista
+        (notifier.errorMsg == _uiNoConnectionSelectedMessage ||
+            notifier.errorMsg == _uiNoConnectionsAvailableMessage) &&
+        !notifier.isLoading;
 
     bool noConnectionSelectedFromList =
         notifier.activeConnection == null &&
         notifier.availableConnections.isNotEmpty &&
-        notifier.errorMsg == _uiNoConnectionSelectedMessage &&
+        (notifier.errorMsg == _uiNoConnectionSelectedMessage ||
+            notifier.errorMsg == _uiNoConnectionsAvailableMessage) &&
         !notifier.isLoading;
 
-    String title =
-        _errorStateTitleText; // Título por defecto para errores generales
+    String title = _errorStateTitleText;
     String message = notifier.errorMsg ?? _defaultUiErrorText;
     IconData iconData = Icons.error_outline_rounded;
     Color iconColor = Colors.red.shade700;
     String buttonLabel = _tryConnectButtonLabel;
     VoidCallback onPressedAction = () {
       if (notifier.activeConnection != null) {
-        notifier.fetchInitialData(); // Reintentar la conexión activa
+        notifier.fetchInitialData();
       } else {
-        notifier
-            .refreshAvailableConnections(); // Si no hay activa, refrescar lista
+        notifier.refreshAvailableConnections();
       }
     };
 
     if (noConnectionsConfigured) {
       title = "Sin Conexiones";
       message =
-          _noConnectionsAvailableText +
-          "\nPor favor, añade una en la configuración.";
+          "$_noConnectionsAvailableText\nPor favor, añada una en la configuración para comenzar.";
       iconData = Icons.settings_input_component_outlined;
       iconColor = Colors.blueGrey.shade700;
       buttonLabel = _goToSettingsButtonText;
       onPressedAction = () => _navigateToSettings(context);
     } else if (noConnectionSelectedFromList) {
-      // Este estado se maneja mejor mostrando el dropdown y un mensaje en _buildDataDisplay
-      // Por lo tanto, este widget de error no debería mostrarse en este caso específico
-      // si el _buildDataDisplay ya está manejándolo.
-      // Si llegamos aquí con este estado, es un fallback.
-      title = "Seleccione Empresa";
+      // Este estado ahora se maneja mostrando el dropdown y un mensaje en _buildDataDisplay
+      // por lo que este widget no debería llegar a mostrarse para este caso específico si la lógica
+      // en el builder principal es correcta. Este es un fallback.
+      title = "Seleccione una Empresa";
       message =
-          "Por favor, seleccione una empresa del listado para ver los datos.";
+          "Por favor, elija una empresa del listado para visualizar sus datos.";
       iconData = Icons.business_center_outlined;
       iconColor = Theme.of(context).primaryColor;
-      // Para este caso, el botón no es tan relevante como el dropdown
-      // Se podría ocultar el botón o no hacer nada.
+      // No se muestra botón aquí; la acción es seleccionar del dropdown.
+      return Padding(
+        padding: const EdgeInsets.all(25.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(iconData, color: iconColor, size: 60),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: iconColor,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      );
     }
 
     return Padding(
@@ -301,12 +300,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            message, // Ya contiene el mensaje adecuado
+            message,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 15, color: Colors.black87),
           ),
           const SizedBox(height: 30),
-          // Solo mostrar botón si no es el caso de "seleccione de la lista"
           if (!noConnectionSelectedFromList || noConnectionsConfigured)
             ElevatedButton.icon(
               icon: Icon(
@@ -315,9 +313,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     : Icons.refresh_rounded,
               ),
               label: Text(buttonLabel, style: const TextStyle(fontSize: 15)),
-              onPressed: notifier.isLoading
-                  ? null
-                  : onPressedAction, // Deshabilitar si ya está cargando
+              onPressed: notifier.isLoading ? null : onPressedAction,
               style: ElevatedButton.styleFrom(
                 backgroundColor: noConnectionsConfigured
                     ? Colors.blueGrey.shade700
@@ -341,23 +337,32 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     );
   }
 
-  // NUEVO: Widget para el selector de empresa
   Widget _buildCompanySelector(InvoiceNotifier notifier, BuildContext context) {
-    // No mostrar si la lista de conexiones disponibles aún se está cargando y está vacía
     if (notifier.isLoading && notifier.availableConnections.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-        child: Center(
-          child: Text(
-            "Cargando lista de conexiones...",
-            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
-          ),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              "Cargando conexiones...",
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ],
         ),
       );
     }
-    // No mostrar si no hay conexiones y ya terminó de cargar (el error state lo indicará)
     if (notifier.availableConnections.isEmpty && !notifier.isLoading) {
-      return const SizedBox.shrink();
+      return const SizedBox.shrink(); // No mostrar si no hay conexiones (error state lo maneja)
     }
 
     return Padding(
@@ -365,7 +370,23 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       child: DropdownButtonFormField<ApiConnection>(
         decoration: InputDecoration(
           labelText: _selectCompanyHintText,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.0)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8.0),
+            borderSide: BorderSide(color: Theme.of(context).primaryColor),
+          ),
+          enabledBorder: OutlineInputBorder(
+            // Borde cuando no está enfocado
+            borderRadius: BorderRadius.circular(8.0),
+            borderSide: BorderSide(color: Colors.grey.shade400),
+          ),
+          focusedBorder: OutlineInputBorder(
+            // Borde cuando está enfocado
+            borderRadius: BorderRadius.circular(8.0),
+            borderSide: BorderSide(
+              color: Theme.of(context).primaryColor,
+              width: 2.0,
+            ),
+          ),
           prefixIcon: Icon(
             Icons.business_rounded,
             color: Theme.of(context).primaryColor,
@@ -375,21 +396,20 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             vertical: 15.0,
           ),
           filled: true,
-          fillColor: Colors.grey.shade50,
+          fillColor: Colors.white, // Un fondo claro para el dropdown
         ),
         isExpanded: true,
-        value:
-            notifier.activeConnection, // Puede ser null si ninguna está activa
-        hint: const Text(
+        value: notifier.activeConnection,
+        hint: Text(
           _selectCompanyHintText,
-          style: TextStyle(color: Colors.black54),
+          style: TextStyle(color: Colors.grey.shade600),
         ),
         items: notifier.availableConnections.map((ApiConnection connection) {
           return DropdownMenuItem<ApiConnection>(
             value: connection,
             child: Text(
               connection.companyName,
-              style: const TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
               overflow: TextOverflow.ellipsis,
             ),
           );
@@ -398,37 +418,25 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             ? null
             : (ApiConnection? newValue) {
                 if (newValue != null) {
-                  // Solo recargar datos si la selección es realmente diferente a la actual
-                  // o si la conexión activa es null.
                   if (notifier.activeConnection?.id != newValue.id ||
                       notifier.activeConnection == null) {
                     notifier.setActiveConnection(newValue, fetchFullData: true);
                   }
-                  // Si es la misma, no hacer nada para evitar recargas innecesarias.
-                  // El estado `activeConnection` ya está seteado.
                 }
               },
-        // validator: (value) => value == null ? 'Por favor, seleccione una empresa' : null, // Opcional
       ),
     );
   }
 
-  // MODIFICADO: Para mostrar datos o mensajes relevantes
   Widget _buildDataDisplay(InvoiceNotifier notifier, BuildContext context) {
     final summary = notifier.invoiceSummary;
-    final pollingInterval =
-        notifier.pollingIntervalSeconds; // Ya toma de la conexión activa
-    final dateFormat = DateFormat(
-      'dd/MM/yyyy',
-      'es_ES',
-    ); // Formato de fecha en español
+    final pollingInterval = notifier.pollingIntervalSeconds;
+    final dateFormat = DateFormat('dd/MM/yyyy', 'es_ES');
 
-    // Mensaje sobre el estado de los datos y polling
-    String liveDataInfo = _noConnectionSelectedText; // Mensaje por defecto
+    String liveDataInfo = _noConnectionSelectedText;
     if (notifier.activeConnection != null && notifier.isAuthenticated) {
-      // Solo si hay conexión activa Y está autenticado
       liveDataInfo =
-          "$_liveDataText Actualizando cada $pollingInterval $_pollingIntervalSuffixText para ${notifier.activeConnection!.companyName}";
+          "$_liveDataText Actualizando cada $pollingInterval $_pollingIntervalSuffixText para \"${notifier.activeConnection!.companyName}\"";
       if (notifier.startDate != null || notifier.endDate != null) {
         String rangeText;
         if (notifier.startDate != null && notifier.endDate != null) {
@@ -437,57 +445,49 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         } else if (notifier.startDate != null) {
           rangeText = "Desde ${dateFormat.format(notifier.startDate!)}";
         } else {
-          // Solo endDate != null
           rangeText = "Hasta ${dateFormat.format(notifier.endDate!)}";
         }
         liveDataInfo += " (Filtro: $rangeText)";
       }
     } else if (notifier.activeConnection != null &&
-        !notifier.isAuthenticated &&
         notifier.errorMsg == _reAuthenticatingMessageFromNotifier) {
-      // Si hay conexión activa, pero no autenticado y está re-autenticando
       liveDataInfo = _reAuthenticatingMessageFromNotifier;
     } else if (notifier.activeConnection != null &&
         notifier.errorMsg != null &&
         notifier.errorMsg != _uiNoConnectionSelectedMessage &&
         notifier.errorMsg !=
             "La fecha final no puede ser anterior a la fecha de inicio.") {
-      // Si hay conexión activa pero hay un error que no es el de "sin seleccionar" o "rango inválido"
-      liveDataInfo =
-          ""; // No mostrar info de "en vivo" si hay un error de conexión/API
+      liveDataInfo = "";
     } else if (notifier.activeConnection == null &&
         notifier.availableConnections.isNotEmpty) {
       liveDataInfo = "Seleccione una empresa del listado para ver los datos.";
+    } else if (notifier.availableConnections.isEmpty) {
+      liveDataInfo =
+          _noConnectionsAvailableText; // Aunque este caso debería ser manejado por _buildErrorState
     }
 
-    // Mensaje de estado general (puede ser el liveDataInfo o un mensaje de error específico)
     String statusMessage = liveDataInfo;
-    Color statusMessageColor =
-        Colors.green.shade700; // Color por defecto para "en vivo"
+    Color statusMessageColor = Colors.green.shade700;
     FontStyle statusMessageFontStyle = FontStyle.italic;
 
     if (notifier.errorMsg != null &&
         notifier.errorMsg !=
             "La fecha final no puede ser anterior a la fecha de inicio." &&
-        notifier.errorMsg != _uiNoConnectionSelectedMessage) {
-      // No mostrar error de rango o no selección como status general
+        notifier.errorMsg != _uiNoConnectionSelectedMessage &&
+        notifier.errorMsg != _uiNoConnectionsAvailableMessage) {
       if (notifier.errorMsg == _reAuthenticatingMessageFromNotifier) {
-        statusMessage =
-            notifier.errorMsg!; // Ya está en liveDataInfo si es el caso
         statusMessageColor = Colors.orange.shade800;
       } else if (notifier.activeConnection != null) {
-        // Si hay conexión activa pero otro error
-        // El error principal se mostrará en _buildErrorState o como advertencia.
-        // El statusMessage aquí podría quedar vacío o indicar "Error al actualizar".
         statusMessage = "Error al actualizar datos. Verifique la conexión.";
         statusMessageColor = Colors.red.shade700;
       }
     } else if (notifier.activeConnection == null &&
         notifier.availableConnections.isNotEmpty) {
-      statusMessageColor = Colors.blueGrey; // Color para "seleccione empresa"
+      statusMessageColor = Colors.blueGrey.shade700;
+    } else if (notifier.availableConnections.isEmpty) {
+      statusMessageColor = Colors.grey.shade700;
     }
 
-    // Texto para el filtro de fecha actual
     String dateFilterDisplayText;
     if (notifier.startDate == null && notifier.endDate == null) {
       dateFilterDisplayText = _allDatesText;
@@ -497,7 +497,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     } else if (notifier.startDate == null && notifier.endDate != null) {
       dateFilterDisplayText = 'Hasta: ${dateFormat.format(notifier.endDate!)}';
     } else {
-      // Ambas no nulas
       dateFilterDisplayText =
           'Rango: ${dateFormat.format(notifier.startDate!)} - ${dateFormat.format(notifier.endDate!)}';
     }
@@ -508,18 +507,12 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.start, // Alineación principal
+        mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          // El selector de empresa (_buildCompanySelector) se muestra fuera de este widget, en el builder principal.
-
-          // Controles de fecha (solo si hay conexión activa y autenticada)
           if (showDateControlsAndSummary) ...[
             Padding(
-              padding: const EdgeInsets.only(
-                bottom: 16.0,
-                top: 8.0,
-              ), // Espacio si el dropdown está arriba
+              padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
               child: Column(
                 children: [
                   Text(
@@ -532,7 +525,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     textAlign: TextAlign.center,
                   ),
                   if (notifier.errorMsg ==
-                      "La fecha final no puede ser anterior a la fecha de inicio.") // Error específico de rango de fechas
+                      "La fecha final no puede ser anterior a la fecha de inicio.")
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0),
                       child: Text(
@@ -546,10 +539,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     ),
                   const SizedBox(height: 8),
                   Wrap(
-                    // Para que los botones se ajusten en pantallas pequeñas
                     alignment: WrapAlignment.center,
-                    spacing: 8.0, // Espacio horizontal entre botones
-                    runSpacing: 4.0, // Espacio vertical si se envuelven
+                    spacing: 8.0,
+                    runSpacing: 4.0,
                     children: [
                       TextButton.icon(
                         icon: const Icon(Icons.date_range, size: 18),
@@ -563,7 +555,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                             ? null
                             : () {
                                 final now = DateTime.now();
-                                // Normalizar 'now' a medianoche para comparar solo la fecha
                                 final todayNormalized = DateTime(
                                   now.year,
                                   now.month,
@@ -584,7 +575,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                                         todayNormalized.day);
 
                                 if (!isTodaySelected) {
-                                  // Solo aplicar si no está ya seleccionado
                                   notifier.filterByDateRange(
                                     todayNormalized,
                                     todayNormalized,
@@ -593,7 +583,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                               },
                         child: const Text(_todayButtonText),
                       ),
-                      // Solo mostrar si hay un filtro aplicado (al menos una fecha)
                       if (notifier.startDate != null ||
                           notifier.endDate != null)
                         TextButton(
@@ -611,18 +600,15 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             const SizedBox(height: 10),
           ],
 
-          // Mostrar advertencias si hay conexión activa pero también un error persistente (que no sea de re-autenticación o rango inválido)
           if (notifier.activeConnection != null &&
               notifier.errorMsg != null &&
-              notifier
-                  .isAuthenticated && // Autenticado pero con error (ej. red temporal al hacer polling, o API devolvió error)
-              !notifier
-                  .isLoading && // No mostrar si ya está el loader principal
+              notifier.isAuthenticated &&
+              !notifier.isLoading &&
               notifier.errorMsg != _reAuthenticatingMessageFromNotifier &&
               notifier.errorMsg !=
                   "La fecha final no puede ser anterior a la fecha de inicio." &&
-              notifier.errorMsg !=
-                  _uiNoConnectionSelectedMessage) // No mostrar como advertencia si es solo "sin conexión seleccionada"
+              notifier.errorMsg != _uiNoConnectionSelectedMessage &&
+              notifier.errorMsg != _uiNoConnectionsAvailableMessage)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
               margin: const EdgeInsets.only(bottom: 18, top: 5),
@@ -653,9 +639,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               ),
             ),
 
-          // Card de resumen (solo mostrar si hay conexión activa, autenticado y sin errores que impidan mostrar datos)
           if (showDateControlsAndSummary &&
-              notifier.errorMsg == null) // Solo si no hay errores mayores
+              (notifier.errorMsg == null ||
+                  notifier.errorMsg == _reAuthenticatingMessageFromNotifier ||
+                  notifier.errorMsg ==
+                      "La fecha final no puede ser anterior a la fecha de inicio."))
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -669,10 +657,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 child: Column(
                   children: [
                     Text(
-                      "$_summaryCardTitleText para ${notifier.activeConnection!.companyName}", // Incluir nombre de la empresa
+                      "$_summaryCardTitleText para \"${notifier.activeConnection!.companyName}\"",
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.5,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
@@ -680,7 +668,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     const SizedBox(height: 25),
                     _buildDataRow(
                       '$_totalSalesLabelText (${summary.salesCount} $_invoicesCountSuffixText):',
-                      // Usar NumberFormat para formato de moneda local
                       NumberFormat.currency(
                         locale: 'es_VE',
                         symbol: 'Bs. ',
@@ -720,14 +707,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 ),
               ),
             )
-          // Mensaje si no hay conexión activa pero sí hay conexiones disponibles (invitando a seleccionar)
           else if (notifier.activeConnection == null &&
               notifier.availableConnections.isNotEmpty &&
               !notifier.isLoading)
             Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 50.0,
-              ), // Más padding para centrar mejor
+              padding: const EdgeInsets.symmetric(vertical: 50.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -737,10 +721,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     color: Colors.blueGrey.shade300,
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    "Seleccione una empresa del listado superior para ver el resumen de ventas.",
+                  Text(
+                    statusMessage, // Ya contiene "Seleccione una empresa..."
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: Colors.blueGrey),
+                    style: TextStyle(fontSize: 15, color: statusMessageColor),
                   ),
                 ],
               ),
@@ -748,13 +732,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
 
           const SizedBox(height: 25),
 
-          // Mensaje de "Actualizando..." o "Datos en vivo"
-          // Solo mostrar si hay conexión activa y no es el mensaje de re-autenticación (que ya se muestra)
           if (notifier.isLoading &&
               notifier.activeConnection != null &&
               notifier.errorMsg != _reAuthenticatingMessageFromNotifier)
             Row(
-              // Loader secundario para polling o actualización de filtro
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(
@@ -769,8 +750,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 ),
               ],
             )
-          else if (statusMessage
-              .isNotEmpty) // Solo mostrar si hay mensaje de status
+          else if (statusMessage.isNotEmpty &&
+              (notifier.activeConnection != null ||
+                  notifier.errorMsg == _reAuthenticatingMessageFromNotifier))
             Text(
               statusMessage,
               textAlign: TextAlign.center,
@@ -785,19 +767,19 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     );
   }
 
-  // NUEVO: Método para navegar a la pantalla de configuración
   void _navigateToSettings(BuildContext context) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const ConnectionSettingsScreen()),
-    ).then((value) {
-      // Al volver de la pantalla de configuración, refrescar la lista de conexiones.
-      // El `value` podría usarse si ConnectionSettingsScreen devuelve algo útil (ej. la conexión recién añadida/editada)
+    ).then((valueFromSettings) {
+      // valueFromSettings podría ser la conexión recién guardada/editada
       final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
+      // Si ConnectionSettingsScreen devuelve la conexión modificada/creada, la pasamos.
+      // Si no, el notifier usará la activa actual o pedirá seleccionar.
       notifier.refreshAvailableConnections(
-        newlySelected: (value is ApiConnection
-            ? value
-            : notifier.activeConnection),
+        newlySelectedFromSettings: valueFromSettings is ApiConnection
+            ? valueFromSettings
+            : null,
       );
     });
   }
@@ -808,33 +790,20 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       appBar: AppBar(
         title: const Text(_screenTitleText),
         actions: [
-          // NUEVO: Botón para configurar conexiones
           IconButton(
             icon: const Icon(Icons.settings_applications_outlined),
             onPressed: () => _navigateToSettings(context),
             tooltip: _settingsTooltipText,
           ),
-          // Botón de recargar (sin cambios en su lógica fundamental)
           Consumer<InvoiceNotifier>(
             builder: (context, notifier, child) {
               return IconButton(
                 icon: const Icon(Icons.refresh),
-                // Deshabilitar si está cargando o si no hay conexión activa para recargar
                 onPressed:
                     (notifier.isLoading || notifier.activeConnection == null)
                     ? null
                     : () {
-                        // Decide si recargar con el filtro actual o datos iniciales
-                        if (notifier.startDate != null ||
-                            notifier.endDate != null) {
-                          notifier.filterByDateRange(
-                            notifier.startDate,
-                            notifier.endDate,
-                          );
-                        } else {
-                          notifier
-                              .fetchInitialData(); // Llama a fetchInitialData para la conexión activa
-                        }
+                        notifier.fetchInitialData();
                       },
                 tooltip: _reloadDataTooltipText,
               );
@@ -844,82 +813,63 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       ),
       body: Consumer<InvoiceNotifier>(
         builder: (context, notifier, child) {
-          // Widget para el selector de empresa, se muestra siempre que haya conexiones o se estén cargando
           Widget companySelector = _buildCompanySelector(notifier, context);
-
           Widget bodyContent;
 
-          // Caso 1: Cargando la lista de conexiones por primera vez (y no hay ninguna aún)
           if (notifier.isLoading &&
               notifier.availableConnections.isEmpty &&
               notifier.activeConnection == null) {
+            // Cargando lista de conexiones por primera vez y no hay nada aún.
             bodyContent = _buildLoadingState(
-              message: "Verificando conexiones guardadas...",
+              message: "Verificando conexiones...",
               notifier: notifier,
             );
-          }
-          // Caso 2: No hay conexiones configuradas (y ya terminó de cargar la lista)
-          else if (notifier.availableConnections.isEmpty &&
+          } else if (notifier.availableConnections.isEmpty &&
               !notifier.isLoading) {
-            bodyContent = _buildErrorState(
-              notifier,
-              context,
-            ); // Mostrará "Sin Conexiones" y botón a config
-          }
-          // Caso 3: Hay conexiones pero ninguna activa (y no está cargando datos para alguna)
-          // Esto es manejado por _buildDataDisplay que mostrará un mensaje para seleccionar.
-          // O si el errorMsg es _uiNoConnectionSelectedMessage, _buildErrorState lo podría manejar.
-          else if (notifier.activeConnection == null &&
+            // No hay conexiones configuradas y ya se intentó cargar.
+            bodyContent = _buildErrorState(notifier, context);
+          } else if (notifier.activeConnection == null &&
               notifier.availableConnections.isNotEmpty &&
               !notifier.isLoading) {
-            // Si el error específico es de no selección, el _buildErrorState lo maneja bien con su lógica interna.
-            // Si no hay error pero no hay conexión activa (ej. al inicio con conexiones disponibles),
-            // _buildDataDisplay mostrará el mensaje de "Seleccione empresa..."
+            // Hay conexiones, pero ninguna activa. _buildDataDisplay mostrará mensaje para seleccionar.
             bodyContent = SingleChildScrollView(
               child: _buildDataDisplay(notifier, context),
             );
-          }
-          // Caso 4: Cargando datos para una conexión activa (ya sea inicial, por filtro, o por polling)
-          else if (notifier.isLoading && notifier.activeConnection != null) {
-            // Si es una carga donde NO hay datos previos para mostrar (resumen vacío)
+          } else if (notifier.isLoading && notifier.activeConnection != null) {
+            // Cargando datos para una conexión activa.
+            // Si no hay datos en _invoiceSummary, mostrar loader principal.
+            // Si hay datos (ej. durante un polling), _buildDataDisplay muestra un loader secundario.
             if (notifier.invoiceSummary.salesCount == 0 &&
                 notifier.invoiceSummary.returnsCount == 0 &&
                 notifier.errorMsg != _reAuthenticatingMessageFromNotifier) {
-              bodyContent = _buildLoadingState(
-                notifier: notifier,
-              ); // Loader principal
+              bodyContent = _buildLoadingState(notifier: notifier);
             } else {
-              // Hay datos antiguos o se está re-autenticando, mostrar la UI normal.
-              // El indicador de "Actualizando..." dentro de _buildDataDisplay se encargará si es polling.
               bodyContent = SingleChildScrollView(
                 child: _buildDataDisplay(notifier, context),
               );
             }
-          }
-          // Caso 5: Error específico (API, Red, Autenticación) para la conexión activa
-          // (Excluyendo el mensaje de "sin conexión seleccionada" o error de rango, que se manejan en DataDisplay)
-          else if (notifier.activeConnection != null &&
+          } else if (notifier.activeConnection != null &&
               notifier.errorMsg != null &&
               notifier.errorMsg != _uiNoConnectionSelectedMessage &&
+              notifier.errorMsg != _uiNoConnectionsAvailableMessage &&
               notifier.errorMsg !=
                   "La fecha final no puede ser anterior a la fecha de inicio.") {
+            // Error específico de API/Red/Auth para la conexión activa.
             bodyContent = _buildErrorState(notifier, context);
-          }
-          // Caso 6: Conexión activa, autenticada y sin errores (o con error de rango que se muestra en DataDisplay)
-          else if (notifier.activeConnection != null &&
+          } else if (notifier.activeConnection != null &&
               notifier.isAuthenticated) {
+            // Conexión activa, autenticado y sin errores mayores.
             bodyContent = SingleChildScrollView(
               child: _buildDataDisplay(notifier, context),
             );
-          }
-          // Caso 7: Fallback - podría ser un estado de error no autenticado para la conexión activa
-          else {
+          } else {
+            // Estado de fallback, probablemente un error o esperando selección.
             bodyContent = _buildErrorState(notifier, context);
           }
 
           return Column(
             children: [
-              companySelector, // Mostrar siempre el selector si hay conexiones o se está cargando la lista
+              companySelector,
               Expanded(child: Center(child: bodyContent)),
             ],
           );

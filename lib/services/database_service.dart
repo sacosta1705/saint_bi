@@ -1,14 +1,13 @@
 // lib/services/database_service.dart
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart'; // Para debugPrint
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:saint_bi/models/api_connection.dart';
 
 class DatabaseService {
   static const String _databaseName = "saint_bi_connections.db";
-  static const int _databaseVersion = 1; // Incrementar si cambias el esquema
+  static const int _databaseVersion = 1;
 
-  // --- Definición de la tabla y columnas ---
   static const String tableConnections = 'connections';
   static const String columnId = 'id';
   static const String columnBaseUrl = 'baseUrl';
@@ -18,7 +17,6 @@ class DatabaseService {
   static const String columnCompanyName = 'companyName';
   static const String columnTerminal = 'terminal';
 
-  // Singleton para la instancia de la base de datos
   DatabaseService._privateConstructor();
   static final DatabaseService instance = DatabaseService._privateConstructor();
 
@@ -38,7 +36,6 @@ class DatabaseService {
       path,
       version: _databaseVersion,
       onCreate: _onCreate,
-      // onUpgrade: _onUpgrade, // Implementar si necesitas migraciones
     );
   }
 
@@ -48,16 +45,14 @@ class DatabaseService {
         $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
         $columnBaseUrl TEXT NOT NULL,
         $columnUsername TEXT NOT NULL,
-        $columnPassword TEXT NOT NULL, -- Considerar encriptación para producción
+        $columnPassword TEXT NOT NULL,
         $columnPollingInterval INTEGER NOT NULL,
-        $columnCompanyName TEXT NOT NULL UNIQUE, -- El nombre de la empresa debe ser único
+        $columnCompanyName TEXT NOT NULL UNIQUE,
         $columnTerminal TEXT NOT NULL
       )
     ''');
     debugPrint('Table $tableConnections created');
   }
-
-  // --- Operaciones CRUD ---
 
   Future<int> insertConnection(ApiConnection connection) async {
     final db = await instance.database;
@@ -65,22 +60,20 @@ class DatabaseService {
       final id = await db.insert(
         tableConnections,
         connection.toMap(),
-        conflictAlgorithm: ConflictAlgorithm
-            .replace, // O .fail para lanzar error si companyName es duplicado
+        conflictAlgorithm: ConflictAlgorithm.replace,
       );
       debugPrint(
-        'Connection inserted with id: $id, company: ${connection.companyName}',
+        'Connection inserted/replaced with id: $id, company: ${connection.companyName}',
       );
       return id;
     } catch (e) {
-      debugPrint('Error inserting connection: $e');
+      debugPrint('Error inserting/replacing connection: $e');
       if (e.toString().toLowerCase().contains('unique constraint failed')) {
-        // Personaliza el mensaje si es una violación de unicidad
         throw Exception(
           'Ya existe una conexión guardada con el nombre de empresa "${connection.companyName}".',
         );
       }
-      rethrow; // Relanzar otras excepciones
+      rethrow;
     }
   }
 
@@ -115,9 +108,25 @@ class DatabaseService {
     return null;
   }
 
+  // MÉTODO AÑADIDO Y CORREGIDO
+  Future<ApiConnection?> getConnectionByCompanyName(String companyName) async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableConnections,
+      where: '$columnCompanyName = ?',
+      whereArgs: [
+        companyName,
+      ], // Asegurarse que el argumento se pasa como lista
+    );
+    if (maps.isNotEmpty) {
+      return ApiConnection.fromMap(maps.first);
+    }
+    debugPrint('Connection with companyName "$companyName" not found in DB.');
+    return null;
+  }
+
   Future<int> updateConnection(ApiConnection connection) async {
     final db = await instance.database;
-    // Asegúrate que el ID no sea nulo para la actualización
     if (connection.id == null) {
       debugPrint('Error: Attempted to update a connection with no ID.');
       return 0;
@@ -157,7 +166,6 @@ class DatabaseService {
   }
 
   Future<void> deleteAllConnections() async {
-    // Útil para desarrollo/pruebas
     final db = await instance.database;
     await db.delete(tableConnections);
     debugPrint('All connections deleted.');
