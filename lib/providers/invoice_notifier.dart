@@ -190,8 +190,9 @@ class InvoiceNotifier extends ChangeNotifier {
         'setActiveConnection: Misma conexión (ID: ${connection.id}), no se fuerza recarga.',
       );
       if (_errorMsg == _uiNoConnectionSelectedMessage ||
-          _errorMsg == _uiNoConnectionsAvailableMessage)
+          _errorMsg == _uiNoConnectionsAvailableMessage) {
         _errorMsg = null;
+      }
       notifyListeners();
       return;
     }
@@ -344,8 +345,8 @@ class InvoiceNotifier extends ChangeNotifier {
         _availableConnections = await _dbService.getAllConnections();
         _availableConnections.sort(
           (a, b) => a.companyName.toLowerCase().compareTo(
-            b.companyName.toLowerCase(),
-          ),
+                b.companyName.toLowerCase(),
+              ),
         );
         _activeConnection = _availableConnections.firstWhere(
           (c) => c.id == currentSelectedId,
@@ -440,8 +441,9 @@ class InvoiceNotifier extends ChangeNotifier {
 
     if (!isInitialFetchForCurrentOp && _errorMsg != _uiSessionExpiredMessage) {
       _isLoading = true;
-      if (_errorMsg != null && _errorMsg != _uiSessionExpiredMessage)
+      if (_errorMsg != null && _errorMsg != _uiSessionExpiredMessage) {
         _errorMsg = null;
+      }
       notifyListeners();
     }
 

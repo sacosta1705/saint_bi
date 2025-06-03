@@ -6,12 +6,13 @@ import 'package:saint_bi/models/api_connection.dart';
 import 'package:saint_bi/providers/invoice_notifier.dart';
 import 'package:saint_bi/screens/connection_settings_screen.dart';
 
-// Constantes de texto para la UI
+// Constantes de texto (sin cambios respecto a tu versión)
 const String _screenTitleText = 'Resumen de Ventas Saint BI 📊';
 const String _reloadDataTooltipText = 'Recargar Datos';
 const String _settingsTooltipText = 'Configurar Conexiones';
 const String _connectingApiText = "Conectando con la API...";
-const String _errorStateTitleText = "Error Inesperado";
+const String _errorStateTitleText =
+    "Error"; // Puedes cambiarlo a "Error Inesperado" si prefieres
 const String _defaultUiErrorText = "Ha ocurrido un error inesperado.";
 const String _tryConnectButtonLabel = 'Intentar Conectar / Reintentar';
 const String _summaryCardTitleText = 'Resumen de Transacciones de Venta';
@@ -20,13 +21,13 @@ const String _totalReturnsLabelText = 'Total Devoluciones';
 const String _totalTaxesLabelText = 'Total Impuestos';
 const String _invoicesCountSuffixText = 'facturas';
 const String _returnsCountSuffixText = 'notas';
-const String _updatingDataText = "Actualizando datos...";
+const String _updatingDataText = "Actualizando...";
 const String _liveDataText = "Datos en vivo.";
 const String _pollingIntervalSuffixText = "seg.";
 const String _warningTitleText = 'Advertencia';
 const String _reAuthenticatingMessageFromNotifier =
     'Sesión expirada. Intentando re-autenticar...';
-const String _selectDateRangeTooltipText = 'Seleccionar Rango de Fechas';
+const String _selectDateRangeTooltipText = 'Seleccionar Rango';
 const String _todayButtonText = 'Hoy';
 const String _clearFilterButtonText = 'Quitar Filtro';
 const String _allDatesText = 'Todas las fechas';
@@ -51,13 +52,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Al iniciar, refresca la lista de conexiones.
-      // Si hay una conexión activa previa (ej. guardada en SharedPreferences, no implementado aquí),
-      // se podría intentar cargarla. Por ahora, solo refresca la lista.
-      Provider.of<InvoiceNotifier>(
-        context,
-        listen: false,
-      ).refreshAvailableConnections();
+      Provider.of<InvoiceNotifier>(context, listen: false)
+          .refreshAvailableConnections();
     });
   }
 
@@ -68,8 +64,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     if (notifier.activeConnection == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Por favor, primero seleccione una empresa.'),
-        ),
+            content: Text('Por favor, primero seleccione una empresa.')),
       );
       return;
     }
@@ -79,45 +74,36 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       initialDateRange: (notifier.startDate != null && notifier.endDate != null)
           ? DateTimeRange(start: notifier.startDate!, end: notifier.endDate!)
           : (notifier.startDate != null)
-          ? DateTimeRange(start: notifier.startDate!, end: notifier.startDate!)
-          : (notifier.endDate != null)
-          ? DateTimeRange(start: notifier.endDate!, end: notifier.endDate!)
-          : null,
+              ? DateTimeRange(
+                  start: notifier.startDate!, end: notifier.startDate!)
+              : (notifier.endDate != null)
+                  ? DateTimeRange(
+                      start: notifier.endDate!, end: notifier.endDate!)
+                  : null,
       firstDate: DateTime(1997),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      locale: const Locale('es', 'ES'), // Para formato de calendario en español
-      helpText: 'SELECCIONAR RANGO',
+      locale: const Locale('es', 'ES'),
+      helpText: 'SELECCIONAR RANGO DE FECHAS',
       cancelText: 'CANCELAR',
       confirmText: 'APLICAR',
-      errorFormatText: 'Formato inválido.',
+      errorFormatText: 'Formato de fecha inválido.',
       errorInvalidText: 'Fecha fuera de rango.',
-      errorInvalidRangeText: 'Rango inválido.',
-      fieldStartHintText: 'Inicio',
-      fieldEndHintText: 'Fin',
+      errorInvalidRangeText: 'Rango de fechas inválido.',
+      fieldStartHintText: 'Fecha de inicio',
+      fieldEndHintText: 'Fecha de fin',
       fieldStartLabelText: 'Desde',
       fieldEndLabelText: 'Hasta',
+      // El builder ahora solo devuelve el child, sin envolverlo en un Theme widget.
+      // Heredará el tema del MaterialApp.
       builder: (context, child) {
-        // Usar el tema actual de la aplicación como base para el DatePicker
-        return Theme(
-          data: Theme.of(context).copyWith(
-            // Personalizaciones adicionales si son necesarias, por ejemplo:
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: Theme.of(
-                context,
-              ).primaryColor, // Asegurar que el primario se use
-              onPrimary: Colors.white, // Texto sobre el primario
-            ),
-            // Puedes añadir más personalizaciones específicas para el DatePicker aquí
-          ),
-          child: child!,
-        );
+        return child!;
       },
     );
 
     if (pickedRange != null) {
       bool hasChanged =
           (notifier.startDate?.isAtSameMomentAs(pickedRange.start) != true) ||
-          (notifier.endDate?.isAtSameMomentAs(pickedRange.end) != true);
+              (notifier.endDate?.isAtSameMomentAs(pickedRange.end) != true);
       if (hasChanged) {
         await notifier.filterByDateRange(pickedRange.start, pickedRange.end);
       }
@@ -127,7 +113,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   Widget _buildDataRow(
     String label,
     String value, {
-    Color valueColor = Colors.black87, // Default color
+    Color valueColor = Colors.black87,
     double fontSize = 14,
   }) {
     return Padding(
@@ -162,10 +148,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     );
   }
 
-  Widget _buildLoadingState({
-    String message = _connectingApiText,
-    required InvoiceNotifier notifier,
-  }) {
+  Widget _buildLoadingState(
+      {String message = _connectingApiText,
+      required InvoiceNotifier notifier}) {
     String displayMessage = message;
     if (notifier.isLoading) {
       if (notifier.errorMsg == _reAuthenticatingMessageFromNotifier) {
@@ -200,25 +185,21 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Text(
-            displayMessage,
-            style: const TextStyle(fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
+          child: Text(displayMessage,
+              style: const TextStyle(fontSize: 14),
+              textAlign: TextAlign.center),
         ),
       ],
     );
   }
 
   Widget _buildErrorState(InvoiceNotifier notifier, BuildContext context) {
-    bool noConnectionsConfigured =
-        notifier.availableConnections.isEmpty &&
+    bool noConnectionsConfigured = notifier.availableConnections.isEmpty &&
         (notifier.errorMsg == _uiNoConnectionSelectedMessage ||
             notifier.errorMsg == _uiNoConnectionsAvailableMessage) &&
         !notifier.isLoading;
 
-    bool noConnectionSelectedFromList =
-        notifier.activeConnection == null &&
+    bool noConnectionSelectedFromList = notifier.activeConnection == null &&
         notifier.availableConnections.isNotEmpty &&
         (notifier.errorMsg == _uiNoConnectionSelectedMessage ||
             notifier.errorMsg == _uiNoConnectionsAvailableMessage) &&
@@ -227,7 +208,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     String title = _errorStateTitleText;
     String message = notifier.errorMsg ?? _defaultUiErrorText;
     IconData iconData = Icons.error_outline_rounded;
-    Color iconColor = Colors.red.shade700;
+    Color iconColor = Colors.red.shade700; // Color por defecto para errores
     String buttonLabel = _tryConnectButtonLabel;
     VoidCallback onPressedAction = () {
       if (notifier.activeConnection != null) {
@@ -246,15 +227,12 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       buttonLabel = _goToSettingsButtonText;
       onPressedAction = () => _navigateToSettings(context);
     } else if (noConnectionSelectedFromList) {
-      // Este estado ahora se maneja mostrando el dropdown y un mensaje en _buildDataDisplay
-      // por lo que este widget no debería llegar a mostrarse para este caso específico si la lógica
-      // en el builder principal es correcta. Este es un fallback.
-      title = "Seleccione una Empresa";
+      title = "Seleccione Empresa";
       message =
           "Por favor, elija una empresa del listado para visualizar sus datos.";
-      iconData = Icons.business_center_outlined;
-      iconColor = Theme.of(context).primaryColor;
-      // No se muestra botón aquí; la acción es seleccionar del dropdown.
+      iconData = Icons.info_outline_rounded; // Ícono más neutral
+      iconColor =
+          Theme.of(context).colorScheme.primary; // Usar color primario del tema
       return Padding(
         padding: const EdgeInsets.all(25.0),
         child: Column(
@@ -262,20 +240,16 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           children: [
             Icon(iconData, color: iconColor, size: 60),
             const SizedBox(height: 20),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: iconColor,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            Text(title,
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(color: iconColor, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15),
-            ),
+            Text(message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 15)),
             const SizedBox(height: 20),
           ],
         ),
@@ -293,10 +267,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: iconColor,
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(color: iconColor, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Text(
@@ -307,11 +281,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           const SizedBox(height: 30),
           if (!noConnectionSelectedFromList || noConnectionsConfigured)
             ElevatedButton.icon(
-              icon: Icon(
-                noConnectionsConfigured
-                    ? Icons.settings_applications_rounded
-                    : Icons.refresh_rounded,
-              ),
+              icon: Icon(noConnectionsConfigured
+                  ? Icons.settings_applications_rounded
+                  : Icons.refresh_rounded),
               label: Text(buttonLabel, style: const TextStyle(fontSize: 15)),
               onPressed: notifier.isLoading ? null : onPressedAction,
               style: ElevatedButton.styleFrom(
@@ -319,17 +291,12 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     ? Colors.blueGrey.shade700
                     : Theme.of(context).primaryColor,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                textStyle:
+                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                    borderRadius: BorderRadius.circular(8)),
               ),
             ),
         ],
@@ -345,24 +312,21 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2.5),
-            ),
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                )),
             const SizedBox(width: 12),
-            Text(
-              "Cargando conexiones...",
-              style: TextStyle(
-                fontStyle: FontStyle.italic,
-                color: Colors.grey.shade700,
-              ),
-            ),
+            Text("Cargando conexiones...",
+                style: TextStyle(
+                    fontStyle: FontStyle.italic, color: Colors.grey.shade700)),
           ],
         ),
       );
     }
     if (notifier.availableConnections.isEmpty && !notifier.isLoading) {
-      return const SizedBox.shrink(); // No mostrar si no hay conexiones (error state lo maneja)
+      return const SizedBox.shrink();
     }
 
     return Padding(
@@ -371,47 +335,34 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         decoration: InputDecoration(
           labelText: _selectCompanyHintText,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8.0),
-            borderSide: BorderSide(color: Theme.of(context).primaryColor),
-          ),
+              borderRadius: BorderRadius.circular(8.0),
+              borderSide: BorderSide(color: Theme.of(context).primaryColor)),
           enabledBorder: OutlineInputBorder(
-            // Borde cuando no está enfocado
             borderRadius: BorderRadius.circular(8.0),
             borderSide: BorderSide(color: Colors.grey.shade400),
           ),
           focusedBorder: OutlineInputBorder(
-            // Borde cuando está enfocado
             borderRadius: BorderRadius.circular(8.0),
-            borderSide: BorderSide(
-              color: Theme.of(context).primaryColor,
-              width: 2.0,
-            ),
+            borderSide:
+                BorderSide(color: Theme.of(context).primaryColor, width: 2.0),
           ),
-          prefixIcon: Icon(
-            Icons.business_rounded,
-            color: Theme.of(context).primaryColor,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12.0,
-            vertical: 15.0,
-          ),
+          prefixIcon: Icon(Icons.business_rounded,
+              color: Theme.of(context).primaryColor),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12.0, vertical: 15.0),
           filled: true,
-          fillColor: Colors.white, // Un fondo claro para el dropdown
+          fillColor: Colors.white,
         ),
         isExpanded: true,
         value: notifier.activeConnection,
-        hint: Text(
-          _selectCompanyHintText,
-          style: TextStyle(color: Colors.grey.shade600),
-        ),
+        hint: Text(_selectCompanyHintText,
+            style: TextStyle(color: Colors.grey.shade600)),
         items: notifier.availableConnections.map((ApiConnection connection) {
           return DropdownMenuItem<ApiConnection>(
             value: connection,
-            child: Text(
-              connection.companyName,
-              style: const TextStyle(fontSize: 16, color: Colors.black87),
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: Text(connection.companyName,
+                style: const TextStyle(fontSize: 16, color: Colors.black87),
+                overflow: TextOverflow.ellipsis),
           );
         }).toList(),
         onChanged: notifier.isLoading
@@ -455,6 +406,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     } else if (notifier.activeConnection != null &&
         notifier.errorMsg != null &&
         notifier.errorMsg != _uiNoConnectionSelectedMessage &&
+        notifier.errorMsg != _uiNoConnectionsAvailableMessage &&
         notifier.errorMsg !=
             "La fecha final no puede ser anterior a la fecha de inicio.") {
       liveDataInfo = "";
@@ -462,8 +414,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         notifier.availableConnections.isNotEmpty) {
       liveDataInfo = "Seleccione una empresa del listado para ver los datos.";
     } else if (notifier.availableConnections.isEmpty) {
-      liveDataInfo =
-          _noConnectionsAvailableText; // Aunque este caso debería ser manejado por _buildErrorState
+      liveDataInfo = _noConnectionsAvailableText;
     }
 
     String statusMessage = liveDataInfo;
@@ -484,7 +435,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     } else if (notifier.activeConnection == null &&
         notifier.availableConnections.isNotEmpty) {
       statusMessageColor = Colors.blueGrey.shade700;
-    } else if (notifier.availableConnections.isEmpty) {
+    } else if (notifier.availableConnections.isEmpty && !notifier.isLoading) {
       statusMessageColor = Colors.grey.shade700;
     }
 
@@ -530,10 +481,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                       padding: const EdgeInsets.only(top: 4.0),
                       child: Text(
                         notifier.errorMsg!,
-                        style: TextStyle(
-                          color: Colors.red.shade700,
-                          fontSize: 12,
-                        ),
+                        style:
+                            TextStyle(color: Colors.red.shade700, fontSize: 12),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -555,30 +504,25 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                             ? null
                             : () {
                                 final now = DateTime.now();
-                                final todayNormalized = DateTime(
-                                  now.year,
-                                  now.month,
-                                  now.day,
-                                );
+                                final todayNormalized =
+                                    DateTime(now.year, now.month, now.day);
                                 bool isTodaySelected =
                                     (notifier.startDate?.year ==
-                                        todayNormalized.year &&
-                                    notifier.startDate?.month ==
-                                        todayNormalized.month &&
-                                    notifier.startDate?.day ==
-                                        todayNormalized.day &&
-                                    notifier.endDate?.year ==
-                                        todayNormalized.year &&
-                                    notifier.endDate?.month ==
-                                        todayNormalized.month &&
-                                    notifier.endDate?.day ==
-                                        todayNormalized.day);
+                                            todayNormalized.year &&
+                                        notifier.startDate?.month ==
+                                            todayNormalized.month &&
+                                        notifier.startDate?.day ==
+                                            todayNormalized.day &&
+                                        notifier.endDate?.year ==
+                                            todayNormalized.year &&
+                                        notifier.endDate?.month ==
+                                            todayNormalized.month &&
+                                        notifier.endDate?.day ==
+                                            todayNormalized.day);
 
                                 if (!isTodaySelected) {
                                   notifier.filterByDateRange(
-                                    todayNormalized,
-                                    todayNormalized,
-                                  );
+                                      todayNormalized, todayNormalized);
                                 }
                               },
                         child: const Text(_todayButtonText),
@@ -599,7 +543,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             const Divider(thickness: 0.8),
             const SizedBox(height: 10),
           ],
-
           if (notifier.activeConnection != null &&
               notifier.errorMsg != null &&
               notifier.isAuthenticated &&
@@ -619,26 +562,21 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.orange.shade700,
-                    size: 22,
-                  ),
+                  Icon(Icons.warning_amber_rounded,
+                      color: Colors.orange.shade700, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       '$_warningTitleText: ${notifier.errorMsg}',
                       style: TextStyle(
-                        color: Colors.orange.shade900,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w500,
-                      ),
+                          color: Colors.orange.shade900,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
               ),
             ),
-
           if (showDateControlsAndSummary &&
               (notifier.errorMsg == null ||
                   notifier.errorMsg == _reAuthenticatingMessageFromNotifier ||
@@ -647,32 +585,26 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 20.0,
-                  horizontal: 15.0,
-                ),
+                    vertical: 20.0, horizontal: 15.0),
                 child: Column(
                   children: [
                     Text(
                       "$_summaryCardTitleText para \"${notifier.activeConnection!.companyName}\"",
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87),
                     ),
                     const SizedBox(height: 25),
                     _buildDataRow(
                       '$_totalSalesLabelText (${summary.salesCount} $_invoicesCountSuffixText):',
                       NumberFormat.currency(
-                        locale: 'es_VE',
-                        symbol: 'Bs. ',
-                        decimalDigits: 2,
-                      ).format(summary.totalSales),
+                              locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2)
+                          .format(summary.totalSales),
                       valueColor: Colors.green.shade700,
                       fontSize: 14,
                     ),
@@ -680,26 +612,18 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     _buildDataRow(
                       '$_totalReturnsLabelText (${summary.returnsCount} $_returnsCountSuffixText):',
                       NumberFormat.currency(
-                        locale: 'es_VE',
-                        symbol: 'Bs. ',
-                        decimalDigits: 2,
-                      ).format(summary.totalReturns),
+                              locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2)
+                          .format(summary.totalReturns),
                       valueColor: Colors.red.shade600,
                       fontSize: 14,
                     ),
                     const Divider(
-                      height: 35,
-                      thickness: 0.8,
-                      indent: 10,
-                      endIndent: 10,
-                    ),
+                        height: 35, thickness: 0.8, indent: 10, endIndent: 10),
                     _buildDataRow(
                       _totalTaxesLabelText,
                       NumberFormat.currency(
-                        locale: 'es_VE',
-                        symbol: 'Bs. ',
-                        decimalDigits: 2,
-                      ).format(summary.totalTax),
+                              locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2)
+                          .format(summary.totalTax),
                       valueColor: Theme.of(context).primaryColorDark,
                       fontSize: 14,
                     ),
@@ -715,23 +639,18 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    size: 50,
-                    color: Colors.blueGrey.shade300,
-                  ),
+                  Icon(Icons.info_outline_rounded,
+                      size: 50, color: Colors.blueGrey.shade300),
                   const SizedBox(height: 16),
                   Text(
-                    statusMessage, // Ya contiene "Seleccione una empresa..."
+                    statusMessage, // "Seleccione una empresa..."
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 15, color: statusMessageColor),
                   ),
                 ],
               ),
             ),
-
           const SizedBox(height: 25),
-
           if (notifier.isLoading &&
               notifier.activeConnection != null &&
               notifier.errorMsg != _reAuthenticatingMessageFromNotifier)
@@ -739,28 +658,26 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2.5),
-                ),
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2.5)),
                 const SizedBox(width: 10),
-                Text(
-                  _updatingDataText,
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-                ),
+                Text(_updatingDataText,
+                    style:
+                        TextStyle(fontSize: 14, color: Colors.grey.shade700)),
               ],
             )
           else if (statusMessage.isNotEmpty &&
               (notifier.activeConnection != null ||
-                  notifier.errorMsg == _reAuthenticatingMessageFromNotifier))
+                  notifier.errorMsg == _reAuthenticatingMessageFromNotifier ||
+                  notifier.availableConnections.isEmpty))
             Text(
               statusMessage,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13,
-                color: statusMessageColor,
-                fontStyle: statusMessageFontStyle,
-              ),
+                  fontSize: 13,
+                  color: statusMessageColor,
+                  fontStyle: statusMessageFontStyle),
             ),
         ],
       ),
@@ -772,15 +689,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       context,
       MaterialPageRoute(builder: (context) => const ConnectionSettingsScreen()),
     ).then((valueFromSettings) {
-      // valueFromSettings podría ser la conexión recién guardada/editada
       final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
-      // Si ConnectionSettingsScreen devuelve la conexión modificada/creada, la pasamos.
-      // Si no, el notifier usará la activa actual o pedirá seleccionar.
       notifier.refreshAvailableConnections(
-        newlySelectedFromSettings: valueFromSettings is ApiConnection
-            ? valueFromSettings
-            : null,
-      );
+          newlySelectedFromSettings: valueFromSettings is ApiConnection
+              ? valueFromSettings
+              : notifier.activeConnection);
     });
   }
 
@@ -801,10 +714,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 icon: const Icon(Icons.refresh),
                 onPressed:
                     (notifier.isLoading || notifier.activeConnection == null)
-                    ? null
-                    : () {
-                        notifier.fetchInitialData();
-                      },
+                        ? null
+                        : () {
+                            notifier.fetchInitialData();
+                          },
                 tooltip: _reloadDataTooltipText,
               );
             },
@@ -819,34 +732,24 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           if (notifier.isLoading &&
               notifier.availableConnections.isEmpty &&
               notifier.activeConnection == null) {
-            // Cargando lista de conexiones por primera vez y no hay nada aún.
             bodyContent = _buildLoadingState(
-              message: "Verificando conexiones...",
-              notifier: notifier,
-            );
+                message: "Verificando conexiones...", notifier: notifier);
           } else if (notifier.availableConnections.isEmpty &&
               !notifier.isLoading) {
-            // No hay conexiones configuradas y ya se intentó cargar.
             bodyContent = _buildErrorState(notifier, context);
           } else if (notifier.activeConnection == null &&
               notifier.availableConnections.isNotEmpty &&
               !notifier.isLoading) {
-            // Hay conexiones, pero ninguna activa. _buildDataDisplay mostrará mensaje para seleccionar.
             bodyContent = SingleChildScrollView(
-              child: _buildDataDisplay(notifier, context),
-            );
+                child: _buildDataDisplay(notifier, context));
           } else if (notifier.isLoading && notifier.activeConnection != null) {
-            // Cargando datos para una conexión activa.
-            // Si no hay datos en _invoiceSummary, mostrar loader principal.
-            // Si hay datos (ej. durante un polling), _buildDataDisplay muestra un loader secundario.
             if (notifier.invoiceSummary.salesCount == 0 &&
                 notifier.invoiceSummary.returnsCount == 0 &&
                 notifier.errorMsg != _reAuthenticatingMessageFromNotifier) {
               bodyContent = _buildLoadingState(notifier: notifier);
             } else {
               bodyContent = SingleChildScrollView(
-                child: _buildDataDisplay(notifier, context),
-              );
+                  child: _buildDataDisplay(notifier, context));
             }
           } else if (notifier.activeConnection != null &&
               notifier.errorMsg != null &&
@@ -854,23 +757,28 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               notifier.errorMsg != _uiNoConnectionsAvailableMessage &&
               notifier.errorMsg !=
                   "La fecha final no puede ser anterior a la fecha de inicio.") {
-            // Error específico de API/Red/Auth para la conexión activa.
             bodyContent = _buildErrorState(notifier, context);
           } else if (notifier.activeConnection != null &&
               notifier.isAuthenticated) {
-            // Conexión activa, autenticado y sin errores mayores.
             bodyContent = SingleChildScrollView(
-              child: _buildDataDisplay(notifier, context),
-            );
+                child: _buildDataDisplay(notifier, context));
           } else {
-            // Estado de fallback, probablemente un error o esperando selección.
-            bodyContent = _buildErrorState(notifier, context);
+            if ((notifier.errorMsg == _uiNoConnectionSelectedMessage ||
+                    notifier.errorMsg == _uiNoConnectionsAvailableMessage) &&
+                notifier.availableConnections.isNotEmpty) {
+              bodyContent = SingleChildScrollView(
+                  child: _buildDataDisplay(notifier, context));
+            } else {
+              bodyContent = _buildErrorState(notifier, context);
+            }
           }
 
           return Column(
             children: [
               companySelector,
-              Expanded(child: Center(child: bodyContent)),
+              Expanded(
+                child: Center(child: bodyContent),
+              ),
             ],
           );
         },

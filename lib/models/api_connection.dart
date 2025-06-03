@@ -10,7 +10,7 @@ class ApiConnection {
   final String companyName;
   final String terminal;
 
-  ApiConnection({
+  const ApiConnection({
     this.id,
     required this.baseUrl,
     required this.username,
