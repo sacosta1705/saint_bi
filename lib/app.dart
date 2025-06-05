@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:saint_bi/providers/invoice_notifier.dart';
-import 'package:saint_bi/screens/invoice_screen.dart' as sa_invoice_screen;
+import 'package:saint_bi/screens/invoice_screen.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -15,7 +15,7 @@ class App extends StatelessWidget {
       create: (context) => InvoiceNotifier(),
       child: MaterialApp(
         title: 'Saint BI',
-        home: const sa_invoice_screen.InvoiceScreen(),
+        home: const InvoiceScreen(),
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,

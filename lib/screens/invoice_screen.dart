@@ -5,14 +5,13 @@ import 'package:provider/provider.dart';
 import 'package:saint_bi/models/api_connection.dart';
 import 'package:saint_bi/providers/invoice_notifier.dart';
 import 'package:saint_bi/screens/connection_settings_screen.dart';
+import 'package:saint_bi/config/app_colors.dart';
 
-// Constantes de texto (sin cambios respecto a tu versión)
-const String _screenTitleText = 'Resumen de Ventas Saint BI 📊';
+const String _screenTitleText = 'Saint: Resumen de operaciones';
 const String _reloadDataTooltipText = 'Recargar Datos';
 const String _settingsTooltipText = 'Configurar Conexiones';
 const String _connectingApiText = "Conectando con la API...";
-const String _errorStateTitleText =
-    "Error"; // Puedes cambiarlo a "Error Inesperado" si prefieres
+const String _errorStateTitleText = "Error";
 const String _defaultUiErrorText = "Ha ocurrido un error inesperado.";
 const String _tryConnectButtonLabel = 'Intentar Conectar / Reintentar';
 const String _summaryCardTitleText = 'Resumen de Transacciones de Venta';
@@ -34,7 +33,7 @@ const String _allDatesText = 'Todas las fechas';
 const String _noConnectionSelectedText = 'Ninguna empresa seleccionada';
 const String _selectCompanyHintText = 'Seleccionar Empresa Conectada';
 const String _noConnectionsAvailableText = 'No hay conexiones configuradas.';
-const String _goToSettingsButtonText = 'Ir a Configuración de Conexiones';
+const String _goToSettingsButtonText = 'Ir a Configuración';
 const String _uiNoConnectionSelectedMessage =
     'Seleccione o configure una conexión de empresa.';
 const String _uiNoConnectionsAvailableMessage =
@@ -62,10 +61,14 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     InvoiceNotifier notifier,
   ) async {
     if (notifier.activeConnection == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Por favor, primero seleccione una empresa.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor, primero seleccione una empresa.'),
+            backgroundColor: AppColors.statusMessageWarning,
+          ),
+        );
+      }
       return;
     }
 
@@ -73,34 +76,19 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       context: context,
       initialDateRange: (notifier.startDate != null && notifier.endDate != null)
           ? DateTimeRange(start: notifier.startDate!, end: notifier.endDate!)
-          : (notifier.startDate != null)
-              ? DateTimeRange(
-                  start: notifier.startDate!, end: notifier.startDate!)
-              : (notifier.endDate != null)
-                  ? DateTimeRange(
-                      start: notifier.endDate!, end: notifier.endDate!)
-                  : null,
+          : null,
       firstDate: DateTime(1997),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       locale: const Locale('es', 'ES'),
-      helpText: 'SELECCIONAR RANGO DE FECHAS',
+      helpText: 'SELECCIONAR RANGO',
       cancelText: 'CANCELAR',
       confirmText: 'APLICAR',
-      errorFormatText: 'Formato de fecha inválido.',
-      errorInvalidText: 'Fecha fuera de rango.',
-      errorInvalidRangeText: 'Rango de fechas inválido.',
-      fieldStartHintText: 'Fecha de inicio',
-      fieldEndHintText: 'Fecha de fin',
-      fieldStartLabelText: 'Desde',
-      fieldEndLabelText: 'Hasta',
-      // El builder ahora solo devuelve el child, sin envolverlo en un Theme widget.
-      // Heredará el tema del MaterialApp.
       builder: (context, child) {
         return child!;
       },
     );
 
-    if (pickedRange != null) {
+    if (pickedRange != null && mounted) {
       bool hasChanged =
           (notifier.startDate?.isAtSameMomentAs(pickedRange.start) != true) ||
               (notifier.endDate?.isAtSameMomentAs(pickedRange.end) != true);
@@ -113,31 +101,32 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   Widget _buildDataRow(
     String label,
     String value, {
-    Color valueColor = Colors.black87,
-    double fontSize = 14,
+    Color valueColor = AppColors.textPrimary,
+    double fontSize = 16,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            flex: 2,
+            flex: 5,
             child: Text(
               label,
-              style: TextStyle(fontSize: fontSize, color: Colors.grey.shade700),
+              style: TextStyle(
+                  fontSize: fontSize - 1, color: AppColors.textSecondary),
               textAlign: TextAlign.start,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
-            flex: 3,
+            flex: 7,
             child: Text(
               value,
               style: TextStyle(
                 fontSize: fontSize,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
                 color: valueColor,
               ),
               textAlign: TextAlign.end,
@@ -177,16 +166,16 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         displayMessage = "Verificando conexiones guardadas...";
       }
     }
-
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const CircularProgressIndicator(),
-        const SizedBox(height: 20),
+        const CircularProgressIndicator(color: AppColors.primaryOrange),
+        const SizedBox(height: 24),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Text(displayMessage,
-              style: const TextStyle(fontSize: 14),
+              style:
+                  const TextStyle(fontSize: 15, color: AppColors.textSecondary),
               textAlign: TextAlign.center),
         ),
       ],
@@ -198,7 +187,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         (notifier.errorMsg == _uiNoConnectionSelectedMessage ||
             notifier.errorMsg == _uiNoConnectionsAvailableMessage) &&
         !notifier.isLoading;
-
     bool noConnectionSelectedFromList = notifier.activeConnection == null &&
         notifier.availableConnections.isNotEmpty &&
         (notifier.errorMsg == _uiNoConnectionSelectedMessage ||
@@ -208,8 +196,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     String title = _errorStateTitleText;
     String message = notifier.errorMsg ?? _defaultUiErrorText;
     IconData iconData = Icons.error_outline_rounded;
-    Color iconColor = Colors.red.shade700; // Color por defecto para errores
+    Color iconColor = AppColors.statusMessageError;
     String buttonLabel = _tryConnectButtonLabel;
+    Color buttonBackgroundColor = AppColors.primaryOrange;
+    Color buttonTextColor = AppColors.textOnPrimaryOrange;
+
     VoidCallback onPressedAction = () {
       if (notifier.activeConnection != null) {
         notifier.fetchInitialData();
@@ -223,16 +214,17 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       message =
           "$_noConnectionsAvailableText\nPor favor, añada una en la configuración para comenzar.";
       iconData = Icons.settings_input_component_outlined;
-      iconColor = Colors.blueGrey.shade700;
+      iconColor = AppColors.statusMessageInfo;
       buttonLabel = _goToSettingsButtonText;
+      buttonBackgroundColor = AppColors.primaryBlue;
+      buttonTextColor = AppColors.textOnPrimaryBlue;
       onPressedAction = () => _navigateToSettings(context);
     } else if (noConnectionSelectedFromList) {
-      title = "Seleccione Empresa";
+      title = "Seleccione una Empresa";
       message =
           "Por favor, elija una empresa del listado para visualizar sus datos.";
-      iconData = Icons.info_outline_rounded; // Ícono más neutral
-      iconColor =
-          Theme.of(context).colorScheme.primary; // Usar color primario del tema
+      iconData = Icons.info_outline_rounded;
+      iconColor = AppColors.primaryBlue;
       return Padding(
         padding: const EdgeInsets.all(25.0),
         child: Column(
@@ -241,15 +233,16 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             Icon(iconData, color: iconColor, size: 60),
             const SizedBox(height: 20),
             Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(color: iconColor, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: iconColor,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center),
             const SizedBox(height: 12),
             Text(message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15)),
+                style: const TextStyle(
+                    fontSize: 16, color: AppColors.textSecondary)),
             const SizedBox(height: 20),
           ],
         ),
@@ -267,16 +260,14 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(color: iconColor, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: iconColor, fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 15, color: Colors.black87),
+            style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 30),
           if (!noConnectionSelectedFromList || noConnectionsConfigured)
@@ -284,17 +275,15 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               icon: Icon(noConnectionsConfigured
                   ? Icons.settings_applications_rounded
                   : Icons.refresh_rounded),
-              label: Text(buttonLabel, style: const TextStyle(fontSize: 15)),
+              label: Text(buttonLabel, style: const TextStyle(fontSize: 16)),
               onPressed: notifier.isLoading ? null : onPressedAction,
               style: ElevatedButton.styleFrom(
-                backgroundColor: noConnectionsConfigured
-                    ? Colors.blueGrey.shade700
-                    : Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
+                backgroundColor: buttonBackgroundColor,
+                foregroundColor: buttonTextColor,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                 textStyle:
-                    const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
               ),
@@ -316,11 +305,13 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
+                  color: AppColors.primaryOrange,
                 )),
             const SizedBox(width: 12),
             Text("Cargando conexiones...",
                 style: TextStyle(
-                    fontStyle: FontStyle.italic, color: Colors.grey.shade700)),
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.textSecondary)),
           ],
         ),
       );
@@ -334,34 +325,37 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       child: DropdownButtonFormField<ApiConnection>(
         decoration: InputDecoration(
           labelText: _selectCompanyHintText,
+          labelStyle: const TextStyle(color: AppColors.primaryBlue),
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8.0),
-              borderSide: BorderSide(color: Theme.of(context).primaryColor)),
+              borderSide:
+                  const BorderSide(color: AppColors.dropdownBorderColor)),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8.0),
-            borderSide: BorderSide(color: Colors.grey.shade400),
+            borderSide: BorderSide(color: AppColors.dropdownBorderColor),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8.0),
-            borderSide:
-                BorderSide(color: Theme.of(context).primaryColor, width: 2.0),
+            borderSide: const BorderSide(
+                color: AppColors.dropdownFocusedBorderColor, width: 2.0),
           ),
-          prefixIcon: Icon(Icons.business_rounded,
-              color: Theme.of(context).primaryColor),
+          prefixIcon: const Icon(Icons.business_rounded,
+              color: AppColors.dropdownIconColor),
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12.0, vertical: 15.0),
+              const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppColors.dropdownFillColor,
         ),
         isExpanded: true,
         value: notifier.activeConnection,
-        hint: Text(_selectCompanyHintText,
-            style: TextStyle(color: Colors.grey.shade600)),
+        hint: const Text(_selectCompanyHintText,
+            style: TextStyle(color: AppColors.dropdownHintColor)),
         items: notifier.availableConnections.map((ApiConnection connection) {
           return DropdownMenuItem<ApiConnection>(
             value: connection,
             child: Text(connection.companyName,
-                style: const TextStyle(fontSize: 16, color: Colors.black87),
+                style: const TextStyle(
+                    fontSize: 16, color: AppColors.dropdownTextColor),
                 overflow: TextOverflow.ellipsis),
           );
         }).toList(),
@@ -379,6 +373,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     );
   }
 
+  // CORRECCIÓN AQUÍ: ELIMINAR `const Spacer()`
   Widget _buildDataDisplay(InvoiceNotifier notifier, BuildContext context) {
     final summary = notifier.invoiceSummary;
     final pollingInterval = notifier.pollingIntervalSeconds;
@@ -413,12 +408,12 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     } else if (notifier.activeConnection == null &&
         notifier.availableConnections.isNotEmpty) {
       liveDataInfo = "Seleccione una empresa del listado para ver los datos.";
-    } else if (notifier.availableConnections.isEmpty) {
+    } else if (notifier.availableConnections.isEmpty && !notifier.isLoading) {
       liveDataInfo = _noConnectionsAvailableText;
     }
 
     String statusMessage = liveDataInfo;
-    Color statusMessageColor = Colors.green.shade700;
+    Color statusMessageColor = AppColors.statusMessageSuccess;
     FontStyle statusMessageFontStyle = FontStyle.italic;
 
     if (notifier.errorMsg != null &&
@@ -427,16 +422,16 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         notifier.errorMsg != _uiNoConnectionSelectedMessage &&
         notifier.errorMsg != _uiNoConnectionsAvailableMessage) {
       if (notifier.errorMsg == _reAuthenticatingMessageFromNotifier) {
-        statusMessageColor = Colors.orange.shade800;
+        statusMessageColor = AppColors.statusMessageWarning;
       } else if (notifier.activeConnection != null) {
         statusMessage = "Error al actualizar datos. Verifique la conexión.";
-        statusMessageColor = Colors.red.shade700;
+        statusMessageColor = AppColors.statusMessageError;
       }
     } else if (notifier.activeConnection == null &&
         notifier.availableConnections.isNotEmpty) {
-      statusMessageColor = Colors.blueGrey.shade700;
+      statusMessageColor = AppColors.statusMessageInfo;
     } else if (notifier.availableConnections.isEmpty && !notifier.isLoading) {
-      statusMessageColor = Colors.grey.shade700;
+      statusMessageColor = AppColors.textSecondary;
     }
 
     String dateFilterDisplayText;
@@ -455,46 +450,67 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     final bool showDateControlsAndSummary =
         notifier.activeConnection != null && notifier.isAuthenticated;
 
-    return Padding(
+    return Container(
+      color: AppColors.scaffoldBackground,
       padding: const EdgeInsets.all(16.0),
       child: Column(
+        // Esta es la Columna dentro del SingleChildScrollView
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (showDateControlsAndSummary) ...[
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0, top: 8.0),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+              margin: const EdgeInsets.only(bottom: 16.0, top: 8.0),
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground,
+                borderRadius: BorderRadius.circular(12.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey,
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: Column(
                 children: [
                   Text(
                     dateFilterDisplayText,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).primaryColorDark,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryBlue,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   if (notifier.errorMsg ==
                       "La fecha final no puede ser anterior a la fecha de inicio.")
                     Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
+                      padding: const EdgeInsets.only(top: 6.0),
                       child: Text(
                         notifier.errorMsg!,
-                        style:
-                            TextStyle(color: Colors.red.shade700, fontSize: 12),
+                        style: const TextStyle(
+                            color: AppColors.statusMessageError,
+                            fontSize: 12.5),
                         textAlign: TextAlign.center,
                       ),
                     ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Wrap(
                     alignment: WrapAlignment.center,
                     spacing: 8.0,
                     runSpacing: 4.0,
                     children: [
                       TextButton.icon(
-                        icon: const Icon(Icons.date_range, size: 18),
-                        label: const Text(_selectDateRangeTooltipText),
+                        icon: const Icon(Icons.date_range,
+                            size: 20, color: AppColors.primaryOrange),
+                        label: const Text(_selectDateRangeTooltipText,
+                            style: TextStyle(
+                                color: AppColors.primaryOrange,
+                                fontWeight: FontWeight.w500)),
                         onPressed: notifier.isLoading
                             ? null
                             : () => _pickDateRange(context, notifier),
@@ -519,13 +535,15 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                                             todayNormalized.month &&
                                         notifier.endDate?.day ==
                                             todayNormalized.day);
-
                                 if (!isTodaySelected) {
                                   notifier.filterByDateRange(
                                       todayNormalized, todayNormalized);
                                 }
                               },
-                        child: const Text(_todayButtonText),
+                        child: const Text(_todayButtonText,
+                            style: TextStyle(
+                                color: AppColors.primaryBlue,
+                                fontWeight: FontWeight.w500)),
                       ),
                       if (notifier.startDate != null ||
                           notifier.endDate != null)
@@ -533,15 +551,16 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                           onPressed: notifier.isLoading
                               ? null
                               : () => notifier.filterByDateRange(null, null),
-                          child: const Text(_clearFilterButtonText),
+                          child: Text(_clearFilterButtonText,
+                              style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.w500)),
                         ),
                     ],
                   ),
                 ],
               ),
             ),
-            const Divider(thickness: 0.8),
-            const SizedBox(height: 10),
           ],
           if (notifier.activeConnection != null &&
               notifier.errorMsg != null &&
@@ -554,50 +573,55 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               notifier.errorMsg != _uiNoConnectionsAvailableMessage)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              margin: const EdgeInsets.only(bottom: 18, top: 5),
+              margin: EdgeInsets.only(
+                  bottom: 18, top: showDateControlsAndSummary ? 0 : 5),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.15),
+                color: AppColors.statusMessageWarning,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade300, width: 0.8),
+                border: Border.all(
+                    color: AppColors.statusMessageWarning, width: 0.8),
               ),
               child: Row(
                 children: [
                   Icon(Icons.warning_amber_rounded,
-                      color: Colors.orange.shade700, size: 22),
+                      color: AppColors.statusMessageWarning, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       '$_warningTitleText: ${notifier.errorMsg}',
                       style: TextStyle(
-                          color: Colors.orange.shade900,
-                          fontSize: 13.5,
+                          color: AppColors.statusMessageWarning,
+                          fontSize: 14,
                           fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
               ),
             ),
+
           if (showDateControlsAndSummary &&
               (notifier.errorMsg == null ||
                   notifier.errorMsg == _reAuthenticatingMessageFromNotifier ||
                   notifier.errorMsg ==
                       "La fecha final no puede ser anterior a la fecha de inicio."))
             Card(
-              elevation: 4,
+              elevation: 3,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
+              color: AppColors.cardBackground,
+              margin: EdgeInsets.only(
+                  top: showDateControlsAndSummary ? 0 : 8, bottom: 10),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    vertical: 20.0, horizontal: 15.0),
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
                   children: [
                     Text(
                       "$_summaryCardTitleText para \"${notifier.activeConnection!.companyName}\"",
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                          fontSize: 14.5,
+                          fontSize: 17,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87),
+                          color: AppColors.primaryBlue),
                     ),
                     const SizedBox(height: 25),
                     _buildDataRow(
@@ -605,27 +629,30 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                       NumberFormat.currency(
                               locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2)
                           .format(summary.totalSales),
-                      valueColor: Colors.green.shade700,
-                      fontSize: 14,
+                      valueColor: AppColors.positiveValue,
+                      fontSize: 16.5,
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 8),
                     _buildDataRow(
                       '$_totalReturnsLabelText (${summary.returnsCount} $_returnsCountSuffixText):',
                       NumberFormat.currency(
                               locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2)
                           .format(summary.totalReturns),
-                      valueColor: Colors.red.shade600,
-                      fontSize: 14,
+                      valueColor: AppColors.negativeValue,
+                      fontSize: 16.5,
                     ),
-                    const Divider(
-                        height: 35, thickness: 0.8, indent: 10, endIndent: 10),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 15.0),
+                      child:
+                          Divider(thickness: 1, color: AppColors.dividerColor),
+                    ),
                     _buildDataRow(
                       _totalTaxesLabelText,
                       NumberFormat.currency(
                               locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2)
                           .format(summary.totalTax),
-                      valueColor: Theme.of(context).primaryColorDark,
-                      fontSize: 14,
+                      valueColor: AppColors.neutralValue,
+                      fontSize: 16.5,
                     ),
                   ],
                 ),
@@ -635,49 +662,67 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
               notifier.availableConnections.isNotEmpty &&
               !notifier.isLoading)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 50.0),
+              padding: const EdgeInsets.symmetric(vertical: 60.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.info_outline_rounded,
-                      size: 50, color: Colors.blueGrey.shade300),
+                      size: 50, color: AppColors.statusMessageInfo),
                   const SizedBox(height: 16),
                   Text(
-                    statusMessage, // "Seleccione una empresa..."
+                    statusMessage,
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 15, color: statusMessageColor),
+                    style: TextStyle(
+                        fontSize: 16,
+                        color: statusMessageColor,
+                        fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
             ),
-          const SizedBox(height: 25),
+
+          // ELIMINADO: const Spacer(), <-- ESTA ERA LA CAUSA DEL ERROR DE RENDERFLEX
+
+          // El mensaje de estado ahora estará al final del contenido desplazable
+          // o se puede mover fuera del SingleChildScrollView si se quiere fijo en la pantalla.
+          // Por ahora, lo dejamos al final del contenido del Column.
+          const SizedBox(height: 20), // Espacio antes del mensaje de estado
           if (notifier.isLoading &&
               notifier.activeConnection != null &&
               notifier.errorMsg != _reAuthenticatingMessageFromNotifier)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2.5)),
-                const SizedBox(width: 10),
-                Text(_updatingDataText,
-                    style:
-                        TextStyle(fontSize: 14, color: Colors.grey.shade700)),
-              ],
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: AppColors.primaryOrange,
+                      )),
+                  const SizedBox(width: 12),
+                  Text(_updatingDataText,
+                      style: TextStyle(
+                          fontSize: 14, color: AppColors.textSecondary)),
+                ],
+              ),
             )
           else if (statusMessage.isNotEmpty &&
               (notifier.activeConnection != null ||
                   notifier.errorMsg == _reAuthenticatingMessageFromNotifier ||
                   notifier.availableConnections.isEmpty))
-            Text(
-              statusMessage,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 13,
-                  color: statusMessageColor,
-                  fontStyle: statusMessageFontStyle),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
+              child: Text(
+                statusMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 13.5,
+                    color: statusMessageColor,
+                    fontStyle: statusMessageFontStyle),
+              ),
             ),
         ],
       ),
@@ -700,18 +745,24 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text(_screenTitleText),
+        title: const Text(_screenTitleText,
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.appBarBackground,
+        foregroundColor: AppColors.appBarForeground,
+        elevation: 2,
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_applications_outlined),
             onPressed: () => _navigateToSettings(context),
             tooltip: _settingsTooltipText,
+            color: AppColors.appBarForeground,
           ),
           Consumer<InvoiceNotifier>(
             builder: (context, notifier, child) {
               return IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh_rounded),
                 onPressed:
                     (notifier.isLoading || notifier.activeConnection == null)
                         ? null
@@ -719,6 +770,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                             notifier.fetchInitialData();
                           },
                 tooltip: _reloadDataTooltipText,
+                color: AppColors.appBarForeground,
               );
             },
           ),
@@ -740,16 +792,17 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           } else if (notifier.activeConnection == null &&
               notifier.availableConnections.isNotEmpty &&
               !notifier.isLoading) {
-            bodyContent = SingleChildScrollView(
-                child: _buildDataDisplay(notifier, context));
+            // Cuando hay conexiones pero ninguna seleccionada, _buildDataDisplay mostrará el mensaje apropiado.
+            bodyContent = _buildDataDisplay(notifier,
+                context); // No necesita SingleChildScrollView aquí, _buildDataDisplay ya es una Columna
           } else if (notifier.isLoading && notifier.activeConnection != null) {
             if (notifier.invoiceSummary.salesCount == 0 &&
                 notifier.invoiceSummary.returnsCount == 0 &&
                 notifier.errorMsg != _reAuthenticatingMessageFromNotifier) {
               bodyContent = _buildLoadingState(notifier: notifier);
             } else {
-              bodyContent = SingleChildScrollView(
-                  child: _buildDataDisplay(notifier, context));
+              // Si hay datos o re-autenticando, _buildDataDisplay se encarga.
+              bodyContent = _buildDataDisplay(notifier, context);
             }
           } else if (notifier.activeConnection != null &&
               notifier.errorMsg != null &&
@@ -760,24 +813,43 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             bodyContent = _buildErrorState(notifier, context);
           } else if (notifier.activeConnection != null &&
               notifier.isAuthenticated) {
-            bodyContent = SingleChildScrollView(
-                child: _buildDataDisplay(notifier, context));
+            bodyContent = _buildDataDisplay(notifier, context);
           } else {
             if ((notifier.errorMsg == _uiNoConnectionSelectedMessage ||
                     notifier.errorMsg == _uiNoConnectionsAvailableMessage) &&
                 notifier.availableConnections.isNotEmpty) {
-              bodyContent = SingleChildScrollView(
-                  child: _buildDataDisplay(notifier, context));
+              bodyContent = _buildDataDisplay(notifier, context);
             } else {
               bodyContent = _buildErrorState(notifier, context);
             }
           }
 
           return Column(
+            // Columna principal de la pantalla
             children: [
               companySelector,
               Expanded(
-                child: Center(child: bodyContent),
+                // Envolver el bodyContent en SingleChildScrollView SI NO ES un estado de error/carga que ya esté centrado
+                child: (bodyContent
+                            is SingleChildScrollView || // Si _buildDataDisplay ya es SingleChildScrollView (lo es en mi última versión)
+                        (bodyContent is Column &&
+                                (bodyContent.children.any((w) => w is Card) ||
+                                    bodyContent.children.any((w) =>
+                                        w is Padding &&
+                                        (w.child is Column &&
+                                            (w.child as Column).children.any(
+                                                (w2) => w2
+                                                    is Card))))) && // O si es la columna de _buildDataDisplay con contenido
+                            !((bodyContent.mainAxisAlignment ==
+                                MainAxisAlignment
+                                    .center)) // Y no es un estado de error/carga centrado
+                    )
+                    ? SingleChildScrollView(
+                        child: Center(
+                            child:
+                                bodyContent)) // Envolver el contenido scrolleable
+                    : Center(
+                        child: bodyContent), // Centrar estados de error/carga
               ),
             ],
           );
