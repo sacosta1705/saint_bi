@@ -8,12 +8,12 @@ import 'package:saint_bi/services/database_service.dart';
 import 'package:saint_bi/services/saint_api.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
 import 'package:saint_bi/providers/invoice_notifier.dart';
-// import 'package:saint_bi/utils/debug_file_logger.dart'; // ELIMINADO
 import 'package:saint_bi/config/app_colors.dart';
 
 class ConnectionSettingsScreen extends StatefulWidget {
-  final ApiConnection? connectionToEdit;
-  const ConnectionSettingsScreen({super.key, this.connectionToEdit});
+  // El constructor ya no necesita recibir la conexión a editar,
+  // la pantalla manejará su propio estado de edición internamente.
+  const ConnectionSettingsScreen({super.key});
 
   @override
   State<ConnectionSettingsScreen> createState() =>
@@ -29,7 +29,8 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   final _terminalController = TextEditingController();
   final _companyNameController = TextEditingController();
 
-  bool _isEditing = false;
+  ApiConnection? _connectionBeingEdited;
+
   bool _isLoading = false;
   List<ApiConnection> _savedConnections = [];
 
@@ -39,20 +40,8 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // DebugFileLogger.log("[ConnectionSettingsScreen.initState] Iniciando pantalla."); // ELIMINADO
-    debugPrint(
-        "[ConnectionSettingsScreen.initState] Iniciando pantalla."); // Opcional: mantener debugPrint
-    if (widget.connectionToEdit != null) {
-      _isEditing = true;
-      _populateFormForEditing(widget.connectionToEdit!);
-      debugPrint(
-          "[ConnectionSettingsScreen.initState] Editando conexión ID: ${widget.connectionToEdit!.id}, Empresa: ${widget.connectionToEdit!.companyName}");
-    } else {
-      _terminalController.text = 'saint_bi_flutter_app';
-      _pollingIntervalController.text = '300';
-      debugPrint(
-          "[ConnectionSettingsScreen.initState] Creando nueva conexión.");
-    }
+    debugPrint("[ConnectionSettingsScreen.initState] Iniciando pantalla.");
+    _clearForm();
     _loadSavedConnections();
   }
 
@@ -66,23 +55,13 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   }
 
   Future<void> _loadSavedConnections() async {
-    final String operation = "[ConnectionSettingsScreen._loadSavedConnections]";
-    debugPrint(
-        "$operation Iniciando carga de conexiones guardadas."); // Opcional
-    if (!mounted) {
-      debugPrint("$operation Abortado: Widget no montado."); // Opcional
-      return;
-    }
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       _savedConnections = await _dbService.getAllConnections();
       _savedConnections.sort((a, b) =>
           a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()));
-      debugPrint(
-          "$operation ${_savedConnections.length} conexiones cargadas."); // Opcional
     } catch (e) {
-      debugPrint(
-          "$operation Error cargando conexiones: ${e.toString()}"); // Opcional
       _setErrorMessage('Error al cargar conexiones: ${e.toString()}');
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -92,27 +71,19 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   void _setErrorMessage(String? message) {
     if (mounted) {
       if (message != null) {
-        debugPrint(
-            "[ConnectionSettingsScreen._setErrorMessage] Mostrando error en UI: $message"); // Opcional
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message,
+                style: const TextStyle(color: AppColors.textOnPrimaryOrange)),
+            backgroundColor: AppColors.primaryOrange,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
-      setState(() {
-        if (message != null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(message,
-                  style: const TextStyle(color: AppColors.textOnPrimaryOrange)),
-              backgroundColor: AppColors.primaryOrange,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-      });
     }
   }
 
   void _clearForm() {
-    debugPrint(
-        "[ConnectionSettingsScreen._clearForm] Limpiando formulario."); // Opcional
     _formKey.currentState?.reset();
     _baseUrlController.clear();
     _usernameController.clear();
@@ -122,19 +93,14 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     _companyNameController.clear();
     if (mounted) {
       setState(() {
-        _isEditing = false;
+        _connectionBeingEdited =
+            null; // CORRECCIÓN: Limpiar la conexión en edición
       });
     }
   }
 
   Future<void> _testAndSaveConnection() async {
-    final String operation =
-        "[ConnectionSettingsScreen._testAndSaveConnection]";
-    debugPrint(
-        "$operation Iniciando proceso de prueba y guardado."); // Opcional
-
     if (!_formKey.currentState!.validate()) {
-      debugPrint("$operation Formulario no válido."); // Opcional
       return;
     }
     _setErrorMessage(null);
@@ -147,19 +113,13 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         int.tryParse(_pollingIntervalController.text.trim());
     final terminal = _terminalController.text.trim();
 
-    debugPrint(
-        "$operation Datos del formulario: baseUrl=$baseUrl, username=$username, pollingInterval=$pollingInterval, terminal=$terminal, isEditing=$_isEditing"); // Opcional (no loguear password)
-
     if (pollingInterval == null || pollingInterval <= 0) {
       _setErrorMessage('El intervalo debe ser un número positivo.');
-      debugPrint(
-          "$operation Error: Intervalo no válido ($pollingInterval)."); // Opcional
       if (mounted) setState(() => _isLoading = false);
       return;
     }
 
     try {
-      debugPrint("$operation Llamando a _saintApi.login..."); // Opcional
       final LoginResponse? loginResponse = await _saintApi.login(
           baseurl: baseUrl,
           username: username,
@@ -169,22 +129,18 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
       if (loginResponse == null ||
           loginResponse.authToken == null ||
           loginResponse.authToken!.isEmpty) {
-        debugPrint(
-            "$operation Login fallido o respuesta inválida de API."); // Opcional
         throw AuthenticationException(
-            'Fallo el inicio de sesión. No se recibieron datos de empresa o token válidos de la API.');
+            'Fallo el inicio de sesión o no se recibieron datos de empresa o token válidos de la API.');
       }
 
       final String companyNameFromApi = loginResponse.company;
-      debugPrint(
-          "$operation Login exitoso. Empresa API: \"$companyNameFromApi\", Token: \"${loginResponse.authToken}\""); // Opcional
-
       if (mounted) {
         _companyNameController.text = companyNameFromApi;
       }
 
       final connection = ApiConnection(
-        id: _isEditing ? widget.connectionToEdit!.id : null,
+        // CORRECCIÓN: Usar el ID de la conexión guardada en el estado del widget
+        id: _connectionBeingEdited?.id,
         baseUrl: baseUrl,
         username: username,
         password: password,
@@ -192,19 +148,17 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         companyName: companyNameFromApi,
         terminal: terminal,
       );
-      // debugPrintMap("$operation Objeto ApiConnection a guardar/actualizar:", connection.toMap()..['password'] = '[OCULTO]'); // Opcional
 
       final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
       ApiConnection? connectionForNavigationResult;
 
-      if (_isEditing) {
+      // CORRECCIÓN: Usar `_connectionBeingEdited != null` para determinar si es edición
+      if (_connectionBeingEdited != null) {
         debugPrint(
-            "$operation Modo edición: Intentando actualizar conexión ID ${connection.id}."); // Opcional
+            "[ConnectionSettingsScreen] Modo edición: Actualizando ID ${connection.id}.");
         final existingByName =
             await _dbService.getConnectionByCompanyName(companyNameFromApi);
         if (existingByName != null && existingByName.id != connection.id) {
-          debugPrint(
-              "$operation Error: Ya existe otra conexión con el nombre de empresa \"$companyNameFromApi\" (ID: ${existingByName.id})."); // Opcional
           throw Exception(
               'Ya existe otra conexión guardada para la empresa "$companyNameFromApi".');
         }
@@ -220,12 +174,10 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         }
       } else {
         debugPrint(
-            "$operation Modo creación: Intentando insertar nueva conexión."); // Opcional
+            "[ConnectionSettingsScreen] Modo creación: Insertando nueva conexión.");
         final existingByName =
             await _dbService.getConnectionByCompanyName(companyNameFromApi);
         if (existingByName != null) {
-          debugPrint(
-              "$operation Error: Ya existe conexión para \"$companyNameFromApi\" (ID: ${existingByName.id})."); // Opcional
           throw Exception(
               'Ya existe una conexión guardada para la empresa "$companyNameFromApi".');
         }
@@ -242,36 +194,25 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         }
       }
       _clearForm();
-      _loadSavedConnections();
+      await _loadSavedConnections(); // Usar await para asegurar que la lista se recargue
 
       if (mounted) {
         Navigator.of(context).pop(connectionForNavigationResult);
       }
     } on AuthenticationException catch (e) {
-      debugPrint("$operation AuthenticationException: ${e.msg}"); // Opcional
       _setErrorMessage('Error de Autenticación: ${e.msg}');
     } on NetworkException catch (e) {
-      debugPrint("$operation NetworkException: ${e.msg}"); // Opcional
       _setErrorMessage('Error de Red: ${e.msg}');
     } on UnknownApiExpection catch (e) {
-      debugPrint("$operation UnknownApiException: ${e.msg}"); // Opcional
       _setErrorMessage('Error de API: ${e.msg}');
-    } catch (e, s) {
-      debugPrint(
-          "$operation Excepción General: ${e.toString()}\nStack: $s"); // Opcional
+    } catch (e) {
       _setErrorMessage('Error: ${e.toString()}');
     } finally {
-      debugPrint(
-          "$operation Proceso de prueba y guardado finalizado."); // Opcional
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _deleteConnection(int id, String companyName) async {
-    final String operation = "[ConnectionSettingsScreen._deleteConnection]";
-    debugPrint(
-        "$operation Solicitando confirmación para eliminar ID $id ($companyName)."); // Opcional
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -300,11 +241,11 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     );
 
     if (confirmed == true) {
-      debugPrint("$operation Confirmado. Eliminando ID $id."); // Opcional
       if (mounted) setState(() => _isLoading = true);
       try {
         await _dbService.deleteConnection(id);
-        if (_isEditing && widget.connectionToEdit?.id == id) {
+        // CORRECCIÓN: Limpiar el formulario si se eliminó la conexión que se estaba editando
+        if (_connectionBeingEdited?.id == id) {
           _clearForm();
         }
         if (mounted) {
@@ -318,22 +259,18 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         }
         _loadSavedConnections();
       } catch (e) {
-        debugPrint("$operation Error al eliminar: ${e.toString()}"); // Opcional
         _setErrorMessage('Error al eliminar: ${e.toString()}');
       } finally {
         if (mounted) setState(() => _isLoading = false);
       }
-    } else {
-      debugPrint("$operation Eliminación cancelada para ID $id."); // Opcional
     }
   }
 
   void _editConnection(ApiConnection connection) {
-    debugPrint(
-        "[ConnectionSettingsScreen._editConnection] Cargando datos para editar conexión ID ${connection.id}."); // Opcional
     if (mounted) {
       setState(() {
-        _isEditing = true;
+        _connectionBeingEdited =
+            connection; // CORRECCIÓN: Guardar la conexión en el estado
         _populateFormForEditing(connection);
       });
     }
@@ -341,8 +278,6 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
 
   @override
   void dispose() {
-    debugPrint(
-        "[ConnectionSettingsScreen.dispose] Pantalla eliminada."); // Opcional
     _baseUrlController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
@@ -377,21 +312,22 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     );
   }
 
-  // El método build() se mantiene igual que en la versión anterior con colores,
-  // ya que el logging estaba principalmente en los métodos de lógica.
-  // Lo incluyo completo para evitar confusiones.
   @override
   Widget build(BuildContext context) {
+    // CORRECCIÓN: La variable que determina si se edita ahora es `_connectionBeingEdited`
+    final bool isCurrentlyEditing = _connectionBeingEdited != null;
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: Text(_isEditing ? 'Editar Conexión' : 'Nueva Conexión API',
+        title: Text(
+            isCurrentlyEditing ? 'Editar Conexión' : 'Nueva Conexión API',
             style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: AppColors.appBarBackground,
         foregroundColor: AppColors.appBarForeground,
         elevation: 1,
         actions: [
-          if (_isEditing)
+          if (isCurrentlyEditing)
             IconButton(
               icon: const Icon(Icons.add_circle_outline_rounded),
               tooltip: 'Crear Nueva Conexión',
@@ -425,8 +361,8 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        _isEditing
-                            ? 'Editando: "${widget.connectionToEdit?.companyName}"'
+                        isCurrentlyEditing
+                            ? 'Editando: "${_connectionBeingEdited?.companyName}"'
                             : "Detalles de la Nueva Conexión",
                         style: TextStyle(
                             fontSize: 18,
@@ -535,14 +471,14 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                                   color: Colors.white,
                                 ))
                             : Icon(
-                                _isEditing
+                                isCurrentlyEditing
                                     ? Icons.save_alt_rounded
                                     : Icons.add_link_rounded,
                                 size: 20),
                         label: Text(
                             _isLoading
                                 ? "Probando..."
-                                : (_isEditing
+                                : (isCurrentlyEditing
                                     ? 'Actualizar Conexión'
                                     : 'Probar y Guardar'),
                             style: const TextStyle(
@@ -551,10 +487,10 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 52),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: _isEditing
+                          backgroundColor: isCurrentlyEditing
                               ? AppColors.primaryOrange
                               : AppColors.buttonPrimaryBackground,
-                          foregroundColor: _isEditing
+                          foregroundColor: isCurrentlyEditing
                               ? AppColors.textOnPrimaryOrange
                               : AppColors.buttonPrimaryText,
                           shape: RoundedRectangleBorder(
@@ -562,7 +498,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                           elevation: 2,
                         ),
                       ),
-                      if (_isEditing) ...[
+                      if (isCurrentlyEditing) ...[
                         const SizedBox(height: 12),
                         OutlinedButton.icon(
                           icon: const Icon(Icons.add_circle_outline_rounded,
@@ -592,7 +528,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                     style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary)),
+                        color: AppColors.textPrimary.withOpacity(0.8))),
               ),
               if (_isLoading && _savedConnections.isEmpty)
                 const Center(
@@ -616,8 +552,8 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                   itemCount: _savedConnections.length,
                   itemBuilder: (context, index) {
                     final connection = _savedConnections[index];
-                    final bool isCurrentlyEditingThis = _isEditing &&
-                        widget.connectionToEdit?.id == connection.id;
+                    final bool isThisOneBeingEdited =
+                        _connectionBeingEdited?.id == connection.id;
                     final bool isActiveInNotifier =
                         Provider.of<InvoiceNotifier>(context, listen: false)
                                 .activeConnection
@@ -625,24 +561,24 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                             connection.id;
 
                     return Card(
-                      elevation: isCurrentlyEditingThis
+                      elevation: isThisOneBeingEdited
                           ? 5
                           : (isActiveInNotifier ? 3 : 1.5),
-                      color: isCurrentlyEditingThis
-                          ? AppColors.primaryOrange
+                      color: isThisOneBeingEdited
+                          ? AppColors.primaryOrange.withOpacity(0.1)
                           : (isActiveInNotifier
-                              ? AppColors.cardBackground
-                              : AppColors.accentColor),
+                              ? AppColors.primaryBlue.withOpacity(0.08)
+                              : AppColors.cardBackground),
                       margin: const EdgeInsets.symmetric(vertical: 7),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                           side: BorderSide(
-                            color: isCurrentlyEditingThis
+                            color: isThisOneBeingEdited
                                 ? AppColors.primaryOrange
                                 : (isActiveInNotifier
                                     ? AppColors.primaryBlue
-                                    : AppColors.dividerColor),
-                            width: isCurrentlyEditingThis || isActiveInNotifier
+                                    : AppColors.dividerColor.withOpacity(0.7)),
+                            width: isThisOneBeingEdited || isActiveInNotifier
                                 ? 1.5
                                 : 1,
                           )),
@@ -655,7 +591,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                               : Icons.link_rounded,
                           color: isActiveInNotifier
                               ? AppColors.primaryOrange
-                              : AppColors.primaryBlue,
+                              : AppColors.primaryBlue.withOpacity(0.7),
                           size: 32,
                         ),
                         title: Text(connection.companyName,
@@ -675,12 +611,14 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                                 'Usuario: ${connection.username} | Terminal: ${connection.terminal}',
                                 style: TextStyle(
                                     fontSize: 12.5,
-                                    color: AppColors.textSecondary)),
+                                    color: AppColors.textSecondary
+                                        .withOpacity(0.9))),
                             Text(
                                 'Intervalo: ${connection.pollingIntervalSeconds} seg.',
                                 style: TextStyle(
                                     fontSize: 12.5,
-                                    color: AppColors.textSecondary)),
+                                    color: AppColors.textSecondary
+                                        .withOpacity(0.9))),
                           ],
                         ),
                         trailing: Row(
@@ -690,7 +628,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                               icon:
                                   const Icon(Icons.edit_note_rounded, size: 28),
                               tooltip: 'Editar esta conexión',
-                              color: AppColors.primaryBlue,
+                              color: AppColors.primaryBlue.withOpacity(0.8),
                               onPressed: _isLoading
                                   ? null
                                   : () => _editConnection(connection),
@@ -699,7 +637,8 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                               icon: const Icon(Icons.delete_forever_rounded,
                                   size: 28),
                               tooltip: 'Eliminar esta conexión',
-                              color: AppColors.statusMessageError,
+                              color:
+                                  AppColors.statusMessageError.withOpacity(0.8),
                               onPressed: _isLoading
                                   ? null
                                   : () => _deleteConnection(

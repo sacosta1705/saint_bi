@@ -222,7 +222,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     } else if (noConnectionSelectedFromList) {
       title = "Seleccione una Empresa";
       message =
-          "Por favor, elija una empresa del listado para visualizar sus datos.";
+          "Por favor, elija una empresa de la lista para visualizar sus datos.";
       iconData = Icons.info_outline_rounded;
       iconColor = AppColors.primaryBlue;
       return Padding(
