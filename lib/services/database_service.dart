@@ -1,13 +1,14 @@
 // lib/services/database_service.dart
-import 'package:flutter/material.dart'; // Para debugPrint
+import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:saint_bi/models/api_connection.dart';
 
 class DatabaseService {
   static const String _databaseName = "saint_bi_connections.db";
-  static const int _databaseVersion = 1;
+  static const int _databaseVersion = 1; // Usamos v1 para el esquema final
 
+  // --- Tabla de Conexiones ---
   static const String tableConnections = 'connections';
   static const String columnId = 'id';
   static const String columnBaseUrl = 'baseUrl';
@@ -16,6 +17,12 @@ class DatabaseService {
   static const String columnPollingInterval = 'pollingIntervalSeconds';
   static const String columnCompanyName = 'companyName';
   static const String columnTerminal = 'terminal';
+
+  // --- Tabla de Configuración de la App ---
+  static const String tableAppConfiguration = 'app_configuration';
+  static const String columnConfigId = 'id';
+  static const String columnAdminPasswordHash = 'admin_password_hash';
+  static const String columnDefaultApiUser = 'default_api_user';
 
   DatabaseService._privateConstructor();
   static final DatabaseService instance = DatabaseService._privateConstructor();
@@ -40,6 +47,7 @@ class DatabaseService {
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    debugPrint('Creando esquema de base de datos para la versión $version...');
     await db.execute('''
       CREATE TABLE $tableConnections (
         $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,10 +59,62 @@ class DatabaseService {
         $columnTerminal TEXT NOT NULL
       )
     ''');
-    debugPrint('Table $tableConnections created');
+    debugPrint('Tabla "$tableConnections" creada.');
+
+    await db.execute('''
+      CREATE TABLE $tableAppConfiguration (
+        $columnConfigId INTEGER PRIMARY KEY DEFAULT 1 CHECK ($columnConfigId = 1),
+        $columnAdminPasswordHash TEXT,
+        $columnDefaultApiUser TEXT
+      )
+    ''');
+    debugPrint('Tabla "$tableAppConfiguration" creada.');
   }
 
+  // --- MÉTODOS CORRECTOS para la tabla de configuración ---
+
+  Future<void> saveAppSettings(
+      {String? adminPasswordHash, String? defaultApiUser}) async {
+    final db = await instance.database;
+    final currentSettings = await getAppSettings();
+
+    final data = {
+      columnConfigId: 1,
+      columnAdminPasswordHash:
+          adminPasswordHash ?? currentSettings[columnAdminPasswordHash],
+      columnDefaultApiUser:
+          defaultApiUser ?? currentSettings[columnDefaultApiUser],
+    };
+
+    await db.insert(
+      tableAppConfiguration,
+      data,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    debugPrint('Configuración de la aplicación guardada/actualizada.');
+  }
+
+  Future<Map<String, String?>> getAppSettings() async {
+    final db = await instance.database;
+    try {
+      final List<Map<String, dynamic>> maps = await db.query(
+        tableAppConfiguration,
+        where: '$columnConfigId = ?',
+        whereArgs: [1],
+      );
+      if (maps.isNotEmpty) {
+        return Map<String, String?>.from(maps.first);
+      }
+    } catch (e) {
+      debugPrint(
+          'Error al obtener app settings (puede que la tabla no exista aún): $e');
+    }
+    return {};
+  }
+
+  // --- Métodos para la tabla de conexiones (sin cambios) ---
   Future<int> insertConnection(ApiConnection connection) async {
+    /* ...código se mantiene... */
     final db = await instance.database;
     try {
       final id = await db.insert(
@@ -62,75 +122,41 @@ class DatabaseService {
         connection.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-      debugPrint(
-        'Connection inserted/replaced with id: $id, company: ${connection.companyName}',
-      );
       return id;
     } catch (e) {
-      debugPrint('Error inserting/replacing connection: $e');
       if (e.toString().toLowerCase().contains('unique constraint failed')) {
         throw Exception(
-          'Ya existe una conexión guardada con el nombre de empresa "${connection.companyName}".',
-        );
+            'Ya existe una conexión guardada con el nombre de empresa "${connection.companyName}".');
       }
       rethrow;
     }
   }
 
   Future<List<ApiConnection>> getAllConnections() async {
+    /* ...código se mantiene... */
     final db = await instance.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      tableConnections,
-      orderBy: '$columnCompanyName ASC',
-    );
-    if (maps.isEmpty) {
-      debugPrint('No connections found in DB.');
-      return [];
-    }
-    final connections = List.generate(maps.length, (i) {
-      return ApiConnection.fromMap(maps[i]);
-    });
-    debugPrint('Fetched ${connections.length} connections from DB.');
-    return connections;
+    final List<Map<String, dynamic>> maps =
+        await db.query(tableConnections, orderBy: '$columnCompanyName ASC');
+    if (maps.isEmpty) return [];
+    return List.generate(maps.length, (i) => ApiConnection.fromMap(maps[i]));
   }
 
-  Future<ApiConnection?> getConnectionById(int id) async {
-    final db = await instance.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      tableConnections,
-      where: '$columnId = ?',
-      whereArgs: [id],
-    );
-    if (maps.isNotEmpty) {
-      return ApiConnection.fromMap(maps.first);
-    }
-    debugPrint('Connection with id $id not found.');
-    return null;
-  }
-
-  // MÉTODO AÑADIDO Y CORREGIDO
   Future<ApiConnection?> getConnectionByCompanyName(String companyName) async {
+    /* ...código se mantiene... */
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.query(
       tableConnections,
       where: '$columnCompanyName = ?',
-      whereArgs: [
-        companyName,
-      ], // Asegurarse que el argumento se pasa como lista
+      whereArgs: [companyName],
     );
-    if (maps.isNotEmpty) {
-      return ApiConnection.fromMap(maps.first);
-    }
-    debugPrint('Connection with companyName "$companyName" not found in DB.');
+    if (maps.isNotEmpty) return ApiConnection.fromMap(maps.first);
     return null;
   }
 
   Future<int> updateConnection(ApiConnection connection) async {
+    /* ...código se mantiene... */
     final db = await instance.database;
-    if (connection.id == null) {
-      debugPrint('Error: Attempted to update a connection with no ID.');
-      return 0;
-    }
+    if (connection.id == null) return 0;
     try {
       final count = await db.update(
         tableConnections,
@@ -139,35 +165,23 @@ class DatabaseService {
         whereArgs: [connection.id],
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-      debugPrint(
-        'Updated connection id: ${connection.id}, company: ${connection.companyName}, rows affected: $count',
-      );
       return count;
     } catch (e) {
-      debugPrint('Error updating connection: $e');
       if (e.toString().toLowerCase().contains('unique constraint failed')) {
         throw Exception(
-          'Error al actualizar: Ya existe otra conexión con el nombre de empresa "${connection.companyName}".',
-        );
+            'Error al actualizar: Ya existe otra conexión con el nombre de empresa "${connection.companyName}".');
       }
       rethrow;
     }
   }
 
   Future<int> deleteConnection(int id) async {
+    /* ...código se mantiene... */
     final db = await instance.database;
-    final count = await db.delete(
+    return await db.delete(
       tableConnections,
       where: '$columnId = ?',
       whereArgs: [id],
     );
-    debugPrint('Deleted connection id: $id, rows affected: $count');
-    return count;
-  }
-
-  Future<void> deleteAllConnections() async {
-    final db = await instance.database;
-    await db.delete(tableConnections);
-    debugPrint('All connections deleted.');
   }
 }

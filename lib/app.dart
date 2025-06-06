@@ -2,9 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-
 import 'package:saint_bi/providers/invoice_notifier.dart';
-import 'package:saint_bi/screens/invoice_screen.dart';
+import 'package:saint_bi/screens/loading_acreen.dart';
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -15,22 +14,17 @@ class App extends StatelessWidget {
       create: (context) => InvoiceNotifier(),
       child: MaterialApp(
         title: 'Saint BI',
-        home: const InvoiceScreen(),
+        home: const LoadingScreen(),
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [
-          Locale(
-            'es',
-            'VE',
-          ), // Español Venezuela (o el que prefieras, ej: 'ES' para España)
-          Locale('en', 'US'), // Inglés USA
+          Locale('es', 'VE'),
+          Locale('en', 'US'),
         ],
-        // locale: const Locale('es', 'VE'), // Opcional: establecer un locale por defecto
         debugShowCheckedModeBanner: false,
-        // ThemeData ha sido eliminado de aquí para usar el default de Flutter.
       ),
     );
   }
