@@ -1,3 +1,5 @@
+// lib/screens/connection_settings_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -107,7 +109,12 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
 
     setState(() => _isLoading = true);
 
-    final baseUrl = _baseUrlController.text.trim();
+    // Normalizamos la URL para asegurar que esté limpia antes de usarla.
+    final baseUrlRaw = _baseUrlController.text.trim();
+    final baseUrl = baseUrlRaw.endsWith('/')
+        ? baseUrlRaw.substring(0, baseUrlRaw.length - 1)
+        : baseUrlRaw;
+
     final password = _passwordController.text;
     final pollingInterval =
         int.tryParse(_pollingIntervalController.text.trim());
@@ -122,8 +129,9 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
           terminal: terminal);
       if (loginResponse == null ||
           loginResponse.authToken == null ||
-          loginResponse.authToken!.isEmpty)
+          loginResponse.authToken!.isEmpty) {
         throw AuthenticationException('Fallo el inicio de sesión.');
+      }
 
       final String companyNameFromApi = loginResponse.company;
       if (mounted) _companyNameController.text = companyNameFromApi;
@@ -144,37 +152,42 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
       if (_connectionBeingEdited != null) {
         final existingByName =
             await _dbService.getConnectionByCompanyName(companyNameFromApi);
-        if (existingByName != null && existingByName.id != connection.id)
+        if (existingByName != null && existingByName.id != connection.id) {
           throw Exception(
               'Ya existe otra conexión para la empresa "$companyNameFromApi".');
+        }
         await _dbService.updateConnection(connection);
         notifier.updateConnectionInList(connection);
         connectionForNavigationResult = connection;
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text(
                   'Conexión para "${connection.companyName}" actualizada.'),
               backgroundColor: AppColors.statusMessageSuccess));
+        }
       } else {
         final existingByName =
             await _dbService.getConnectionByCompanyName(companyNameFromApi);
-        if (existingByName != null)
+        if (existingByName != null) {
           throw Exception(
               'Ya existe una conexión para la empresa "$companyNameFromApi".');
+        }
         final newId = await _dbService.insertConnection(connection);
         final newSavedConnection = connection.copyWith(id: newId);
         notifier.addConnectionToList(newSavedConnection);
         connectionForNavigationResult = newSavedConnection;
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content:
                   Text('Conexión para "${connection.companyName}" guardada.'),
               backgroundColor: AppColors.statusMessageSuccess));
+        }
       }
       _clearForm();
       await _loadSavedConnections();
-      if (mounted && connectionForNavigationResult != null)
+      if (mounted) {
         Navigator.of(context).pop(connectionForNavigationResult);
+      }
     } catch (e) {
       _setErrorMessage('Error: ${e.toString()}');
     } finally {
@@ -225,11 +238,12 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   }
 
   void _editConnection(ApiConnection connection) {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _connectionBeingEdited = connection;
         _populateFormForEditing(connection);
       });
+    }
   }
 
   @override
@@ -247,14 +261,13 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         labelText: label,
         hintText: hint,
         labelStyle: const TextStyle(color: AppColors.primaryBlue),
-        hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.7)),
+        hintStyle: TextStyle(color: AppColors.textSecondary),
         border: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(8.0)),
             borderSide: BorderSide(color: AppColors.inputBorderColor)),
         enabledBorder: OutlineInputBorder(
             borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-            borderSide:
-                BorderSide(color: AppColors.inputBorderColor.withOpacity(0.7))),
+            borderSide: BorderSide(color: AppColors.inputBorderColor)),
         focusedBorder: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(8.0)),
             borderSide: BorderSide(
@@ -299,7 +312,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       borderRadius: BorderRadius.circular(12.0),
                       boxShadow: [
                         BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
+                            color: Colors.grey,
                             spreadRadius: 1,
                             blurRadius: 3,
                             offset: const Offset(0, 1))
@@ -343,13 +356,28 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                             Icons.http_rounded),
                         keyboardType: TextInputType.url,
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty)
+                          if (value == null || value.trim().isEmpty) {
                             return 'Ingresa la URL base';
-                          final uri = Uri.tryParse(value.trim());
+                          }
+
+                          final trimmedValue = value.trim();
+                          final normalizedValue = trimmedValue.endsWith('/')
+                              ? trimmedValue.substring(
+                                  0, trimmedValue.length - 1)
+                              : trimmedValue;
+
+                          final uri = Uri.tryParse(normalizedValue);
+
                           if (uri == null ||
                               !uri.isAbsolute ||
-                              (uri.scheme != 'http' && uri.scheme != 'https'))
-                            return 'Ingresa una URL válida (ej: http://...)';
+                              uri.host.isEmpty) {
+                            return 'Ingresa una URL válida (ej: http://1.2.3.4:8080)';
+                          }
+
+                          if (uri.scheme != 'http' && uri.scheme != 'https') {
+                            return 'La URL debe comenzar con http:// o https://';
+                          }
+
                           return null;
                         },
                       ),
@@ -373,11 +401,13 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                           FilteringTextInputFormatter.digitsOnly
                         ],
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty)
+                          if (value == null || value.trim().isEmpty) {
                             return 'Ingresa el intervalo';
+                          }
                           final interval = int.tryParse(value.trim());
-                          if (interval == null || interval <= 0)
+                          if (interval == null || interval <= 0) {
                             return 'Debe ser > 0';
+                          }
                           return null;
                         },
                       ),
@@ -458,7 +488,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                     style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary.withOpacity(0.8))),
+                        color: AppColors.textPrimary)),
               ),
               if (_isLoading && _savedConnections.isEmpty)
                 const Center(
@@ -492,9 +522,9 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                           ? 5
                           : (isActiveInNotifier ? 3 : 1.5),
                       color: isThisOneBeingEdited
-                          ? AppColors.primaryOrange.withOpacity(0.1)
+                          ? AppColors.primaryOrange
                           : (isActiveInNotifier
-                              ? AppColors.primaryBlue.withOpacity(0.08)
+                              ? AppColors.primaryBlue
                               : AppColors.cardBackground),
                       margin: const EdgeInsets.symmetric(vertical: 7),
                       shape: RoundedRectangleBorder(
@@ -504,7 +534,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                                 ? AppColors.primaryOrange
                                 : (isActiveInNotifier
                                     ? AppColors.primaryBlue
-                                    : AppColors.dividerColor.withOpacity(0.7)),
+                                    : AppColors.dividerColor),
                             width: isThisOneBeingEdited || isActiveInNotifier
                                 ? 1.5
                                 : 1,
@@ -518,7 +548,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                                 : Icons.link_rounded,
                             color: isActiveInNotifier
                                 ? AppColors.primaryOrange
-                                : AppColors.primaryBlue.withOpacity(0.7),
+                                : AppColors.primaryBlue,
                             size: 32),
                         title: Text(connection.companyName,
                             style: TextStyle(
@@ -537,14 +567,12 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                                 'Usuario: ${connection.username} | Terminal: ${connection.terminal}',
                                 style: TextStyle(
                                     fontSize: 12.5,
-                                    color: AppColors.textSecondary
-                                        .withOpacity(0.9))),
+                                    color: AppColors.textSecondary)),
                             Text(
                                 'Intervalo: ${connection.pollingIntervalSeconds} seg.',
                                 style: TextStyle(
                                     fontSize: 12.5,
-                                    color: AppColors.textSecondary
-                                        .withOpacity(0.9))),
+                                    color: AppColors.textSecondary)),
                           ],
                         ),
                         trailing: Row(
@@ -554,7 +582,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                                 icon: const Icon(Icons.edit_note_rounded,
                                     size: 28),
                                 tooltip: 'Editar esta conexión',
-                                color: AppColors.primaryBlue.withOpacity(0.8),
+                                color: AppColors.primaryBlue,
                                 onPressed: _isLoading
                                     ? null
                                     : () => _editConnection(connection)),
@@ -562,8 +590,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                                 icon: const Icon(Icons.delete_forever_rounded,
                                     size: 28),
                                 tooltip: 'Eliminar esta conexión',
-                                color: AppColors.statusMessageError
-                                    .withOpacity(0.8),
+                                color: AppColors.statusMessageError,
                                 onPressed: _isLoading
                                     ? null
                                     : () => _deleteConnection(connection.id!,

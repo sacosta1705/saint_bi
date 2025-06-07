@@ -94,7 +94,7 @@ class DatabaseService {
     debugPrint('Configuración de la aplicación guardada/actualizada.');
   }
 
-  Future<Map<String, String?>> getAppSettings() async {
+  Future<Map<String, dynamic>> getAppSettings() async {
     final db = await instance.database;
     try {
       final List<Map<String, dynamic>> maps = await db.query(
@@ -103,7 +103,7 @@ class DatabaseService {
         whereArgs: [1],
       );
       if (maps.isNotEmpty) {
-        return Map<String, String?>.from(maps.first);
+        return maps.first;
       }
     } catch (e) {
       debugPrint(
