@@ -109,7 +109,6 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
 
     setState(() => _isLoading = true);
 
-    // Normalizamos la URL para asegurar que esté limpia antes de usarla.
     final baseUrlRaw = _baseUrlController.text.trim();
     final baseUrl = baseUrlRaw.endsWith('/')
         ? baseUrlRaw.substring(0, baseUrlRaw.length - 1)
@@ -510,34 +509,27 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                   itemCount: _savedConnections.length,
                   itemBuilder: (context, index) {
                     final connection = _savedConnections[index];
-                    final bool isThisOneBeingEdited =
-                        _connectionBeingEdited?.id == connection.id;
                     final bool isActiveInNotifier =
                         Provider.of<InvoiceNotifier>(context, listen: false)
                                 .activeConnection
                                 ?.id ==
                             connection.id;
+
                     return Card(
-                      elevation: isThisOneBeingEdited
-                          ? 5
-                          : (isActiveInNotifier ? 3 : 1.5),
-                      color: isThisOneBeingEdited
-                          ? AppColors.primaryOrange
-                          : (isActiveInNotifier
-                              ? AppColors.primaryBlue
-                              : AppColors.cardBackground),
+                      // --- INICIO DE LA CORRECCIÓN ---
+                      // Se elimina el color de fondo dinámico y se usa siempre el blanco.
+                      // La elevación también es más simple.
+                      elevation: isActiveInNotifier ? 4 : 2,
+                      color: AppColors.cardBackground,
                       margin: const EdgeInsets.symmetric(vertical: 7),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                           side: BorderSide(
-                            color: isThisOneBeingEdited
-                                ? AppColors.primaryOrange
-                                : (isActiveInNotifier
-                                    ? AppColors.primaryBlue
-                                    : AppColors.dividerColor),
-                            width: isThisOneBeingEdited || isActiveInNotifier
-                                ? 1.5
-                                : 1,
+                            // Se mantiene un borde sutil para indicar la conexión activa.
+                            color: isActiveInNotifier
+                                ? AppColors.primaryBlue
+                                : AppColors.dividerColor,
+                            width: isActiveInNotifier ? 1.5 : 1,
                           )),
                       child: ListTile(
                         contentPadding: const EdgeInsets.symmetric(
@@ -551,30 +543,35 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                                 : AppColors.primaryBlue,
                             size: 32),
                         title: Text(connection.companyName,
-                            style: TextStyle(
+                            style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16.5,
-                                color: AppColors.textPrimary)),
+                                color:
+                                    AppColors.textPrimary)), // Color estático
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 4),
                             Text(connection.baseUrl,
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 13,
-                                    color: AppColors.textSecondary)),
+                                    color: AppColors
+                                        .textSecondary)), // Color estático
                             Text(
                                 'Usuario: ${connection.username} | Terminal: ${connection.terminal}',
                                 style: TextStyle(
                                     fontSize: 12.5,
-                                    color: AppColors.textSecondary)),
+                                    color: AppColors
+                                        .textSecondary)), // Color estático
                             Text(
                                 'Intervalo: ${connection.pollingIntervalSeconds} seg.',
                                 style: TextStyle(
                                     fontSize: 12.5,
-                                    color: AppColors.textSecondary)),
+                                    color: AppColors
+                                        .textSecondary)), // Color estático
                           ],
                         ),
+                        // --- FIN DE LA CORRECCIÓN ---
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
