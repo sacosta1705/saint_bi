@@ -1,9 +1,23 @@
 // lib/screens/initial_setup_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // IMPORTANTE: Añadir para usar formatters
 import 'package:saint_bi/config/app_colors.dart';
-import 'package:saint_bi/screens/invoice_screen.dart';
+import 'package:saint_bi/screens/connection_settings_screen.dart';
+import 'package:saint_bi/screens/login_screen.dart'; // Se navega a LoginScreen, no a ConnectionSettingsScreen
 import 'package:saint_bi/services/database_service.dart';
 import 'package:saint_bi/utils/security_service.dart';
+
+// --- NUEVO: Formatter para convertir texto a mayúsculas en tiempo real ---
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    return TextEditingValue(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
+    );
+  }
+}
 
 class InitialSetupScreen extends StatefulWidget {
   const InitialSetupScreen({super.key});
@@ -27,11 +41,11 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final apiUser = _apiUserControlller.text.trim();
+      // --- CORRECCIÓN: Asegurarse de guardar en mayúsculas ---
+      final apiUser = _apiUserControlller.text.trim().toUpperCase();
       final adminPass = _adminPassController.text;
       final adminPassHash = SecurityService.hashPassword(adminPass);
 
-      // CORRECCIÓN: Usar el nuevo método para guardar la configuración
       await DatabaseService.instance.saveAppSettings(
         defaultApiUser: apiUser,
         adminPasswordHash: adminPassHash,
@@ -46,8 +60,9 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
         ),
       );
 
+      // Navegamos a la pantalla de Login, que es el siguiente paso lógico
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const InvoiceScreen()),
+        MaterialPageRoute(builder: (_) => const ConnectionSettingsScreen()),
         (route) => false,
       );
     } catch (e) {
@@ -109,6 +124,11 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _apiUserControlller,
+                      // --- CORRECCIÓN: Aplicar el formatter y la capitalización ---
+                      textCapitalization: TextCapitalization.characters,
+                      inputFormatters: [
+                        UpperCaseTextFormatter(),
+                      ],
                       decoration: const InputDecoration(
                         labelText: 'Usuario por Defecto para la API',
                         border: OutlineInputBorder(),

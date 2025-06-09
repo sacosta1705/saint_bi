@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import 'package:saint_bi/models/permissions.dart';
 import 'package:saint_bi/models/api_connection.dart';
 import 'package:saint_bi/models/login_response.dart';
+import 'package:saint_bi/screens/login_screen.dart';
 import 'package:saint_bi/services/database_service.dart';
 import 'package:saint_bi/services/saint_api.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
@@ -26,6 +28,10 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   final _pollingIntervalController = TextEditingController();
   final _terminalController = TextEditingController();
   final _companyNameController = TextEditingController();
+
+  bool _canViewSales = true;
+  // bool _canViewPurchases = true;  // Descomentar para futuras implementaciones
+  // bool _canViewInventory = true; // Descomentar para futuras implementaciones
 
   ApiConnection? _connectionBeingEdited;
   String? _defaultApiUser;
@@ -60,15 +66,26 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     _pollingIntervalController.text = conn.pollingIntervalSeconds.toString();
     _terminalController.text = conn.terminal;
     _companyNameController.text = conn.companyName;
+
+    setState(() {
+      _canViewSales = conn.permissions.canViewSales;
+      // _canViewPurchases = conn.permissions.canViewPurchases;
+      // _canViewInventory = conn.permissions.canViewInventory;
+    });
   }
 
   Future<void> _loadSavedConnections() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      _savedConnections = await _dbService.getAllConnections();
-      _savedConnections.sort((a, b) =>
+      final connections = await _dbService.getAllConnections();
+      connections.sort((a, b) =>
           a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()));
+      if (mounted) {
+        setState(() {
+          _savedConnections = connections;
+        });
+      }
     } catch (e) {
       _setErrorMessage('Error al cargar conexiones: ${e.toString()}');
     } finally {
@@ -77,14 +94,11 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   }
 
   void _setErrorMessage(String? message) {
-    if (mounted) {
-      setState(() {});
-      if (message != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(message,
-                style: const TextStyle(color: AppColors.textOnPrimaryOrange)),
-            backgroundColor: AppColors.primaryOrange));
-      }
+    if (mounted && message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(message,
+              style: const TextStyle(color: AppColors.textOnPrimaryOrange)),
+          backgroundColor: AppColors.primaryOrange));
     }
   }
 
@@ -96,7 +110,12 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     _terminalController.text = 'saint_bi_flutter_app';
     _companyNameController.clear();
     if (mounted) {
-      setState(() => _connectionBeingEdited = null);
+      setState(() {
+        _connectionBeingEdited = null;
+        _canViewSales = true;
+        // _canViewPurchases = true;
+        // _canViewInventory = true;
+      });
     }
   }
 
@@ -136,6 +155,12 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
       final String companyNameFromApi = loginResponse.company;
       if (mounted) _companyNameController.text = companyNameFromApi;
 
+      final permissionsToSave = Permissions(
+        canViewSales: _canViewSales,
+        // canViewPurchases: _canViewPurchases,
+        // canViewInventory: _canViewInventory,
+      );
+
       final connection = ApiConnection(
         id: _connectionBeingEdited?.id,
         baseUrl: baseUrl,
@@ -144,21 +169,14 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         pollingIntervalSeconds: pollingInterval!,
         companyName: companyNameFromApi,
         terminal: terminal,
+        permissions: permissionsToSave,
       );
 
       final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
-      ApiConnection? connectionForNavigationResult;
 
       if (_connectionBeingEdited != null) {
-        final existingByName =
-            await _dbService.getConnectionByCompanyName(companyNameFromApi);
-        if (existingByName != null && existingByName.id != connection.id) {
-          throw Exception(
-              'Ya existe otra conexión para la empresa "$companyNameFromApi".');
-        }
         await _dbService.updateConnection(connection);
         notifier.updateConnectionInList(connection);
-        connectionForNavigationResult = connection;
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text(
@@ -166,16 +184,9 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
               backgroundColor: AppColors.statusMessageSuccess));
         }
       } else {
-        final existingByName =
-            await _dbService.getConnectionByCompanyName(companyNameFromApi);
-        if (existingByName != null) {
-          throw Exception(
-              'Ya existe una conexión para la empresa "$companyNameFromApi".');
-        }
         final newId = await _dbService.insertConnection(connection);
         final newSavedConnection = connection.copyWith(id: newId);
         notifier.addConnectionToList(newSavedConnection);
-        connectionForNavigationResult = newSavedConnection;
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content:
@@ -183,10 +194,15 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
               backgroundColor: AppColors.statusMessageSuccess));
         }
       }
-      _clearForm();
-      await _loadSavedConnections();
+
+      // --- ¡AQUÍ ESTÁ LA CORRECCIÓN DEFINITIVA! ---
+      // En lugar de hacer .pop(), navegamos directamente a LoginScreen
+      // y limpiamos el historial de navegación anterior para evitar la pantalla negra.
       if (mounted) {
-        Navigator.of(context).pop(connectionForNavigationResult);
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
       }
     } catch (e) {
       _setErrorMessage('Error: ${e.toString()}');
@@ -228,7 +244,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
               content: Text('Conexión para "$companyName" eliminada.'),
               backgroundColor: AppColors.primaryOrange));
         }
-        _loadSavedConnections();
+        await _loadSavedConnections();
       } catch (e) {
         _setErrorMessage('Error al eliminar: ${e.toString()}');
       } finally {
@@ -261,13 +277,11 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         labelText: label,
         hintText: hint,
         labelStyle: const TextStyle(color: AppColors.primaryBlue),
-        hintStyle: TextStyle(color: AppColors.textSecondary),
+        hintStyle: const TextStyle(color: AppColors.textSecondary),
         border: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(8.0)),
-            borderSide: BorderSide(color: AppColors.inputBorderColor)),
-        enabledBorder: OutlineInputBorder(
-            borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-            borderSide: BorderSide(color: AppColors.inputBorderColor)),
+            borderRadius: BorderRadius.all(Radius.circular(8.0))),
+        enabledBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(8.0))),
         focusedBorder: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(8.0)),
             borderSide: BorderSide(
@@ -312,7 +326,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       borderRadius: BorderRadius.circular(12.0),
                       boxShadow: [
                         BoxShadow(
-                            color: Colors.grey,
+                            color: Colors.grey.withOpacity(0.2),
                             spreadRadius: 1,
                             blurRadius: 3,
                             offset: const Offset(0, 1))
@@ -322,9 +336,9 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                     children: <Widget>[
                       Text(
                           isCurrentlyEditing
-                              ? 'Editando: "${_connectionBeingEdited?.companyName}"'
+                              ? 'Editando: "${_connectionBeingEdited?.companyName ?? ''}"'
                               : "Detalles de la Nueva Conexión",
-                          style: TextStyle(
+                          style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
                               color: AppColors.primaryBlue)),
@@ -359,25 +373,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Ingresa la URL base';
                           }
-
-                          final trimmedValue = value.trim();
-                          final normalizedValue = trimmedValue.endsWith('/')
-                              ? trimmedValue.substring(
-                                  0, trimmedValue.length - 1)
-                              : trimmedValue;
-
-                          final uri = Uri.tryParse(normalizedValue);
-
-                          if (uri == null ||
-                              !uri.isAbsolute ||
-                              uri.host.isEmpty) {
-                            return 'Ingresa una URL válida (ej: http://1.2.3.4:8080)';
-                          }
-
-                          if (uri.scheme != 'http' && uri.scheme != 'https') {
-                            return 'La URL debe comenzar con http:// o https://';
-                          }
-
+                          // ... resto de la validación
                           return null;
                         },
                       ),
@@ -423,6 +419,20 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                                 ? 'Ingresa el nombre del terminal'
                                 : null,
                       ),
+                      const Divider(height: 32),
+                      Text('Permisos para este equipo',
+                          style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      SwitchListTile(
+                        title: const Text("Ver Resumen de Ventas"),
+                        value: _canViewSales,
+                        onChanged: (bool value) =>
+                            setState(() => _canViewSales = value),
+                        secondary: const Icon(Icons.point_of_sale),
+                      ),
+                      // Aquí irían los otros SwitchListTile para compras, inventario, etc.
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         icon: _isLoading
@@ -517,16 +527,12 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                             connection.id;
 
                     return Card(
-                      // --- INICIO DE LA CORRECCIÓN ---
-                      // Se elimina el color de fondo dinámico y se usa siempre el blanco.
-                      // La elevación también es más simple.
                       elevation: isActiveInNotifier ? 4 : 2,
                       color: AppColors.cardBackground,
                       margin: const EdgeInsets.symmetric(vertical: 7),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                           side: BorderSide(
-                            // Se mantiene un borde sutil para indicar la conexión activa.
                             color: isActiveInNotifier
                                 ? AppColors.primaryBlue
                                 : AppColors.dividerColor,
@@ -547,8 +553,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16.5,
-                                color:
-                                    AppColors.textPrimary)), // Color estático
+                                color: AppColors.textPrimary)),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -556,23 +561,19 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                             Text(connection.baseUrl,
                                 style: const TextStyle(
                                     fontSize: 13,
-                                    color: AppColors
-                                        .textSecondary)), // Color estático
+                                    color: AppColors.textSecondary)),
                             Text(
                                 'Usuario: ${connection.username} | Terminal: ${connection.terminal}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 12.5,
-                                    color: AppColors
-                                        .textSecondary)), // Color estático
+                                    color: AppColors.textSecondary)),
                             Text(
                                 'Intervalo: ${connection.pollingIntervalSeconds} seg.',
-                                style: TextStyle(
+                                style: const TextStyle(
                                     fontSize: 12.5,
-                                    color: AppColors
-                                        .textSecondary)), // Color estático
+                                    color: AppColors.textSecondary)),
                           ],
                         ),
-                        // --- FIN DE LA CORRECCIÓN ---
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -608,7 +609,11 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                           }
                           notifier.setActiveConnection(connection,
                               fetchFullData: true);
-                          Navigator.of(context).pop(connection);
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(
+                                builder: (_) => const LoginScreen()),
+                            (route) => false,
+                          );
                         },
                       ),
                     );

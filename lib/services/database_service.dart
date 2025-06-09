@@ -1,12 +1,13 @@
 // lib/services/database_service.dart
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
+import 'package:saint_bi/models/permissions.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:saint_bi/models/api_connection.dart';
 
 class DatabaseService {
   static const String _databaseName = "saint_bi_connections.db";
-  static const int _databaseVersion = 1; // Usamos v1 para el esquema final
+  static const int _databaseVersion = 2;
 
   // --- Tabla de Conexiones ---
   static const String tableConnections = 'connections';
@@ -23,6 +24,7 @@ class DatabaseService {
   static const String columnConfigId = 'id';
   static const String columnAdminPasswordHash = 'admin_password_hash';
   static const String columnDefaultApiUser = 'default_api_user';
+  static const String columnPermissions = 'permissions';
 
   DatabaseService._privateConstructor();
   static final DatabaseService instance = DatabaseService._privateConstructor();
@@ -43,6 +45,7 @@ class DatabaseService {
       path,
       version: _databaseVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -56,10 +59,10 @@ class DatabaseService {
         $columnPassword TEXT NOT NULL,
         $columnPollingInterval INTEGER NOT NULL,
         $columnCompanyName TEXT NOT NULL UNIQUE,
-        $columnTerminal TEXT NOT NULL
+        $columnTerminal TEXT NOT NULL,
+        $columnPermissions TEXT NOT NULL
       )
     ''');
-    debugPrint('Tabla "$tableConnections" creada.');
 
     await db.execute('''
       CREATE TABLE $tableAppConfiguration (
@@ -68,9 +71,20 @@ class DatabaseService {
         $columnDefaultApiUser TEXT
       )
     ''');
-    debugPrint('Tabla "$tableAppConfiguration" creada.');
   }
 
+  Future<void> _onUpgrade(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      final defaultPermissions = Permissions().toJson();
+      await db.execute('''
+        ALTER TABLE $tableConnections ADD COLUMN $columnPermissions TEXT NOT NULL DEFAULT '$defaultPermissions'
+      ''');
+    }
+  }
   // --- MÉTODOS CORRECTOS para la tabla de configuración ---
 
   Future<void> saveAppSettings(

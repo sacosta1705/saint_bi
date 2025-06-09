@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:saint_bi/models/permissions.dart';
 
 @immutable
 class ApiConnection {
@@ -9,6 +10,7 @@ class ApiConnection {
   final int pollingIntervalSeconds;
   final String companyName;
   final String terminal;
+  final Permissions permissions;
 
   const ApiConnection({
     this.id,
@@ -18,6 +20,7 @@ class ApiConnection {
     required this.pollingIntervalSeconds,
     required this.companyName,
     this.terminal = 'saint_bi',
+    required this.permissions,
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +32,7 @@ class ApiConnection {
       'pollingIntervalSeconds': pollingIntervalSeconds,
       'companyName': companyName,
       'terminal': terminal,
+      'permissions': permissions.toJson(),
     };
   }
 
@@ -41,6 +45,9 @@ class ApiConnection {
       pollingIntervalSeconds: map['pollingIntervalSeconds'] as int,
       companyName: map['companyName'] as String,
       terminal: map['terminal'] as String? ?? 'saint_bi',
+      permissions: map['permissions'] != null
+          ? Permissions.fromJson(map['permissions'])
+          : Permissions(),
     );
   }
 
@@ -52,17 +59,18 @@ class ApiConnection {
     int? pollingIntervalSeconds,
     String? companyName,
     String? terminal,
+    Permissions? permissions,
   }) {
     return ApiConnection(
-      id: id ?? this.id,
-      baseUrl: baseUrl ?? this.baseUrl,
-      username: username ?? this.username,
-      password: password ?? this.password,
-      pollingIntervalSeconds:
-          pollingIntervalSeconds ?? this.pollingIntervalSeconds,
-      companyName: companyName ?? this.companyName,
-      terminal: terminal ?? this.terminal,
-    );
+        id: id ?? this.id,
+        baseUrl: baseUrl ?? this.baseUrl,
+        username: username ?? this.username,
+        password: password ?? this.password,
+        pollingIntervalSeconds:
+            pollingIntervalSeconds ?? this.pollingIntervalSeconds,
+        companyName: companyName ?? this.companyName,
+        terminal: terminal ?? this.terminal,
+        permissions: permissions ?? this.permissions);
   }
 
   @override

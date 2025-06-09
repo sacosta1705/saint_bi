@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:saint_bi/models/api_connection.dart';
+// IMPORTANTE: Añadir este import
 import 'package:saint_bi/providers/invoice_notifier.dart';
 import 'package:saint_bi/screens/connection_settings_screen.dart';
 import 'package:saint_bi/config/app_colors.dart';
@@ -13,6 +14,7 @@ import 'package:saint_bi/utils/security_service.dart';
 const String _screenTitleText = 'Saint: Resumen de operaciones';
 const String _reloadDataTooltipText = 'Recargar Datos';
 const String _settingsTooltipText = 'Configurar Conexiones';
+const String _logoutTooltipText = 'Cerrar Sesión';
 const String _connectingApiText = "Conectando con la API...";
 const String _errorStateTitleText = "Error";
 const String _defaultUiErrorText = "Ha ocurrido un error inesperado.";
@@ -47,24 +49,20 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   }
 
   Future<void> _logout(BuildContext context) async {
-    // Primero, llamamos al notifier para que limpie su estado interno.
     final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
     await notifier.logout();
 
-    // Luego, navegamos a la pantalla de login y eliminamos todas las rutas anteriores del stack.
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false, // Esta condición elimina todas las rutas anteriores.
+        (route) => false,
       );
     }
   }
 
   Future<void> _navigateToSettings(BuildContext context) async {
-    // 1. Mostrar el diálogo y esperar por un resultado booleano (true si la contraseña es correcta)
     final bool? isAuthenticated = await _showAdminPasswordDialog(context);
 
-    // 2. Si el usuario se autenticó correctamente, navegar a la pantalla de configuración.
     if (isAuthenticated == true && mounted) {
       final result = await Navigator.push(
         context,
@@ -74,15 +72,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
 
       final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
 
-      // --- LÓGICA CORREGIDA ---
-      // Primero, verificamos si obtuvimos un resultado válido desde la pantalla de configuración.
       if (result != null && result is ApiConnection) {
-        // SI HAY RESULTADO: El usuario seleccionó, editó o creó una conexión.
-        // La acción correcta es establecer esa conexión como la activa.
         await notifier.setActiveConnection(result, fetchFullData: true);
       } else {
-        // SI NO HAY RESULTADO: El usuario simplemente presionó "atrás".
-        // Mantenemos la lógica de refrescar los datos de la conexión activa.
         if (notifier.activeConnection != null) {
           await notifier.fetchInitialData();
         }
@@ -283,13 +275,9 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     VoidCallback onPressedAction = () {
       if (notifier.activeConnection != null) {
         notifier.fetchInitialData();
-      } else {
-        // En teoría, este caso no debería ocurrir aquí, pero como fallback
-        // se podría navegar al login o mostrar un error más genérico.
       }
     };
 
-    // Si el error indica que no hay conexiones, el botón debe llevar a configuración.
     if (notifier.errorMsg == _uiNoConnectionsAvailableMessage) {
       title = "Sin Conexiones";
       message =
@@ -337,162 +325,133 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     );
   }
 
-  Widget _buildDataDisplay(InvoiceNotifier notifier, BuildContext context) {
+  // Este widget ahora solo construye la tarjeta de Ventas.
+  Widget _buildSalesCard(InvoiceNotifier notifier, BuildContext context) {
     final summary = notifier.invoiceSummary;
     final dateFormat = DateFormat('dd/MM/yyyy', 'es_ES');
 
-    // Asumimos que activeConnection no es nulo aquí porque esta UI solo se muestra si está autenticado.
-    final bool showDateControlsAndSummary = notifier.isAuthenticated;
-
-    return Container(
-      color: AppColors.scaffoldBackground,
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          if (showDateControlsAndSummary)
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
-              margin: const EdgeInsets.only(bottom: 16.0, top: 8.0),
-              decoration: BoxDecoration(
-                  color: AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(12.0),
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.grey,
-                        spreadRadius: 1,
-                        blurRadius: 5,
-                        offset: const Offset(0, 2))
-                  ]),
-              child: Column(
+    return Column(
+      children: [
+        // Controles de fecha
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+          margin: const EdgeInsets.only(
+              bottom: 16.0, top: 8.0, left: 8.0, right: 8.0),
+          decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(12.0),
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    spreadRadius: 1,
+                    blurRadius: 5,
+                    offset: const Offset(0, 2))
+              ]),
+          child: Column(
+            children: [
+              Text(
+                  (notifier.startDate == null && notifier.endDate == null)
+                      ? _allDatesText
+                      : 'Rango: ${dateFormat.format(notifier.startDate!)} - ${dateFormat.format(notifier.endDate!)}',
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primaryBlue),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 10),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8.0,
+                runSpacing: 4.0,
                 children: [
-                  Text(
-                      (notifier.startDate == null && notifier.endDate == null)
-                          ? _allDatesText
-                          : 'Rango: ${dateFormat.format(notifier.startDate!)} - ${dateFormat.format(notifier.endDate!)}',
-                      style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primaryBlue),
-                      textAlign: TextAlign.center),
-                  if (notifier.errorMsg ==
-                      "La fecha final no puede ser anterior a la fecha de inicio.")
-                    Padding(
-                        padding: const EdgeInsets.only(top: 6.0),
-                        child: Text(notifier.errorMsg!,
-                            style: const TextStyle(
-                                color: AppColors.statusMessageError,
-                                fontSize: 12.5),
-                            textAlign: TextAlign.center)),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 8.0,
-                    runSpacing: 4.0,
-                    children: [
-                      TextButton.icon(
-                          icon: const Icon(Icons.date_range,
-                              size: 20, color: AppColors.primaryOrange),
-                          label: const Text(_selectDateRangeTooltipText,
-                              style: TextStyle(
-                                  color: AppColors.primaryOrange,
-                                  fontWeight: FontWeight.w500)),
-                          onPressed: notifier.isLoading
-                              ? null
-                              : () => _pickDateRange(context, notifier)),
-                      TextButton(
-                          onPressed: notifier.isLoading
-                              ? null
-                              : () {
-                                  final now = DateTime.now();
-                                  final todayNormalized =
-                                      DateTime(now.year, now.month, now.day);
-                                  if (!(notifier.startDate?.isAtSameMomentAs(
-                                              todayNormalized) ==
-                                          true &&
-                                      notifier.endDate?.isAtSameMomentAs(
-                                              todayNormalized) ==
-                                          true)) {
-                                    notifier.filterByDateRange(
-                                        todayNormalized, todayNormalized);
-                                  }
-                                },
-                          child: const Text(_todayButtonText,
-                              style: TextStyle(
-                                  color: AppColors.primaryBlue,
-                                  fontWeight: FontWeight.w500))),
-                      if (notifier.startDate != null ||
-                          notifier.endDate != null)
-                        TextButton(
-                            onPressed: notifier.isLoading
-                                ? null
-                                : () => notifier.filterByDateRange(null, null),
-                            child: Text(_clearFilterButtonText,
-                                style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontWeight: FontWeight.w500))),
-                    ],
-                  ),
+                  TextButton.icon(
+                      icon: const Icon(Icons.date_range,
+                          size: 20, color: AppColors.primaryOrange),
+                      label: const Text(_selectDateRangeTooltipText,
+                          style: TextStyle(
+                              color: AppColors.primaryOrange,
+                              fontWeight: FontWeight.w500)),
+                      onPressed: notifier.isLoading
+                          ? null
+                          : () => _pickDateRange(context, notifier)),
+                  TextButton(
+                      onPressed: notifier.isLoading
+                          ? null
+                          : () {
+                              final now = DateTime.now();
+                              final todayNormalized =
+                                  DateTime(now.year, now.month, now.day);
+                              notifier.filterByDateRange(
+                                  todayNormalized, todayNormalized);
+                            },
+                      child: const Text(_todayButtonText,
+                          style: TextStyle(
+                              color: AppColors.primaryBlue,
+                              fontWeight: FontWeight.w500))),
+                  if (notifier.startDate != null || notifier.endDate != null)
+                    TextButton(
+                        onPressed: notifier.isLoading
+                            ? null
+                            : () => notifier.filterByDateRange(null, null),
+                        child: const Text(_clearFilterButtonText,
+                            style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500))),
                 ],
               ),
+            ],
+          ),
+        ),
+        // Tarjeta de datos de ventas
+        Card(
+          elevation: 3,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          color: AppColors.cardBackground,
+          margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              children: [
+                Text(
+                    "$_summaryCardTitleText para \"${notifier.activeConnection!.companyName}\"",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryBlue)),
+                const SizedBox(height: 25),
+                _buildDataRow(
+                    '$_totalSalesLabelText (${summary.salesCount} $_invoicesCountSuffixText):',
+                    NumberFormat.currency(
+                            locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2)
+                        .format(summary.totalSales),
+                    valueColor: AppColors.positiveValue,
+                    fontSize: 16.5),
+                const SizedBox(height: 8),
+                _buildDataRow(
+                    '$_totalReturnsLabelText (${summary.returnsCount} $_returnsCountSuffixText):',
+                    NumberFormat.currency(
+                            locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2)
+                        .format(summary.totalReturns),
+                    valueColor: AppColors.negativeValue,
+                    fontSize: 16.5),
+                const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 15.0),
+                    child:
+                        Divider(thickness: 1, color: AppColors.dividerColor)),
+                _buildDataRow(
+                    _totalTaxesLabelText,
+                    NumberFormat.currency(
+                            locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2)
+                        .format(summary.totalTax),
+                    valueColor: AppColors.neutralValue,
+                    fontSize: 16.5),
+              ],
             ),
-          if (showDateControlsAndSummary)
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              color: AppColors.cardBackground,
-              margin: const EdgeInsets.only(bottom: 10),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  children: [
-                    Text(
-                        "$_summaryCardTitleText para \"${notifier.activeConnection!.companyName}\"",
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryBlue)),
-                    const SizedBox(height: 25),
-                    _buildDataRow(
-                        '$_totalSalesLabelText (${summary.salesCount} $_invoicesCountSuffixText):',
-                        NumberFormat.currency(
-                                locale: 'es_VE',
-                                symbol: 'Bs. ',
-                                decimalDigits: 2)
-                            .format(summary.totalSales),
-                        valueColor: AppColors.positiveValue,
-                        fontSize: 16.5),
-                    const SizedBox(height: 8),
-                    _buildDataRow(
-                        '$_totalReturnsLabelText (${summary.returnsCount} $_returnsCountSuffixText):',
-                        NumberFormat.currency(
-                                locale: 'es_VE',
-                                symbol: 'Bs. ',
-                                decimalDigits: 2)
-                            .format(summary.totalReturns),
-                        valueColor: AppColors.negativeValue,
-                        fontSize: 16.5),
-                    const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 15.0),
-                        child: Divider(
-                            thickness: 1, color: AppColors.dividerColor)),
-                    _buildDataRow(
-                        _totalTaxesLabelText,
-                        NumberFormat.currency(
-                                locale: 'es_VE',
-                                symbol: 'Bs. ',
-                                decimalDigits: 2)
-                            .format(summary.totalTax),
-                        valueColor: AppColors.neutralValue,
-                        fontSize: 16.5),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -510,7 +469,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => _logout(context),
-            tooltip: 'Cerrar sesion',
+            tooltip: _logoutTooltipText,
           ),
           IconButton(
               icon: const Icon(Icons.settings_applications_outlined),
@@ -528,27 +487,90 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                   color: AppColors.appBarForeground)),
         ],
       ),
+      // --- INICIO DE LA IMPLEMENTACIÓN DE PERMISOS ---
       body: Consumer<InvoiceNotifier>(
         builder: (context, notifier, child) {
-          Widget bodyContent;
-
-          if (notifier.isLoading) {
-            bodyContent = (notifier.isAuthenticated &&
-                    notifier.invoiceSummary.salesCount > 0)
-                ? SingleChildScrollView(
-                    child: _buildDataDisplay(notifier, context))
-                : _buildLoadingState(notifier: notifier);
-          } else if (notifier.errorMsg != null) {
-            bodyContent = _buildErrorState(notifier, context);
-          } else if (notifier.isAuthenticated) {
-            bodyContent = SingleChildScrollView(
-                child: _buildDataDisplay(notifier, context));
-          } else {
-            bodyContent = _buildErrorState(notifier, context);
+          // Primero, manejamos los estados que impiden mostrar contenido
+          if (notifier.isLoading && !notifier.isAuthenticated) {
+            return _buildLoadingState(notifier: notifier);
+          }
+          if (notifier.errorMsg != null) {
+            return _buildErrorState(notifier, context);
+          }
+          if (!notifier.isAuthenticated || notifier.activeConnection == null) {
+            return _buildErrorState(notifier, context);
           }
 
-          return Center(child: bodyContent);
+          // Si llegamos aquí, estamos autenticados y tenemos una conexión.
+          // Ahora, verificamos los permisos.
+          final permissions = notifier.activeConnection!.permissions;
+
+          List<Widget> visibleCards = [];
+
+          if (permissions.canViewSales) {
+            visibleCards.add(_buildSalesCard(notifier, context));
+          }
+          // Si después de chequear, no hay tarjetas para mostrar, informamos al usuario.
+          if (visibleCards.isEmpty) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'No tienes permisos para ver ningún resumen.\nContacta al administrador.',
+                  textAlign: TextAlign.center,
+                  style:
+                      TextStyle(fontSize: 16, color: AppColors.textSecondary),
+                ),
+              ),
+            );
+          }
+
+          // Si hay tarjetas, las mostramos en una lista.
+          return ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            children: visibleCards,
+          );
         },
+      ),
+      // --- FIN DE LA IMPLEMENTACIÓN DE PERMISOS ---
+    );
+  }
+}
+
+// Widget de marcador de posición para futuras tarjetas. Puedes moverlo a su propio archivo.
+class _PlaceholderCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  const _PlaceholderCard({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: AppColors.cardBackground,
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+        child: Column(
+          children: [
+            Icon(icon, size: 36, color: AppColors.textSecondary),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryBlue),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '(Este es un marcador de posición para una futura implementación)',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
       ),
     );
   }
