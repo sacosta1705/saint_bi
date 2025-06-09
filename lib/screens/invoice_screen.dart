@@ -5,6 +5,7 @@ import 'package:saint_bi/models/api_connection.dart';
 import 'package:saint_bi/providers/invoice_notifier.dart';
 import 'package:saint_bi/screens/connection_settings_screen.dart';
 import 'package:saint_bi/config/app_colors.dart';
+import 'package:saint_bi/screens/login_screen.dart';
 import 'package:saint_bi/services/database_service.dart';
 import 'package:saint_bi/utils/security_service.dart';
 
@@ -30,7 +31,7 @@ const String _clearFilterButtonText = 'Quitar Filtro';
 const String _allDatesText = 'Todas las fechas';
 const String _goToSettingsButtonText = 'Ir a Configuración';
 const String _uiNoConnectionsAvailableMessage =
-    'No hay conexiones disponibles. Porfavor agregar una en la configuracion.';
+    'No hay conexiones disponibles. Por favor agregar una en la configuracion.';
 
 class InvoiceScreen extends StatefulWidget {
   const InvoiceScreen({super.key});
@@ -43,6 +44,20 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   @override
   void initState() {
     super.initState();
+  }
+
+  Future<void> _logout(BuildContext context) async {
+    // Primero, llamamos al notifier para que limpie su estado interno.
+    final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
+    await notifier.logout();
+
+    // Luego, navegamos a la pantalla de login y eliminamos todas las rutas anteriores del stack.
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false, // Esta condición elimina todas las rutas anteriores.
+      );
+    }
   }
 
   Future<void> _navigateToSettings(BuildContext context) async {
@@ -492,6 +507,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         foregroundColor: AppColors.appBarForeground,
         elevation: 2,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => _logout(context),
+            tooltip: 'Cerrar sesion',
+          ),
           IconButton(
               icon: const Icon(Icons.settings_applications_outlined),
               onPressed: () => _navigateToSettings(context),

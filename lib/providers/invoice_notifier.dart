@@ -566,4 +566,19 @@ class InvoiceNotifier extends ChangeNotifier {
     _stopPolling();
     super.dispose();
   }
+
+  Future<void> logout() async {
+    debugPrint('Cerrando sesión y limpiando estado del notifier...');
+    _stopPolling();
+    _activeConnection = null;
+    _authtoken = null;
+    _invoiceSummary = InvoiceSummary();
+    _errorMsg = null;
+    _isLoading = false;
+    _isReAuthenticating = false;
+    _startDate = null;
+    _endDate = null;
+    // Notificamos a los listeners para que la UI se limpie antes de la navegación.
+    notifyListeners();
+  }
 }

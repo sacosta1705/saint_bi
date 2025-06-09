@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import 'package:saint_bi/config/app_colors.dart';
 import 'package:saint_bi/models/api_connection.dart';
 import 'package:saint_bi/providers/invoice_notifier.dart';
+import 'package:saint_bi/screens/connection_settings_screen.dart';
 import 'package:saint_bi/screens/invoice_screen.dart';
 import 'package:saint_bi/services/database_service.dart';
 import 'package:saint_bi/services/saint_api.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
+import 'package:saint_bi/utils/security_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,13 +21,14 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
+  // --- CORRECCIÓN: Añadir un controller para el usuario ---
+  final _userController = TextEditingController();
 
   final DatabaseService _dbService = DatabaseService.instance;
   final SaintApi _saintApi = SaintApi();
 
   List<ApiConnection> _savedConnections = [];
   ApiConnection? _selectedConnection;
-  String? _defaultApiUser;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -45,10 +48,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         setState(() {
-          _defaultApiUser = settings[DatabaseService.columnDefaultApiUser];
+          // --- CORRECCIÓN: Usar el controller para actualizar el campo de texto ---
+          _userController.text =
+              settings[DatabaseService.columnDefaultApiUser] ??
+                  "Usuario no encontrado";
           _savedConnections = connections;
+          // Si hay conexiones, seleccionar la primera por defecto
           if (_savedConnections.isNotEmpty) {
             _selectedConnection = _savedConnections.first;
+          } else {
+            _selectedConnection = null;
           }
         });
       }
@@ -74,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final loginResponse = await _saintApi.login(
         baseurl: _selectedConnection!.baseUrl,
-        username: _defaultApiUser!,
+        username: _userController.text, // Leer el usuario desde el controller
         password: _passwordController.text,
         terminal: _selectedConnection!.terminal,
       );
@@ -87,12 +96,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        // Obtenemos el notifier y establecemos la conexión activa para que cargue los datos
         final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
         await notifier.setActiveConnection(_selectedConnection!,
             fetchFullData: true);
 
-        // Navegamos a la pantalla de reportes
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const InvoiceScreen()),
         );
@@ -107,9 +114,118 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  // --- NUEVO: Métodos para navegar a configuración ---
+  Future<void> _navigateToSettings(BuildContext context) async {
+    final bool? isAuthenticated = await _showAdminPasswordDialog(context);
+
+    if (isAuthenticated == true && mounted) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => const ConnectionSettingsScreen()),
+      );
+      // Al volver, recargamos los datos por si se añadió/editó una conexión
+      await _loadInitialData();
+    }
+  }
+
+  Future<bool?> _showAdminPasswordDialog(BuildContext context) {
+    final passController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setStateInDialog) {
+            String? errorText;
+            bool isLoading = false;
+
+            return AlertDialog(
+              backgroundColor: AppColors.dialogBackground,
+              title: const Text('Acceso de Administrador'),
+              content: Form(
+                key: formKey,
+                child: TextFormField(
+                  controller: passController,
+                  obscureText: true,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock),
+                    errorText: errorText,
+                  ),
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Ingrese la contraseña'
+                      : null,
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancelar',
+                      style: TextStyle(color: AppColors.textSecondary)),
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                      foregroundColor: Colors.white),
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            setStateInDialog(() => isLoading = true);
+                            try {
+                              final db = DatabaseService.instance;
+                              final settings = await db.getAppSettings();
+                              final storedHash = settings[
+                                  DatabaseService.columnAdminPasswordHash];
+
+                              if (storedHash == null) {
+                                setStateInDialog(() => errorText =
+                                    'Error: No hay contraseña configurada.');
+                                return;
+                              }
+
+                              final isValid = SecurityService.verifyPassword(
+                                  passController.text, storedHash);
+
+                              if (isValid) {
+                                Navigator.of(dialogContext).pop(true);
+                              } else {
+                                setStateInDialog(
+                                    () => errorText = 'Contraseña incorrecta.');
+                              }
+                            } catch (e) {
+                              setStateInDialog(
+                                  () => errorText = 'Error: ${e.toString()}');
+                            } finally {
+                              setStateInDialog(() => isLoading = false);
+                            }
+                          }
+                        },
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Text('Ingresar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _passwordController.dispose();
+    _userController.dispose(); // --- CORRECCIÓN: Disponer el nuevo controller
     super.dispose();
   }
 
@@ -121,6 +237,14 @@ class _LoginScreenState extends State<LoginScreen> {
         title: const Text('Inicio de Sesión'),
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: AppColors.appBarForeground,
+        // --- NUEVO: Botón de acceso a la configuración ---
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Configurar Conexiones',
+            onPressed: () => _navigateToSettings(context),
+          )
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -147,9 +271,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: AppColors.primaryBlue),
                     ),
                     const SizedBox(height: 24),
-
-                    // --- Selector de Empresa (Dropdown) ---
-                    if (_savedConnections.isNotEmpty)
+                    if (_isLoading && _savedConnections.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text("Cargando conexiones..."),
+                      )
+                    else if (_savedConnections.isNotEmpty)
                       DropdownButtonFormField<ApiConnection>(
                         value: _selectedConnection,
                         items: _savedConnections.map((conn) {
@@ -168,15 +295,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       )
                     else
-                      Text(_isLoading
-                          ? "Cargando conexiones..."
-                          : "No hay conexiones configuradas."),
-
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(8)),
+                        child: const Text(
+                          "No hay conexiones configuradas. Por favor, añada una desde el menú de configuración (arriba a la derecha).",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
                     const SizedBox(height: 16),
-
-                    // --- Campo de Usuario (Solo lectura) ---
                     TextFormField(
-                      initialValue: _defaultApiUser ?? 'Cargando...',
+                      controller: _userController,
                       readOnly: true,
                       decoration: const InputDecoration(
                         labelText: 'Usuario',
@@ -187,8 +319,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // --- Campo de Contraseña ---
                     TextFormField(
                       controller: _passwordController,
                       decoration: const InputDecoration(
@@ -203,8 +333,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       onFieldSubmitted: (_) => _isLoading ? null : _login(),
                     ),
                     const SizedBox(height: 24),
-
-                    // --- Mensaje de Error ---
                     if (_errorMessage != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
@@ -215,8 +343,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           textAlign: TextAlign.center,
                         ),
                       ),
-
-                    // --- Botón de Inicio de Sesión ---
                     ElevatedButton(
                       onPressed: _isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
