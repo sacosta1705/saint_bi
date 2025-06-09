@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:saint_bi/config/app_colors.dart';
 import 'package:saint_bi/screens/initial_setup_screen.dart';
-import 'package:saint_bi/screens/invoice_screen.dart';
+import 'package:saint_bi/screens/login_screen.dart';
 import 'package:saint_bi/services/database_service.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -30,7 +30,6 @@ class _LoadingScreenState extends State<LoadingScreen> {
 
     if (!mounted) return;
 
-    // Si alguno de los dos es nulo o vacío, ir a la configuración inicial
     if (adminPassHash == null ||
         adminPassHash.isEmpty ||
         defaultApiUser == null ||
@@ -40,7 +39,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
       );
     } else {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const InvoiceScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     }
   }
