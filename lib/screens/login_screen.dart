@@ -278,11 +278,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       )
                     else if (_savedConnections.isNotEmpty)
                       DropdownButtonFormField<ApiConnection>(
+                        isExpanded: true,
                         value: _selectedConnection,
                         items: _savedConnections.map((conn) {
                           return DropdownMenuItem<ApiConnection>(
                             value: conn,
-                            child: Text(conn.companyName),
+                            child: Text(
+                              conn.companyName,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           );
                         }).toList(),
                         onChanged: (ApiConnection? newValue) {

@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:saint_bi/models/api_connection.dart';
 // IMPORTANTE: Añadir este import
-import 'package:saint_bi/providers/invoice_notifier.dart';
+import 'package:saint_bi/providers/managment_summary_notifier.dart';
 import 'package:saint_bi/screens/connection_settings_screen.dart';
 import 'package:saint_bi/config/app_colors.dart';
 import 'package:saint_bi/screens/login_screen.dart';

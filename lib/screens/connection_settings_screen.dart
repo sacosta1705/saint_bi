@@ -297,8 +297,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-          title: Text(
-              isCurrentlyEditing ? 'Editar Conexión' : 'Nueva Conexión API',
+          title: Text(isCurrentlyEditing ? 'Editar Conexión' : 'Nueva Conexión',
               style: const TextStyle(fontWeight: FontWeight.bold)),
           backgroundColor: AppColors.appBarBackground,
           foregroundColor: AppColors.appBarForeground,
@@ -326,7 +325,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       borderRadius: BorderRadius.circular(12.0),
                       boxShadow: [
                         BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey,
                             spreadRadius: 1,
                             blurRadius: 3,
                             offset: const Offset(0, 1))
@@ -348,7 +347,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                         initialValue: _defaultApiUser ?? 'Cargando usuario...',
                         readOnly: true,
                         decoration: _inputDecoration(
-                                'Usuario API (Fijo)', '', Icons.person_rounded)
+                                'Usuario', '', Icons.person_rounded)
                             .copyWith(fillColor: Colors.grey.shade200),
                       ),
                       const SizedBox(height: 16),
@@ -356,7 +355,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                         controller: _companyNameController,
                         readOnly: true,
                         decoration: _inputDecoration(
-                                'Nombre de Empresa (obtenido de API)',
+                                'Nombre de Empresa',
                                 'Se completará al probar la conexión',
                                 Icons.business_center_outlined)
                             .copyWith(fillColor: Colors.grey.shade200),
@@ -365,7 +364,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       TextFormField(
                         controller: _baseUrlController,
                         decoration: _inputDecoration(
-                            'URL Base de la API *',
+                            'URL del SAINT Enterprise Administrativo *',
                             'ej: http://tu-servidor.com/api',
                             Icons.http_rounded),
                         keyboardType: TextInputType.url,
@@ -380,18 +379,22 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordController,
-                        decoration: _inputDecoration('Contraseña API *',
-                            'Contraseña', Icons.lock_outline_rounded),
+                        decoration: _inputDecoration(
+                            'Clave del Administrativo *',
+                            'Clave',
+                            Icons.lock_outline_rounded),
                         obscureText: true,
                         validator: (value) => (value == null || value.isEmpty)
-                            ? 'Ingresa la contraseña'
+                            ? 'Ingresa la clave'
                             : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _pollingIntervalController,
-                        decoration: _inputDecoration('Intervalo (segundos) *',
-                            'Ej: 300', Icons.timer_outlined),
+                        decoration: _inputDecoration(
+                            'Intervalo de refrescamiento (segundos) *',
+                            'Ej: 300',
+                            Icons.timer_outlined),
                         keyboardType: TextInputType.number,
                         inputFormatters: <TextInputFormatter>[
                           FilteringTextInputFormatter.digitsOnly
