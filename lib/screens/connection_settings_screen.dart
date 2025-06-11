@@ -11,7 +11,7 @@ import 'package:saint_bi/screens/login_screen.dart';
 import 'package:saint_bi/services/database_service.dart';
 import 'package:saint_bi/services/saint_api.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
-import 'package:saint_bi/providers/invoice_notifier.dart';
+import 'package:saint_bi/providers/managment_summary_notifier.dart';
 import 'package:saint_bi/config/app_colors.dart';
 
 class ConnectionSettingsScreen extends StatefulWidget {
@@ -28,6 +28,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   final _pollingIntervalController = TextEditingController();
   final _terminalController = TextEditingController();
   final _companyNameController = TextEditingController();
+  final _companyAliasController = TextEditingController();
 
   bool _canViewSales = true;
   // bool _canViewPurchases = true;  // Descomentar para futuras implementaciones
@@ -66,6 +67,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     _pollingIntervalController.text = conn.pollingIntervalSeconds.toString();
     _terminalController.text = conn.terminal;
     _companyNameController.text = conn.companyName;
+    _companyAliasController.text = conn.companyAlias;
 
     setState(() {
       _canViewSales = conn.permissions.canViewSales;
@@ -109,6 +111,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     _pollingIntervalController.text = '300';
     _terminalController.text = 'saint_bi_flutter_app';
     _companyNameController.clear();
+    _companyAliasController.clear();
     if (mounted) {
       setState(() {
         _connectionBeingEdited = null;
@@ -153,6 +156,8 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
       }
 
       final String companyNameFromApi = loginResponse.company;
+      final String companyAlias = _companyAliasController.text.trim();
+
       if (mounted) _companyNameController.text = companyNameFromApi;
 
       final permissionsToSave = Permissions(
@@ -161,6 +166,19 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         // canViewInventory: _canViewInventory,
       );
 
+      final existingAlias = await _dbService.getConnectionByAlias(companyAlias);
+
+      if (_connectionBeingEdited != null) {
+        if (existingAlias != null &&
+            existingAlias.id != _connectionBeingEdited!.id) {
+          throw Exception('Ya existe una conexion con ese alias.');
+        }
+      } else {
+        if (existingAlias != null) {
+          throw Exception('Ya existe una conexion con ese alias.');
+        }
+      }
+
       final connection = ApiConnection(
         id: _connectionBeingEdited?.id,
         baseUrl: baseUrl,
@@ -168,11 +186,13 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         password: password,
         pollingIntervalSeconds: pollingInterval!,
         companyName: companyNameFromApi,
+        companyAlias: companyAlias,
         terminal: terminal,
         permissions: permissionsToSave,
       );
 
-      final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
+      final notifier =
+          Provider.of<ManagementSummaryNotifier>(context, listen: false);
 
       if (_connectionBeingEdited != null) {
         await _dbService.updateConnection(connection);
@@ -195,9 +215,6 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         }
       }
 
-      // --- ¡AQUÍ ESTÁ LA CORRECCIÓN DEFINITIVA! ---
-      // En lugar de hacer .pop(), navegamos directamente a LoginScreen
-      // y limpiamos el historial de navegación anterior para evitar la pantalla negra.
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -238,7 +255,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         await _dbService.deleteConnection(id);
         if (_connectionBeingEdited?.id == id) _clearForm();
         if (mounted) {
-          Provider.of<InvoiceNotifier>(context, listen: false)
+          Provider.of<ManagementSummaryNotifier>(context, listen: false)
               .removeConnectionFromList(id);
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               content: Text('Conexión para "$companyName" eliminada.'),
@@ -372,7 +389,21 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Ingresa la URL base';
                           }
-                          // ... resto de la validación
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _companyAliasController,
+                        decoration: _inputDecoration(
+                          'Alias de la conexión *',
+                          'Ej: Sede principal, Sede Maracaibo...',
+                          Icons.label_important,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Por favor, ingrese un alias a la conexión.';
+                          }
                           return null;
                         },
                       ),
@@ -524,7 +555,8 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                   itemBuilder: (context, index) {
                     final connection = _savedConnections[index];
                     final bool isActiveInNotifier =
-                        Provider.of<InvoiceNotifier>(context, listen: false)
+                        Provider.of<ManagementSummaryNotifier>(context,
+                                    listen: false)
                                 .activeConnection
                                 ?.id ==
                             connection.id;
@@ -600,8 +632,9 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                           ],
                         ),
                         onTap: () {
-                          final notifier = Provider.of<InvoiceNotifier>(context,
-                              listen: false);
+                          final notifier =
+                              Provider.of<ManagementSummaryNotifier>(context,
+                                  listen: false);
                           if (isActiveInNotifier && !notifier.isLoading) {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                 content: Text(

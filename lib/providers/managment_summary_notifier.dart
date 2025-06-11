@@ -1,16 +1,23 @@
-// lib/providers/invoice_notifier.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-// import 'package:intl/intl.dart';
 
 import 'package:saint_bi/services/saint_api.dart';
-import 'package:saint_bi/models/invoice.dart';
-import 'package:saint_bi/models/invoice_summary.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
-import 'package:saint_bi/services/invoice_calculator_service.dart';
-import 'package:saint_bi/models/api_connection.dart';
 import 'package:saint_bi/services/database_service.dart';
+import 'package:saint_bi/models/api_connection.dart';
 import 'package:saint_bi/models/login_response.dart';
+
+// --- Importaciones para el Resumen Gerencial ---
+import 'package:saint_bi/services/summary_calculator_service.dart';
+import 'package:saint_bi/models/management_summary.dart';
+import 'package:saint_bi/models/invoice.dart';
+import 'package:saint_bi/models/invoice_item.dart';
+import 'package:saint_bi/models/product.dart';
+import 'package:saint_bi/models/account_receivable.dart';
+import 'package:saint_bi/models/account_payable.dart';
+import 'package:saint_bi/models/purchase.dart';
+import 'package:saint_bi/models/inventory_operation.dart';
+import 'package:saint_bi/models/configuration.dart';
 
 // Constantes de mensajes para la UI
 const String _uiAuthErrorMessage =
@@ -25,15 +32,17 @@ const String _uiNoConnectionSelectedMessage =
 const String _uiNoConnectionsAvailableMessage =
     'No hay conexiones configuradas. Por favor, añada una.';
 
-class InvoiceNotifier extends ChangeNotifier {
+class ManagementSummaryNotifier extends ChangeNotifier {
   final SaintApi _api = SaintApi();
-  final InvoiceCalculator _invoiceCalculator = InvoiceCalculator();
+  final ManagementSummaryCalculator _summaryCalculator =
+      ManagementSummaryCalculator();
   final DatabaseService _dbService = DatabaseService.instance;
 
-  InvoiceSummary _invoiceSummary = InvoiceSummary();
+  // --- Estado unificado para el Resumen Gerencial ---
+  ManagementSummary _summary = ManagementSummary();
   bool _isLoading = false;
   String? _errorMsg;
-  String? _authtoken; // Token de la sesión activa (valor del header Pragma)
+  String? _authtoken;
   Timer? _timer;
   bool _isReAuthenticating = false;
 
@@ -43,29 +52,32 @@ class InvoiceNotifier extends ChangeNotifier {
   ApiConnection? _activeConnection;
   List<ApiConnection> _availableConnections = [];
 
-  // Getters
-  InvoiceSummary get invoiceSummary => _invoiceSummary;
+  // Getters actualizados
+  ManagementSummary get summary => _summary;
   bool get isLoading => _isLoading;
   String? get errorMsg => _errorMsg;
   bool get isAuthenticated => _authtoken != null && _authtoken!.isNotEmpty;
   int get pollingIntervalSeconds =>
-      _activeConnection?.pollingIntervalSeconds ??
-      9999999; // Default alto si no hay conexión
+      _activeConnection?.pollingIntervalSeconds ?? 9999999;
   DateTime? get startDate => _startDate;
   DateTime? get endDate => _endDate;
   ApiConnection? get activeConnection => _activeConnection;
   List<ApiConnection> get availableConnections => _availableConnections;
 
-  InvoiceNotifier() {
-    debugPrint('Inicializando InvoiceNotifier...');
-    refreshAvailableConnections(); // Cargar conexiones al iniciar
+  ManagementSummaryNotifier() {
+    debugPrint('Inicializando ManagementSummaryNotifier...');
+    refreshAvailableConnections();
   }
+
+  // --- MÉTODOS DE GESTIÓN DE CONEXIÓN Y AUTENTICACIÓN ---
+  // (Estos métodos no requieren cambios lógicos internos, solo cambiar
+  // _invoiceSummary por _summary en los resets)
 
   Future<void> refreshAvailableConnections({
     ApiConnection? newlySelectedFromSettings,
   }) async {
     _isLoading = true;
-    notifyListeners(); // Notificar que estamos cargando la lista
+    notifyListeners();
     try {
       _availableConnections = await _dbService.getAllConnections();
       _availableConnections.sort(
@@ -73,50 +85,34 @@ class InvoiceNotifier extends ChangeNotifier {
             a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()),
       );
       debugPrint(
-        'Conexiones disponibles cargadas: ${_availableConnections.length}',
-      );
+          'Conexiones disponibles cargadas: ${_availableConnections.length}');
 
       if (_availableConnections.isEmpty) {
-        _errorMsg =
-            _uiNoConnectionsAvailableMessage; // Mensaje específico si no hay ninguna conexión en la BD
-        clearActiveConnectionAndData(
-          notify: false,
-        ); // Limpiar, no notificar aun
+        _errorMsg = _uiNoConnectionsAvailableMessage;
+        clearActiveConnectionAndData(notify: false);
       } else if (newlySelectedFromSettings != null) {
-        // Si se pasa una conexión desde settings (recién guardada/editada), intentar seleccionarla
         final found = _availableConnections.firstWhere(
           (c) => c.id == newlySelectedFromSettings.id,
           orElse: () => _availableConnections.first,
         );
-        await setActiveConnection(
-          found,
-          fetchFullData: true,
-          isInitialLoad: true,
-        );
+        await setActiveConnection(found,
+            fetchFullData: true, isInitialLoad: true);
       } else if (_activeConnection != null) {
-        // Verificar si la conexión activa actual sigue existiendo en la lista
         final currentActiveStillExists = _availableConnections.any(
           (c) => c.id == _activeConnection!.id,
         );
         if (!currentActiveStillExists) {
           debugPrint(
-            'La conexión activa (ID: ${_activeConnection!.id}) ya no existe. Limpiando.',
-          );
-          clearActiveConnectionAndData(
-            notify: false,
-          ); // Limpiar datos, no notificar aun
-          _errorMsg =
-              _uiNoConnectionSelectedMessage; // Pedir que seleccione una nueva
+              'La conexión activa (ID: ${_activeConnection!.id}) ya no existe. Limpiando.');
+          clearActiveConnectionAndData(notify: false);
+          _errorMsg = _uiNoConnectionSelectedMessage;
         } else {
-          // La conexión activa sigue siendo válida, no es necesario hacer nada más aquí.
-          // Limpiar el error si antes había uno de "no conexión"
           if (_errorMsg == _uiNoConnectionSelectedMessage ||
               _errorMsg == _uiNoConnectionsAvailableMessage) {
             _errorMsg = null;
           }
         }
       } else {
-        // Hay conexiones, pero ninguna estaba activa (ej. primer inicio con conexiones existentes)
         _errorMsg = _uiNoConnectionSelectedMessage;
       }
     } catch (e) {
@@ -125,33 +121,28 @@ class InvoiceNotifier extends ChangeNotifier {
       clearActiveConnectionAndData(notify: false);
     } finally {
       _isLoading = false;
-      notifyListeners(); // Notificar al final de la operación
+      notifyListeners();
     }
   }
 
   void addConnectionToList(ApiConnection connection) {
     if (!_availableConnections.any((c) => c.id == connection.id)) {
       _availableConnections.add(connection);
-      _availableConnections.sort(
-        (a, b) =>
-            a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()),
-      );
+      _availableConnections.sort((a, b) =>
+          a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()));
       notifyListeners();
     }
   }
 
   void updateConnectionInList(ApiConnection connection) {
-    final index = _availableConnections.indexWhere(
-      (c) => c.id == connection.id,
-    );
+    final index =
+        _availableConnections.indexWhere((c) => c.id == connection.id);
     if (index != -1) {
       _availableConnections[index] = connection;
-      _availableConnections.sort(
-        (a, b) =>
-            a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()),
-      );
+      _availableConnections.sort((a, b) =>
+          a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()));
       if (_activeConnection?.id == connection.id) {
-        _activeConnection = connection; // Actualizar la instancia activa
+        _activeConnection = connection;
       }
       notifyListeners();
     }
@@ -160,7 +151,7 @@ class InvoiceNotifier extends ChangeNotifier {
   void removeConnectionFromList(int connectionId) {
     _availableConnections.removeWhere((c) => c.id == connectionId);
     if (_activeConnection?.id == connectionId) {
-      clearActiveConnectionAndData(); // Si se eliminó la activa
+      clearActiveConnectionAndData();
       if (_availableConnections.isEmpty) {
         _errorMsg = _uiNoConnectionsAvailableMessage;
       } else {
@@ -187,8 +178,7 @@ class InvoiceNotifier extends ChangeNotifier {
         !fetchFullData &&
         !isInitialLoad) {
       debugPrint(
-        'setActiveConnection: Misma conexión (ID: ${connection.id}), no se fuerza recarga.',
-      );
+          'setActiveConnection: Misma conexión (ID: ${connection.id}), no se fuerza recarga.');
       if (_errorMsg == _uiNoConnectionSelectedMessage ||
           _errorMsg == _uiNoConnectionsAvailableMessage) {
         _errorMsg = null;
@@ -198,20 +188,18 @@ class InvoiceNotifier extends ChangeNotifier {
     }
 
     debugPrint(
-      'Estableciendo conexión activa: ${connection.companyName} (ID: ${connection.id}), fetchFullData: $fetchFullData',
-    );
+        'Estableciendo conexión activa: ${connection.companyName} (ID: ${connection.id}), fetchFullData: $fetchFullData');
     _activeConnection = connection;
     _authtoken = null;
-    _invoiceSummary = InvoiceSummary();
+    _summary = ManagementSummary();
     _startDate = null;
     _endDate = null;
     _errorMsg = null;
-    _isLoading =
-        fetchFullData; // Poner isLoading true solo si vamos a buscar datos
+    _isLoading = fetchFullData;
     _isReAuthenticating = false;
     _stopPolling();
 
-    notifyListeners(); // Notificar el cambio de selección y el inicio de carga si fetchFullData es true
+    notifyListeners();
 
     if (fetchFullData) {
       await fetchInitialData();
@@ -222,7 +210,7 @@ class InvoiceNotifier extends ChangeNotifier {
     debugPrint('Limpiando conexión activa y datos.');
     _activeConnection = null;
     _authtoken = null;
-    _invoiceSummary = InvoiceSummary();
+    _summary = ManagementSummary();
     _errorMsg = _availableConnections.isEmpty
         ? _uiNoConnectionsAvailableMessage
         : _uiNoConnectionSelectedMessage;
@@ -244,14 +232,12 @@ class InvoiceNotifier extends ChangeNotifier {
     if (isAuthenticationIssue) {
       _authtoken = null;
       debugPrint(
-        'Token invalidado para "${_activeConnection?.companyName}" por error de auth.',
-      );
+          'Token invalidado para "${_activeConnection?.companyName}" por error de auth.');
     }
     _isLoading = false;
     _isReAuthenticating = false;
     debugPrint(
-      'Error en Notifier para "${_activeConnection?.companyName ?? "N/A"}": $message. Exc: $error, Stack: $stackTrace',
-    );
+        'Error en Notifier para "${_activeConnection?.companyName ?? "N/A"}": $message. Exc: $error, Stack: $stackTrace');
     notifyListeners();
   }
 
@@ -271,19 +257,17 @@ class InvoiceNotifier extends ChangeNotifier {
     _endDate = end;
     _isLoading = true;
     _errorMsg = null;
-    _invoiceSummary = InvoiceSummary(); // Resetear para nueva carga con filtro
+    _summary = ManagementSummary();
     _stopPolling();
     notifyListeners();
 
     if (!isAuthenticated) {
       debugPrint(
-        'No autenticado al filtrar por rango para "${_activeConnection!.companyName}". Intentando login.',
-      );
+          'No autenticado al filtrar por rango para "${_activeConnection!.companyName}". Intentando login.');
       await fetchInitialData();
     } else {
       debugPrint(
-        'Autenticado para "${_activeConnection!.companyName}". Obteniendo datos para rango: $_startDate - $_endDate',
-      );
+          'Autenticado para "${_activeConnection!.companyName}". Obteniendo datos para rango: $_startDate - $_endDate');
       await _fetchSummaryData(isInitialFetchForCurrentOp: true);
       if (isAuthenticated && _errorMsg == null) {
         _startPollingInvoices();
@@ -294,20 +278,19 @@ class InvoiceNotifier extends ChangeNotifier {
   Future<void> fetchInitialData() async {
     if (_activeConnection == null) {
       _handleError(_uiNoConnectionSelectedMessage);
-      if (_isLoading) _isLoading = false; // Asegurar que no se quede cargando
+      if (_isLoading) _isLoading = false;
       notifyListeners();
       return;
     }
 
     debugPrint(
-      'Iniciando fetchInitialData para "${_activeConnection!.companyName}". isLoading: $_isLoading, isReAuth: $_isReAuthenticating',
-    );
+        'Iniciando fetchInitialData para "${_activeConnection!.companyName}". isLoading: $_isLoading, isReAuth: $_isReAuthenticating');
 
-    _isLoading = true; // Marcar como cargando desde el inicio de la operación
+    _isLoading = true;
     if (!_isReAuthenticating) {
       _errorMsg = null;
       _authtoken = null;
-      _invoiceSummary = InvoiceSummary();
+      _summary = ManagementSummary();
       _stopPolling();
     }
     notifyListeners();
@@ -324,80 +307,56 @@ class InvoiceNotifier extends ChangeNotifier {
           loginResponse.authToken == null ||
           loginResponse.authToken!.isEmpty) {
         throw AuthenticationException(
-          "Login falló o no se recibió token/datos de empresa válidos.",
-        );
+            "Login falló o no se recibió token/datos de empresa válidos.");
       }
 
-      _authtoken = loginResponse.authToken; // Guardar el token Pragma
-      // Validar/actualizar el nombre de la empresa si es diferente al guardado
+      _authtoken = loginResponse.authToken;
       if (loginResponse.company != _activeConnection!.companyName) {
         debugPrint(
-          "Advertencia: Nombre de empresa en BD local ('${_activeConnection!.companyName}') difiere del de API ('${loginResponse.company}'). Actualizando local.",
-        );
-        _activeConnection = _activeConnection!.copyWith(
-          companyName: loginResponse.company,
-        );
-        await _dbService.updateConnection(
-          _activeConnection!,
-        ); // Actualizar en BD
-        // Refrescar la lista de conexiones disponibles para que la UI muestre el nombre correcto
+            "Advertencia: Nombre de empresa en BD local ('${_activeConnection!.companyName}') difiere del de API ('${loginResponse.company}'). Actualizando local.");
+        _activeConnection =
+            _activeConnection!.copyWith(companyName: loginResponse.company);
+        await _dbService.updateConnection(_activeConnection!);
         final currentSelectedId = _activeConnection!.id;
         _availableConnections = await _dbService.getAllConnections();
-        _availableConnections.sort(
-          (a, b) => a.companyName.toLowerCase().compareTo(
-                b.companyName.toLowerCase(),
-              ),
-        );
+        _availableConnections.sort((a, b) =>
+            a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()));
         _activeConnection = _availableConnections.firstWhere(
-          (c) => c.id == currentSelectedId,
-          orElse: () => _activeConnection!,
-        );
+            (c) => c.id == currentSelectedId,
+            orElse: () => _activeConnection!);
       }
 
       debugPrint(
-        'Login exitoso para "${_activeConnection!.companyName}". Token: $_authtoken. Empresa API: "${loginResponse.company}"',
-      );
+          'Login exitoso para "${_activeConnection!.companyName}". Token: $_authtoken. Empresa API: "${loginResponse.company}"');
       _isReAuthenticating = false;
 
       if (isAuthenticated) {
-        // Doble chequeo por si _authtoken se volvió null
         _errorMsg = null;
         debugPrint(
-          'Procediendo a _fetchSummaryData para "${_activeConnection!.companyName}"',
-        );
+            'Procediendo a _fetchSummaryData para "${_activeConnection!.companyName}"');
         await _fetchSummaryData(isInitialFetchForCurrentOp: true);
 
         if (_errorMsg == null) {
           debugPrint(
-            'fetchInitialData: _fetchSummaryData OK para "${_activeConnection!.companyName}", iniciando polling.',
-          );
+              'fetchInitialData: _fetchSummaryData OK para "${_activeConnection!.companyName}", iniciando polling.');
           _startPollingInvoices();
         } else {
           debugPrint(
-            'fetchInitialData: _fetchSummaryData falló post-login para "${_activeConnection!.companyName}". Error: $_errorMsg',
-          );
+              'fetchInitialData: _fetchSummaryData falló post-login para "${_activeConnection!.companyName}". Error: $_errorMsg');
           _stopPolling();
         }
       } else {
-        // Esto teóricamente no debería ocurrir si loginResponse.authToken es validado arriba.
-        _handleError(
-          _uiAuthErrorMessage,
-          isAuthenticationIssue: true,
-          error: "Token inválido post-procesamiento de login.",
-        );
+        _handleError(_uiAuthErrorMessage,
+            isAuthenticationIssue: true,
+            error: "Token inválido post-procesamiento de login.");
         _stopPolling();
       }
     } on AuthenticationException catch (e, stackTrace) {
-      _handleError(
-        _uiAuthErrorMessage,
-        isAuthenticationIssue: true,
-        error: e,
-        stackTrace: stackTrace,
-      );
+      _handleError(_uiAuthErrorMessage,
+          isAuthenticationIssue: true, error: e, stackTrace: stackTrace);
       _stopPolling();
     } on NetworkException catch (e, stackTrace) {
       _handleError(_uiNetworkErrorMessage, error: e, stackTrace: stackTrace);
-      // No detener polling, podría ser temporal
     } on UnknownApiExpection catch (e, stackTrace) {
       _handleError(_uiGenericErrorMessage, error: e, stackTrace: stackTrace);
       _stopPolling();
@@ -411,29 +370,18 @@ class InvoiceNotifier extends ChangeNotifier {
       }
       notifyListeners();
       debugPrint(
-        'fetchInitialData finalizado para "${_activeConnection?.companyName}". isLoading: $_isLoading, isAuth: $isAuthenticated, error: $_errorMsg',
-      );
+          'fetchInitialData finalizado para "${_activeConnection?.companyName}". isLoading: $_isLoading, isAuth: $isAuthenticated, error: $_errorMsg');
     }
   }
 
+  // --- MÉTODO DE OBTENCIÓN DE DATOS COMPLETAMENTE RECONSTRUIDO ---
   Future<void> _fetchSummaryData({
     bool isInitialFetchForCurrentOp = false,
   }) async {
-    if (_activeConnection == null) {
-      _handleError(
-        _uiNoConnectionSelectedMessage,
-        error: "Fetch abortado: Sin conexión activa.",
-      );
-      if (isInitialFetchForCurrentOp) _isLoading = false;
-      notifyListeners();
-      return;
-    }
-    if (!isAuthenticated) {
-      _handleError(
-        'No autenticado para "${_activeConnection!.companyName}".',
-        isAuthenticationIssue: true,
-        error: "Fetch abortado: Sin token.",
-      );
+    if (_activeConnection == null || !isAuthenticated) {
+      _handleError('No autenticado.',
+          isAuthenticationIssue: true,
+          error: "Fetch abortado: Sin conexión o token.");
       if (isInitialFetchForCurrentOp) _isLoading = false;
       notifyListeners();
       return;
@@ -448,42 +396,85 @@ class InvoiceNotifier extends ChangeNotifier {
     }
 
     debugPrint(
-      'Iniciando _fetchSummaryData para "${_activeConnection!.companyName}" (isInitialOp: $isInitialFetchForCurrentOp). Filtro: $_startDate - $_endDate',
-    );
+        'Iniciando _fetchSummaryData para "${_activeConnection!.companyName}". Filtro: $_startDate - $_endDate');
 
     try {
-      final List<Invoice> allInvoices = await _api.getInvoices(
-        baseUrl: _activeConnection!.baseUrl,
-        authtoken: _authtoken!,
-      );
-      debugPrint(
-        '_fetchSummaryData para "${_activeConnection!.companyName}": ${allInvoices.length} facturas de API.',
+      final dateParams = (_startDate != null && _endDate != null)
+          ? {
+              'fechae>=': _startDate!.toIso8601String().substring(0, 10),
+              'fechae<=': _endDate!.toIso8601String().substring(0, 10)
+            }
+          : null;
+
+      // 1. Orquestar todas las llamadas a la API en paralelo
+      final results = await Future.wait([
+        _api.getInvoices(
+            baseUrl: _activeConnection!.baseUrl,
+            authtoken: _authtoken!,
+            params: dateParams),
+        _api.getInvoiceItems(
+            baseUrl: _activeConnection!.baseUrl,
+            authtoken: _authtoken!,
+            params: dateParams),
+        _api.getProducts(
+            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
+        _api.getAccountsReceivable(
+            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
+        _api.getAccountsPayable(
+            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
+        _api.getPurchases(
+            baseUrl: _activeConnection!.baseUrl,
+            authtoken: _authtoken!,
+            params: dateParams),
+        _api.getInventoryOperations(
+            baseUrl: _activeConnection!.baseUrl,
+            authtoken: _authtoken!,
+            params: dateParams),
+        _api.getConfig(
+            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
+      ]);
+
+      // 2. Parsear los resultados a listas de nuestros modelos
+      final invoices =
+          (results[0] as List).map((e) => Invoice.fromJson(e)).toList();
+      final invoiceItems =
+          (results[1] as List).map((e) => InvoiceItem.fromJson(e)).toList();
+      final products =
+          (results[2] as List).map((e) => Product.fromJson(e)).toList();
+      final receivables = (results[3] as List)
+          .map((e) => AccountReceivable.fromJson(e))
+          .toList();
+      final payables =
+          (results[4] as List).map((e) => AccountPayable.fromJson(e)).toList();
+      final purchases =
+          (results[5] as List).map((e) => Purchase.fromJson(e)).toList();
+      final inventoryOps = (results[6] as List)
+          .map((e) => InventoryOperation.fromJson(e))
+          .toList();
+      final config = Configuration.fromJson(results[7] as Map<String, dynamic>);
+
+      // 3. Delegar el cálculo al servicio dedicado
+      _summary = _summaryCalculator.calculate(
+        invoices: invoices,
+        invoiceItems: invoiceItems,
+        products: products,
+        receivables: receivables,
+        payables: payables,
+        purchases: purchases,
+        inventoryOps: inventoryOps,
+        config: config,
       );
 
-      _invoiceSummary = _invoiceCalculator.calculateSummary(
-        allInvoices: allInvoices,
-        startDate: _startDate,
-        endDate: _endDate,
-      );
       debugPrint(
-        '_fetchSummaryData para "${_activeConnection!.companyName}": Resumen. Ventas: ${_invoiceSummary.totalSales}',
-      );
-
-      if (_errorMsg != _uiSessionExpiredMessage) {
-        _errorMsg = null;
-      }
+          '_fetchSummaryData para "${_activeConnection!.companyName}": Resumen calculado. Ventas: ${_summary.totalNetSales}');
+      if (_errorMsg != _uiSessionExpiredMessage) _errorMsg = null;
       _isReAuthenticating = false;
     } on SessionExpiredException catch (e, stackTrace) {
       debugPrint(
-        '_fetchSummaryData para "${_activeConnection!.companyName}": Sesión Expirada. ${e.toString()}',
-      );
+          '_fetchSummaryData para "${_activeConnection!.companyName}": Sesión Expirada. ${e.toString()}');
       if (_isReAuthenticating) {
-        _handleError(
-          _uiAuthErrorMessage,
-          isAuthenticationIssue: true,
-          error: e,
-          stackTrace: stackTrace,
-        );
+        _handleError(_uiAuthErrorMessage,
+            isAuthenticationIssue: true, error: e, stackTrace: stackTrace);
         _stopPolling();
         return;
       }
@@ -491,18 +482,13 @@ class InvoiceNotifier extends ChangeNotifier {
       _authtoken = null;
       _isReAuthenticating = true;
       notifyListeners();
-
       _stopPolling();
       await Future.delayed(const Duration(seconds: 1));
       await fetchInitialData();
       return;
     } on AuthenticationException catch (e, stackTrace) {
-      _handleError(
-        _uiAuthErrorMessage,
-        isAuthenticationIssue: true,
-        error: e,
-        stackTrace: stackTrace,
-      );
+      _handleError(_uiAuthErrorMessage,
+          isAuthenticationIssue: true, error: e, stackTrace: stackTrace);
       _stopPolling();
     } on NetworkException catch (e, stackTrace) {
       _handleError(_uiNetworkErrorMessage, error: e, stackTrace: stackTrace);
@@ -517,8 +503,7 @@ class InvoiceNotifier extends ChangeNotifier {
       }
       notifyListeners();
       debugPrint(
-        '_fetchSummaryData finalizado para "${_activeConnection?.companyName}". isLoading: $_isLoading, error: $_errorMsg, summarySales: ${_invoiceSummary.totalSales}',
-      );
+          '_fetchSummaryData finalizado para "${_activeConnection?.companyName}". isLoading: $_isLoading, error: $_errorMsg, summarySales: ${_summary.totalNetSales}');
     }
   }
 
@@ -528,33 +513,28 @@ class InvoiceNotifier extends ChangeNotifier {
         _activeConnection != null &&
         _activeConnection!.pollingIntervalSeconds > 0) {
       debugPrint(
-        'Iniciando polling para "${_activeConnection!.companyName}" c/${_activeConnection!.pollingIntervalSeconds}s.',
-      );
+          'Iniciando polling para "${_activeConnection!.companyName}" c/${_activeConnection!.pollingIntervalSeconds}s.');
       _timer = Timer.periodic(
-        Duration(seconds: _activeConnection!.pollingIntervalSeconds),
-        (timer) {
-          if (_activeConnection == null || !isAuthenticated) {
-            _stopPolling();
-            return;
-          }
-          debugPrint(
-            'Ejecutando fetch por polling para "${_activeConnection!.companyName}"...',
-          );
-          _fetchSummaryData(isInitialFetchForCurrentOp: false);
-        },
-      );
+          Duration(seconds: _activeConnection!.pollingIntervalSeconds),
+          (timer) {
+        if (_activeConnection == null || !isAuthenticated) {
+          _stopPolling();
+          return;
+        }
+        debugPrint(
+            'Ejecutando fetch por polling para "${_activeConnection!.companyName}"...');
+        _fetchSummaryData(isInitialFetchForCurrentOp: false);
+      });
     } else {
       debugPrint(
-        'No se inicia polling: no auth, sin conexión activa, o intervalo <= 0.',
-      );
+          'No se inicia polling: no auth, sin conexión activa, o intervalo <= 0.');
     }
   }
 
   void _stopPolling() {
     if (_timer != null && _timer!.isActive) {
       debugPrint(
-        'Deteniendo polling para "${_activeConnection?.companyName}".',
-      );
+          'Deteniendo polling para "${_activeConnection?.companyName}".');
       _timer!.cancel();
       _timer = null;
     }
@@ -562,7 +542,7 @@ class InvoiceNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
-    debugPrint('Disposing InvoiceNotifier.');
+    debugPrint('Disposing ManagementSummaryNotifier.');
     _stopPolling();
     super.dispose();
   }
@@ -572,13 +552,12 @@ class InvoiceNotifier extends ChangeNotifier {
     _stopPolling();
     _activeConnection = null;
     _authtoken = null;
-    _invoiceSummary = InvoiceSummary();
+    _summary = ManagementSummary();
     _errorMsg = null;
     _isLoading = false;
     _isReAuthenticating = false;
     _startDate = null;
     _endDate = null;
-    // Notificamos a los listeners para que la UI se limpie antes de la navegación.
     notifyListeners();
   }
 }

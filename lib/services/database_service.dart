@@ -17,6 +17,7 @@ class DatabaseService {
   static const String columnPassword = 'password';
   static const String columnPollingInterval = 'pollingIntervalSeconds';
   static const String columnCompanyName = 'companyName';
+  static const String columnCompanyAlias = 'companyAlias';
   static const String columnTerminal = 'terminal';
 
   // --- Tabla de Configuración de la App ---
@@ -58,7 +59,8 @@ class DatabaseService {
         $columnUsername TEXT NOT NULL,
         $columnPassword TEXT NOT NULL,
         $columnPollingInterval INTEGER NOT NULL,
-        $columnCompanyName TEXT NOT NULL UNIQUE,
+        $columnCompanyName TEXT NOT NULL,
+        $columnCompanyAlias TEXT NOT NULL UNIQUE,
         $columnTerminal TEXT NOT NULL,
         $columnPermissions TEXT NOT NULL
       )
@@ -83,6 +85,11 @@ class DatabaseService {
       await db.execute('''
         ALTER TABLE $tableConnections ADD COLUMN $columnPermissions TEXT NOT NULL DEFAULT '$defaultPermissions'
       ''');
+    }
+
+    if (oldVersion < 3) {
+      await db.execute('DROP TABLE IF EXISTS $tableConnections');
+      await _onCreate(db, newVersion);
     }
   }
   // --- MÉTODOS CORRECTOS para la tabla de configuración ---
@@ -197,5 +204,17 @@ class DatabaseService {
       where: '$columnId = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<ApiConnection?> getConnectionByAlias(String alias) async {
+    final db = await instance.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      tableConnections,
+      where: '$columnCompanyAlias = ?',
+      whereArgs: [alias],
+    );
+
+    if (maps.isNotEmpty) return ApiConnection.fromMap(maps.first);
+    return null;
   }
 }

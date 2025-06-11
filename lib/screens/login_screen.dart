@@ -1,11 +1,15 @@
-// lib/screens/login_screen.dart
+// Archivo: lib/screens/login_screen.dart (Corregido)
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:saint_bi/config/app_colors.dart';
 import 'package:saint_bi/models/api_connection.dart';
-import 'package:saint_bi/providers/invoice_notifier.dart';
+
+// CAMBIO: Se importa el Notifier correcto y la nueva pantalla de resumen.
+import 'package:saint_bi/providers/managment_summary_notifier.dart';
+
 import 'package:saint_bi/screens/connection_settings_screen.dart';
-import 'package:saint_bi/screens/invoice_screen.dart';
+import 'package:saint_bi/screens/managment_summary_screen.dart';
 import 'package:saint_bi/services/database_service.dart';
 import 'package:saint_bi/services/saint_api.dart';
 import 'package:saint_bi/services/saint_api_exceptions.dart';
@@ -21,7 +25,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
-  // --- CORRECCIÓN: Añadir un controller para el usuario ---
   final _userController = TextEditingController();
 
   final DatabaseService _dbService = DatabaseService.instance;
@@ -48,12 +51,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         setState(() {
-          // --- CORRECCIÓN: Usar el controller para actualizar el campo de texto ---
           _userController.text =
               settings[DatabaseService.columnDefaultApiUser] ??
                   "Usuario no encontrado";
           _savedConnections = connections;
-          // Si hay conexiones, seleccionar la primera por defecto
           if (_savedConnections.isNotEmpty) {
             _selectedConnection = _savedConnections.first;
           } else {
@@ -83,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final loginResponse = await _saintApi.login(
         baseurl: _selectedConnection!.baseUrl,
-        username: _userController.text, // Leer el usuario desde el controller
+        username: _userController.text,
         password: _passwordController.text,
         terminal: _selectedConnection!.terminal,
       );
@@ -96,12 +97,17 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        final notifier = Provider.of<InvoiceNotifier>(context, listen: false);
+        // CAMBIO: Se obtiene una referencia al Notifier correcto.
+        final notifier =
+            Provider.of<ManagementSummaryNotifier>(context, listen: false);
+
+        // Se establece la conexión activa y se le indica que cargue todos los datos del resumen.
         await notifier.setActiveConnection(_selectedConnection!,
             fetchFullData: true);
 
+        // CAMBIO: Se navega a la nueva pantalla de Resumen Gerencial.
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const InvoiceScreen()),
+          MaterialPageRoute(builder: (_) => const ManagementSummaryScreen()),
         );
       }
     } on SaintApiExceptions catch (e) {
@@ -114,7 +120,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // --- NUEVO: Métodos para navegar a configuración ---
   Future<void> _navigateToSettings(BuildContext context) async {
     final bool? isAuthenticated = await _showAdminPasswordDialog(context);
 
@@ -124,7 +129,6 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(
             builder: (context) => const ConnectionSettingsScreen()),
       );
-      // Al volver, recargamos los datos por si se añadió/editó una conexión
       await _loadInitialData();
     }
   }
@@ -225,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _passwordController.dispose();
-    _userController.dispose(); // --- CORRECCIÓN: Disponer el nuevo controller
+    _userController.dispose();
     super.dispose();
   }
 
@@ -237,7 +241,6 @@ class _LoginScreenState extends State<LoginScreen> {
         title: const Text('Inicio de Sesión'),
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: AppColors.appBarForeground,
-        // --- NUEVO: Botón de acceso a la configuración ---
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -284,7 +287,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           return DropdownMenuItem<ApiConnection>(
                             value: conn,
                             child: Text(
-                              conn.companyName,
+                              conn.companyAlias,
                               overflow: TextOverflow.ellipsis,
                             ),
                           );
@@ -293,7 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           setState(() => _selectedConnection = newValue);
                         },
                         decoration: const InputDecoration(
-                          labelText: 'Empresa',
+                          labelText: 'Conexión (Alias)',
                           border: OutlineInputBorder(),
                           prefixIcon: Icon(Icons.business_rounded),
                         ),
@@ -302,8 +305,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(8)),
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.red)),
                         child: const Text(
                           "No hay conexiones configuradas. Por favor, añada una desde el menú de configuración (arriba a la derecha).",
                           textAlign: TextAlign.center,

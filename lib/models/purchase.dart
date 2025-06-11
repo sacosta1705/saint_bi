@@ -9,6 +9,7 @@ class Purchase {
   final double amountTax;
   final double debit;
   final double credit;
+  final double sign;
 
   Purchase({
     required this.uniqueNum,
@@ -21,5 +22,22 @@ class Purchase {
     required this.amountTax,
     required this.debit,
     required this.credit,
+    required this.sign,
   });
+
+  factory Purchase.fromJson(Map<String, dynamic> json) {
+    return Purchase(
+      uniqueNum: json['nrounico'],
+      type: json['tipofac'],
+      docNumber: json['numerod'],
+      date: json['fechae'],
+      exchange: json['factor'],
+      amountEx: json['montomex'],
+      amount: json['monto'],
+      amountTax: json['mtotax'],
+      debit: json['contado'],
+      credit: json['credito'],
+      sign: json['signo'],
+    );
+  }
 }

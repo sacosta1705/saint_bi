@@ -2,7 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:saint_bi/providers/invoice_notifier.dart';
+
+import 'package:saint_bi/providers/managment_summary_notifier.dart';
 import 'package:saint_bi/screens/loading_acreen.dart';
 
 class App extends StatelessWidget {
@@ -11,7 +12,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => InvoiceNotifier(),
+      create: (context) => ManagementSummaryNotifier(),
       child: MaterialApp(
         title: 'Saint BI',
         home: const LoadingScreen(),

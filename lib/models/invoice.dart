@@ -9,6 +9,10 @@ class Invoice {
   final double amounttax;
   final double exchange;
   final String date;
+  final double credit;
+  final double cash;
+  final double saleCommission;
+  final double collectionComision;
 
   Invoice({
     required this.docnumber,
@@ -21,5 +25,28 @@ class Invoice {
     required this.amounttax,
     required this.exchange,
     required this.date,
+    required this.credit,
+    required this.cash,
+    required this.saleCommission,
+    required this.collectionComision,
   });
+
+  factory Invoice.fromJson(Map<String, dynamic> json) {
+    return Invoice(
+      docnumber: json['numerod'] as String,
+      type: json['tipofac'] as String,
+      clientid: json['codclie'] as String,
+      client: json['descrip'] as String,
+      salesperson: json['codvend'] as String,
+      date: json['fechae'] as String,
+      amount: (json['monto'] as num?)?.toDouble() ?? 0.0,
+      amountex: (json['montomex'] as num?)?.toDouble() ?? 0.0,
+      amounttax: (json['mtotax'] as num?)?.toDouble() ?? 0.0,
+      exchange: (json['factor'] as num?)?.toDouble() ?? 0.0,
+      credit: (json['credito'] as num?)?.toDouble() ?? 0.0,
+      cash: (json['contado'] as num?)?.toDouble() ?? 0.0,
+      saleCommission: (json['mtocomivta'] as num?)?.toDouble() ?? 0.0,
+      collectionComision: (json['mtocomicob'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
 }
