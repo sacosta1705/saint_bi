@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:saint_bi/models/configuration.dart';
 import 'package:saint_bi/models/management_summary.dart';
 import 'package:saint_bi/models/invoice.dart';
@@ -24,6 +26,7 @@ class ManagementSummaryCalculator {
     required List<InventoryOperation> inventoryOps,
     required Configuration config,
   }) {
+    developer.log('Inicializando calculadora de operaciones.');
     // --- INICIO DE LÓGICA DE CÁLCULOS ---
 
     // 1. Lógica de Ventas, Impuestos y Comisiones
@@ -100,6 +103,25 @@ class ManagementSummaryCalculator {
         grossProfit - commissionsPayable - fixedCosts;
 
     // 8. Retornamos el objeto de resumen completamente poblado con todos los valores calculados
+    developer.log(totalNetSalesCredit.toString());
+    developer.log(totalNetSalesCash.toString());
+    developer.log(totalNetSales.toString());
+    developer.log(costOfGoodsSold.toString());
+    developer.log(grossProfit.toString());
+    developer.log(inventoryCharges.toString());
+    developer.log(inventoryDischarges.toString());
+    developer.log(fixedCosts.toString());
+    developer.log(commissionsPayable.toString());
+    developer.log(netProfitOrLoss.toString());
+    developer.log(currentInventory.toString());
+    developer.log(overdueReceivables.toString());
+    developer.log(customerAdvances.toString());
+    developer.log(supplierAdvances.toString());
+    developer.log(overduePayables.toString());
+    developer.log(totalPayables.toString());
+    developer.log(salesVat.toString());
+    developer.log(purchasesVat.toString());
+
     return ManagementSummary(
       totalNetSalesCredit: totalNetSalesCredit,
       totalNetSalesCash: totalNetSalesCash,

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 
 import 'package:saint_bi/services/saint_api.dart';
@@ -65,7 +67,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
   List<ApiConnection> get availableConnections => _availableConnections;
 
   ManagementSummaryNotifier() {
-    debugPrint('Inicializando ManagementSummaryNotifier...');
     refreshAvailableConnections();
   }
 
@@ -84,8 +85,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
         (a, b) =>
             a.companyName.toLowerCase().compareTo(b.companyName.toLowerCase()),
       );
-      debugPrint(
-          'Conexiones disponibles cargadas: ${_availableConnections.length}');
 
       if (_availableConnections.isEmpty) {
         _errorMsg = _uiNoConnectionsAvailableMessage;
@@ -102,8 +101,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
           (c) => c.id == _activeConnection!.id,
         );
         if (!currentActiveStillExists) {
-          debugPrint(
-              'La conexión activa (ID: ${_activeConnection!.id}) ya no existe. Limpiando.');
           clearActiveConnectionAndData(notify: false);
           _errorMsg = _uiNoConnectionSelectedMessage;
         } else {
@@ -177,8 +174,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
     if (_activeConnection?.id == connection.id &&
         !fetchFullData &&
         !isInitialLoad) {
-      debugPrint(
-          'setActiveConnection: Misma conexión (ID: ${connection.id}), no se fuerza recarga.');
       if (_errorMsg == _uiNoConnectionSelectedMessage ||
           _errorMsg == _uiNoConnectionsAvailableMessage) {
         _errorMsg = null;
@@ -187,8 +182,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
       return;
     }
 
-    debugPrint(
-        'Estableciendo conexión activa: ${connection.companyName} (ID: ${connection.id}), fetchFullData: $fetchFullData');
     _activeConnection = connection;
     _authtoken = null;
     _summary = ManagementSummary();
@@ -207,7 +200,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
   }
 
   void clearActiveConnectionAndData({bool notify = true}) {
-    debugPrint('Limpiando conexión activa y datos.');
     _activeConnection = null;
     _authtoken = null;
     _summary = ManagementSummary();
@@ -231,13 +223,9 @@ class ManagementSummaryNotifier extends ChangeNotifier {
     _errorMsg = message;
     if (isAuthenticationIssue) {
       _authtoken = null;
-      debugPrint(
-          'Token invalidado para "${_activeConnection?.companyName}" por error de auth.');
     }
     _isLoading = false;
     _isReAuthenticating = false;
-    debugPrint(
-        'Error en Notifier para "${_activeConnection?.companyName ?? "N/A"}": $message. Exc: $error, Stack: $stackTrace');
     notifyListeners();
   }
 
@@ -262,12 +250,8 @@ class ManagementSummaryNotifier extends ChangeNotifier {
     notifyListeners();
 
     if (!isAuthenticated) {
-      debugPrint(
-          'No autenticado al filtrar por rango para "${_activeConnection!.companyName}". Intentando login.');
       await fetchInitialData();
     } else {
-      debugPrint(
-          'Autenticado para "${_activeConnection!.companyName}". Obteniendo datos para rango: $_startDate - $_endDate');
       await _fetchSummaryData(isInitialFetchForCurrentOp: true);
       if (isAuthenticated && _errorMsg == null) {
         _startPollingInvoices();
@@ -282,9 +266,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
       notifyListeners();
       return;
     }
-
-    debugPrint(
-        'Iniciando fetchInitialData para "${_activeConnection!.companyName}". isLoading: $_isLoading, isReAuth: $_isReAuthenticating');
 
     _isLoading = true;
     if (!_isReAuthenticating) {
@@ -312,8 +293,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
 
       _authtoken = loginResponse.authToken;
       if (loginResponse.company != _activeConnection!.companyName) {
-        debugPrint(
-            "Advertencia: Nombre de empresa en BD local ('${_activeConnection!.companyName}') difiere del de API ('${loginResponse.company}'). Actualizando local.");
         _activeConnection =
             _activeConnection!.copyWith(companyName: loginResponse.company);
         await _dbService.updateConnection(_activeConnection!);
@@ -326,23 +305,15 @@ class ManagementSummaryNotifier extends ChangeNotifier {
             orElse: () => _activeConnection!);
       }
 
-      debugPrint(
-          'Login exitoso para "${_activeConnection!.companyName}". Token: $_authtoken. Empresa API: "${loginResponse.company}"');
       _isReAuthenticating = false;
 
       if (isAuthenticated) {
         _errorMsg = null;
-        debugPrint(
-            'Procediendo a _fetchSummaryData para "${_activeConnection!.companyName}"');
         await _fetchSummaryData(isInitialFetchForCurrentOp: true);
 
         if (_errorMsg == null) {
-          debugPrint(
-              'fetchInitialData: _fetchSummaryData OK para "${_activeConnection!.companyName}", iniciando polling.');
           _startPollingInvoices();
         } else {
-          debugPrint(
-              'fetchInitialData: _fetchSummaryData falló post-login para "${_activeConnection!.companyName}". Error: $_errorMsg');
           _stopPolling();
         }
       } else {
@@ -369,8 +340,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
         _isLoading = false;
       }
       notifyListeners();
-      debugPrint(
-          'fetchInitialData finalizado para "${_activeConnection?.companyName}". isLoading: $_isLoading, isAuth: $isAuthenticated, error: $_errorMsg');
     }
   }
 
@@ -394,9 +363,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
       }
       notifyListeners();
     }
-
-    debugPrint(
-        'Iniciando _fetchSummaryData para "${_activeConnection!.companyName}". Filtro: $_startDate - $_endDate');
 
     try {
       final dateParams = (_startDate != null && _endDate != null)
@@ -433,6 +399,7 @@ class ManagementSummaryNotifier extends ChangeNotifier {
         _api.getConfig(
             baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
       ]);
+      developer.log(results.toString());
 
       // 2. Parsear los resultados a listas de nuestros modelos
       final invoices =
@@ -465,13 +432,9 @@ class ManagementSummaryNotifier extends ChangeNotifier {
         config: config,
       );
 
-      debugPrint(
-          '_fetchSummaryData para "${_activeConnection!.companyName}": Resumen calculado. Ventas: ${_summary.totalNetSales}');
       if (_errorMsg != _uiSessionExpiredMessage) _errorMsg = null;
       _isReAuthenticating = false;
     } on SessionExpiredException catch (e, stackTrace) {
-      debugPrint(
-          '_fetchSummaryData para "${_activeConnection!.companyName}": Sesión Expirada. ${e.toString()}');
       if (_isReAuthenticating) {
         _handleError(_uiAuthErrorMessage,
             isAuthenticationIssue: true, error: e, stackTrace: stackTrace);
@@ -502,8 +465,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
         _isLoading = false;
       }
       notifyListeners();
-      debugPrint(
-          '_fetchSummaryData finalizado para "${_activeConnection?.companyName}". isLoading: $_isLoading, error: $_errorMsg, summarySales: ${_summary.totalNetSales}');
     }
   }
 
@@ -512,8 +473,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
     if (isAuthenticated &&
         _activeConnection != null &&
         _activeConnection!.pollingIntervalSeconds > 0) {
-      debugPrint(
-          'Iniciando polling para "${_activeConnection!.companyName}" c/${_activeConnection!.pollingIntervalSeconds}s.');
       _timer = Timer.periodic(
           Duration(seconds: _activeConnection!.pollingIntervalSeconds),
           (timer) {
@@ -521,20 +480,13 @@ class ManagementSummaryNotifier extends ChangeNotifier {
           _stopPolling();
           return;
         }
-        debugPrint(
-            'Ejecutando fetch por polling para "${_activeConnection!.companyName}"...');
         _fetchSummaryData(isInitialFetchForCurrentOp: false);
       });
-    } else {
-      debugPrint(
-          'No se inicia polling: no auth, sin conexión activa, o intervalo <= 0.');
-    }
+    } else {}
   }
 
   void _stopPolling() {
     if (_timer != null && _timer!.isActive) {
-      debugPrint(
-          'Deteniendo polling para "${_activeConnection?.companyName}".');
       _timer!.cancel();
       _timer = null;
     }
@@ -542,13 +494,11 @@ class ManagementSummaryNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
-    debugPrint('Disposing ManagementSummaryNotifier.');
     _stopPolling();
     super.dispose();
   }
 
   Future<void> logout() async {
-    debugPrint('Cerrando sesión y limpiando estado del notifier...');
     _stopPolling();
     _activeConnection = null;
     _authtoken = null;

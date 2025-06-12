@@ -41,7 +41,6 @@ class DatabaseService {
   Future<Database> _initDatabase() async {
     final documentsDirectoryPath = await getDatabasesPath();
     final path = join(documentsDirectoryPath, _databaseName);
-    debugPrint('Database path: $path');
     return await openDatabase(
       path,
       version: _databaseVersion,
@@ -51,7 +50,6 @@ class DatabaseService {
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    debugPrint('Creando esquema de base de datos para la versión $version...');
     await db.execute('''
       CREATE TABLE $tableConnections (
         $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,7 +90,6 @@ class DatabaseService {
       await _onCreate(db, newVersion);
     }
   }
-  // --- MÉTODOS CORRECTOS para la tabla de configuración ---
 
   Future<void> saveAppSettings(
       {String? adminPasswordHash, String? defaultApiUser}) async {
@@ -112,7 +109,6 @@ class DatabaseService {
       data,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    debugPrint('Configuración de la aplicación guardada/actualizada.');
   }
 
   Future<Map<String, dynamic>> getAppSettings() async {
@@ -126,16 +122,12 @@ class DatabaseService {
       if (maps.isNotEmpty) {
         return maps.first;
       }
-    } catch (e) {
-      debugPrint(
-          'Error al obtener app settings (puede que la tabla no exista aún): $e');
-    }
+      // ignore: empty_catches
+    } catch (e) {}
     return {};
   }
 
-  // --- Métodos para la tabla de conexiones (sin cambios) ---
   Future<int> insertConnection(ApiConnection connection) async {
-    /* ...código se mantiene... */
     final db = await instance.database;
     try {
       final id = await db.insert(
@@ -154,7 +146,6 @@ class DatabaseService {
   }
 
   Future<List<ApiConnection>> getAllConnections() async {
-    /* ...código se mantiene... */
     final db = await instance.database;
     final List<Map<String, dynamic>> maps =
         await db.query(tableConnections, orderBy: '$columnCompanyName ASC');
@@ -163,7 +154,6 @@ class DatabaseService {
   }
 
   Future<ApiConnection?> getConnectionByCompanyName(String companyName) async {
-    /* ...código se mantiene... */
     final db = await instance.database;
     final List<Map<String, dynamic>> maps = await db.query(
       tableConnections,
@@ -175,7 +165,6 @@ class DatabaseService {
   }
 
   Future<int> updateConnection(ApiConnection connection) async {
-    /* ...código se mantiene... */
     final db = await instance.database;
     if (connection.id == null) return 0;
     try {
@@ -197,7 +186,6 @@ class DatabaseService {
   }
 
   Future<int> deleteConnection(int id) async {
-    /* ...código se mantiene... */
     final db = await instance.database;
     return await db.delete(
       tableConnections,

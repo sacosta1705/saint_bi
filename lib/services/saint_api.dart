@@ -20,13 +20,13 @@ class SaintApi {
     final Uri uri =
         Uri.parse('$baseUrl/v1/adm/$endpoint').replace(queryParameters: params);
 
-    developer.log('URI generada: $uri');
-
+    // developer.log('Enviando request a $uri con $authtoken.');
     try {
       final response = await http.get(uri, headers: {
         'Content-Type': 'application/json',
         'Pragma': authtoken,
       });
+      // developer.log(response.body);
       return _handleResponse(response);
     } catch (e) {
       throw SaintApiExceptions('No fue posible conectarse al servidor: $e');
@@ -127,6 +127,7 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
+    // developer.log('Leyendo Ventas con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'invoices',
       baseUrl: baseUrl,
@@ -140,6 +141,7 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
+    // developer.log('Leyendo Compras con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'purchases',
       baseUrl: baseUrl,
@@ -153,6 +155,8 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
+    // developer.log(
+    //     'Leyendo Items vendidos con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'invoiceitems',
       baseUrl: baseUrl,
@@ -166,6 +170,7 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
+    // developer.log('Leyendo CxC con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'accreceivables',
       baseUrl: baseUrl,
@@ -179,6 +184,7 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
+    // developer.log('Leyendo CxP con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'accpayables',
       baseUrl: baseUrl,
@@ -192,6 +198,8 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
+    // developer
+    //     .log('Leyendo Productos con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'products',
       baseUrl: baseUrl,
@@ -205,8 +213,10 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
+    // developer.log(
+    //     'Leyendo Operaciones de inventario con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
-      'inventories',
+      'stocks',
       baseUrl: baseUrl,
       authtoken: authtoken,
       params: params,
@@ -218,6 +228,8 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
+    // developer
+    //     .log('Leyendo Configuracion con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'config',
       baseUrl: baseUrl,

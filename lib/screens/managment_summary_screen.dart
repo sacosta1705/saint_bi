@@ -376,7 +376,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
   // Este es el widget principal que reemplaza a _buildSalesCard
   Widget _buildManagementSummaryBody(
       ManagementSummaryNotifier notifier, BuildContext context) {
-    // CAMBIO: Obtenemos el nuevo modelo de resumen
     final summary = notifier.summary;
     final currencyFormat = NumberFormat.currency(
         locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2);
