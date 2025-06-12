@@ -1,5 +1,7 @@
+import 'dart:developer' as developer;
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:http/http.dart' as http;
 
 import 'package:saint_bi/services/saint_api_exceptions.dart';
@@ -18,10 +20,12 @@ class SaintApi {
     final Uri uri =
         Uri.parse('$baseUrl/v1/adm/$endpoint').replace(queryParameters: params);
 
+    developer.log('URI generada: $uri');
+
     try {
       final response = await http.get(uri, headers: {
-        'Contenty-Type': 'application/json',
-        'Authorization': 'Basic $authtoken',
+        'Content-Type': 'application/json',
+        'Pragma': authtoken,
       });
       return _handleResponse(response);
     } catch (e) {
@@ -30,11 +34,22 @@ class SaintApi {
   }
 
   dynamic _handleResponse(http.Response response) {
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return json.decode(response.body);
-    } else {
-      final error = json.decode(response.body);
-      throw SaintApiExceptions(error['message'] ?? 'Error desconocido');
+    try {
+      final responseBody = utf8.decode(response.bodyBytes);
+      final jsonData = jsonDecode(responseBody);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return jsonData;
+      } else {
+        final String message = (jsonData as Map<String, dynamic>)['message'] ??
+            'Error desconocido desde el API.';
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          throw SessionExpiredException(message);
+        }
+        throw UnknownApiExpection('Error: ${response.statusCode}: $message');
+      }
+    } on FormatException catch (e) {
+      throw UnknownApiExpection('Error al procesar la respuesta del servidor');
     }
   }
 
@@ -210,116 +225,4 @@ class SaintApi {
       params: params,
     );
   }
-
-  // Future<List<Purchase>> getPurchases({
-  //   required String baseUrl,
-  //   required String authToken,
-  // }) async {
-  //   final Uri uri = Uri.parse('$baseUrl/v1/adm/purchases');
-
-  //   try {
-  //     final response = await http.get(uri, headers: {'pragma': authToken});
-
-  //     if (response.statusCode == 200) {
-  //       final String responseBody = utf8.decode(response.bodyBytes);
-  //       final List<dynamic> data = jsonDecode(responseBody);
-
-  //       if (data.isEmpty) {
-  //         return [];
-  //       }
-
-  //       List<Purchase> purchases = [];
-  //       for (var item in data) {
-  //         try {
-  //           purchases.add(
-  //             PurchaseParser.fromJson(item as Map<String, dynamic>),
-  //           );
-  //         } catch (e) {
-  //           debugPrint('Error al parsear un objeto Purchase: $e. JSON: $item');
-  //         }
-  //       }
-  //       return purchases;
-  //     } else if (response.statusCode == 403) {
-  //       throw SessionExpiredException(
-  //         'Sesión expirada o acceso denegado al obtener compras (Status: 403).',
-  //       );
-  //     } else {
-  //       throw UnknownApiExpection(
-  //         'Error desconocido al obtener compras (Status: ${response.statusCode}). Body: ${response.body}',
-  //       );
-  //     }
-  //   } on http.ClientException catch (e) {
-  //     throw NetworkException("Error de red al obtener compras: ${e.message}");
-  //   } on SocketException catch (e) {
-  //     throw NetworkException(
-  //       "Error de conexión al obtener compras: ${e.message}",
-  //     );
-  //   } on FormatException catch (e) {
-  //     throw UnknownApiExpection(
-  //       'Error al procesar la respuesta del servidor (compras - JSON inválido): ${e.message}',
-  //     );
-  //   } catch (e) {
-  //     if (e is SaintApiExceptions) rethrow;
-  //     throw UnknownApiExpection(
-  //       'Excepción no controlada al obtener compras: ${e.toString()}',
-  //     );
-  //   }
-  // }
-
-  // Future<List<Invoice>> getInvoices({
-  //   required String baseUrl,
-  //   required String authtoken,
-  // }) async {
-  //   final Uri uri = Uri.parse('$baseUrl/v1/adm/invoices');
-
-  //   try {
-  //     final response = await http.get(uri, headers: {'pragma': authtoken});
-
-  //     if (response.statusCode == 200) {
-  //       final String responseBody = utf8.decode(response.bodyBytes);
-  //       final List<dynamic> data = jsonDecode(responseBody);
-
-  //       if (data.isEmpty) {
-  //         return [];
-  //       }
-
-  //       List<Invoice> invoices = [];
-  //       for (var jsonItem in data) {
-  //         try {
-  //           invoices.add(
-  //             InvoiceParser.fromJson(jsonItem as Map<String, dynamic>),
-  //           );
-  //         } catch (e) {
-  //           debugPrint(
-  //             'Error al parsear un objeto Invoice individual. Se omitirá este objeto. JSON: $jsonItem. Error: $e',
-  //           );
-  //         }
-  //       }
-  //       return invoices;
-  //     } else if (response.statusCode == 403) {
-  //       throw SessionExpiredException(
-  //         "Sesión expirada o acceso negado al obtener facturas (Status: 403).",
-  //       );
-  //     } else {
-  //       throw UnknownApiExpection(
-  //         'Error desconocido al obtener facturas (Status: ${response.statusCode}). Body: ${response.body}',
-  //       );
-  //     }
-  //   } on http.ClientException catch (e) {
-  //     throw NetworkException("Error de red al obtener facturas: ${e.message}");
-  //   } on SocketException catch (e) {
-  //     throw NetworkException(
-  //       "Error de conexión al obtener facturas: ${e.message}",
-  //     );
-  //   } on FormatException catch (e) {
-  //     throw UnknownApiExpection(
-  //       'Error al procesar la respuesta del servidor (facturas - JSON inválido): ${e.message}',
-  //     );
-  //   } catch (e) {
-  //     if (e is SaintApiExceptions) rethrow;
-  //     throw UnknownApiExpection(
-  //       'Excepción no controlada al obtener facturas: ${e.toString()}',
-  //     );
-  //   }
-  // }
 }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // IMPORTANTE: Añadir para usar formatters
 import 'package:saint_bi/config/app_colors.dart';
 import 'package:saint_bi/screens/connection_settings_screen.dart';
-import 'package:saint_bi/screens/login_screen.dart'; // Se navega a LoginScreen, no a ConnectionSettingsScreen
 import 'package:saint_bi/services/database_service.dart';
 import 'package:saint_bi/utils/security_service.dart';
 
