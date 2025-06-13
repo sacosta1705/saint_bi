@@ -24,7 +24,6 @@ class ManagementSummaryCalculator {
     required List<AccountPayable> payables,
     required List<Purchase> purchases,
     required List<InventoryOperation> inventoryOps,
-    required Configuration config,
   }) {
     developer.log('Inicializando calculadora de operaciones.');
     // --- INICIO DE LÓGICA DE CÁLCULOS ---
@@ -98,9 +97,7 @@ class ManagementSummaryCalculator {
         .fold(0.0, (previousValue, ap) => previousValue + ap.balance);
 
     // 7. Costos Fijos y Utilidad Neta
-    final double fixedCosts = config.monthlyBudget;
-    final double netProfitOrLoss =
-        grossProfit - commissionsPayable - fixedCosts;
+    final double netProfitOrLoss = grossProfit - commissionsPayable;
 
     // 8. Retornamos el objeto de resumen completamente poblado con todos los valores calculados
     developer.log(totalNetSalesCredit.toString());
@@ -110,7 +107,6 @@ class ManagementSummaryCalculator {
     developer.log(grossProfit.toString());
     developer.log(inventoryCharges.toString());
     developer.log(inventoryDischarges.toString());
-    developer.log(fixedCosts.toString());
     developer.log(commissionsPayable.toString());
     developer.log(netProfitOrLoss.toString());
     developer.log(currentInventory.toString());
@@ -130,7 +126,6 @@ class ManagementSummaryCalculator {
       grossProfit: grossProfit,
       inventoryCharges: inventoryCharges,
       inventoryDischarges: inventoryDischarges,
-      fixedCosts: fixedCosts,
       commissionsPayable: commissionsPayable,
       netProfitOrLoss: netProfitOrLoss,
       currentInventory: currentInventory,

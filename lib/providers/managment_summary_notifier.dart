@@ -422,7 +422,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
         payables: payables,
         purchases: purchases,
         inventoryOps: inventoryOps,
-        config: config,
       );
 
       if (_errorMsg != _uiSessionExpiredMessage) _errorMsg = null;
