@@ -378,78 +378,69 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
 
     return RefreshIndicator(
       onRefresh: () => notifier.fetchInitialData(),
-      child: Column(
+      child: ListView(
+        padding: const EdgeInsets.all(12.0),
         children: [
-          // Mantenemos la barra de filtros de fecha que ya tenías.
           _buildDateFilterBar(notifier, context),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(12.0),
-              children: [
-                _buildSectionCard("OPERACIONES", [
-                  _buildDataRow("Total ventas netas a CRÉDITO:",
-                      currencyFormat.format(summary.totalNetSalesCredit)),
-                  _buildDataRow("Total ventas netas de CONTADO:",
-                      currencyFormat.format(summary.totalNetSalesCash)),
-                  _buildDataRow("Total ventas netas:",
-                      currencyFormat.format(summary.totalNetSales),
-                      isTotal: true),
-                  Divider(),
-                  _buildDataRow("Costo de productos y servicios:",
-                      currencyFormat.format(summary.costOfGoodsSold)),
-                  _buildDataRow("Utilidad bruta:",
-                      currencyFormat.format(summary.grossProfit),
-                      isTotal: true,
-                      valueColor: summary.grossProfit >= 0
-                          ? AppColors.positiveValue
-                          : AppColors.negativeValue),
-                  Divider(),
-                  _buildDataRow("Comisiones por pagar:",
-                      currencyFormat.format(summary.commissionsPayable)),
-                  _buildDataRow("Costos fijos aproximados:",
-                      currencyFormat.format(summary.fixedCosts)),
-                  _buildDataRow("Utilidad o pérdida aprox.:",
-                      currencyFormat.format(summary.netProfitOrLoss),
-                      isTotal: true,
-                      valueColor: summary.netProfitOrLoss >= 0
-                          ? AppColors.positiveValue
-                          : AppColors.negativeValue),
-                ]),
-                SizedBox(height: 16),
-                _buildSectionCard("RESUMEN GERENCIAL", [
-                  _buildDataRow("Inventario actual:",
-                      currencyFormat.format(summary.currentInventory)),
-                  _buildDataRow("Ctas. por cobrar Vencido:",
-                      currencyFormat.format(summary.overdueReceivables),
-                      valueColor: summary.overdueReceivables > 0
-                          ? AppColors.negativeValue
-                          : AppColors.textPrimary),
-                  _buildDataRow("Total Ctas. por cobrar:",
-                      currencyFormat.format(summary.totalReceivables)),
-                  Divider(),
-                  _buildDataRow("Ctas. por pagar Vencido:",
-                      currencyFormat.format(summary.overduePayables),
-                      valueColor: summary.overduePayables > 0
-                          ? AppColors.negativeValue
-                          : AppColors.textPrimary),
-                  _buildDataRow("Total Ctas. por pagar:",
-                      currencyFormat.format(summary.totalPayables)),
-                ]),
-                SizedBox(height: 16),
-                _buildSectionCard("IMPUESTOS", [
-                  _buildDataRow("I.V.A. en ventas (Débito Fiscal):",
-                      currencyFormat.format(summary.salesVat)),
-                  _buildDataRow("I.V.A. en compras (Crédito Fiscal):",
-                      currencyFormat.format(summary.purchasesVat)),
-                  _buildDataRow(
-                      "Total I.V.A. por pagar:",
-                      currencyFormat
-                          .format(summary.salesVat - summary.purchasesVat),
-                      isTotal: true),
-                ]),
-              ],
-            ),
-          ),
+          _buildSectionCard("OPERACIONES", [
+            _buildDataRow("Total ventas netas a CRÉDITO:",
+                currencyFormat.format(summary.totalNetSalesCredit)),
+            _buildDataRow("Total ventas netas de CONTADO:",
+                currencyFormat.format(summary.totalNetSalesCash)),
+            _buildDataRow("Total ventas netas:",
+                currencyFormat.format(summary.totalNetSales),
+                isTotal: true),
+            Divider(),
+            _buildDataRow("Costo de productos y servicios:",
+                currencyFormat.format(summary.costOfGoodsSold)),
+            _buildDataRow(
+                "Utilidad bruta:", currencyFormat.format(summary.grossProfit),
+                isTotal: true,
+                valueColor: summary.grossProfit >= 0
+                    ? AppColors.positiveValue
+                    : AppColors.negativeValue),
+            Divider(),
+            _buildDataRow("Comisiones por pagar:",
+                currencyFormat.format(summary.commissionsPayable)),
+            _buildDataRow("Costos fijos aproximados:",
+                currencyFormat.format(summary.fixedCosts)),
+            _buildDataRow("Utilidad o pérdida aprox.:",
+                currencyFormat.format(summary.netProfitOrLoss),
+                isTotal: true,
+                valueColor: summary.netProfitOrLoss >= 0
+                    ? AppColors.positiveValue
+                    : AppColors.negativeValue),
+          ]),
+          SizedBox(height: 16),
+          _buildSectionCard("RESUMEN GERENCIAL", [
+            _buildDataRow("Inventario actual:",
+                currencyFormat.format(summary.currentInventory)),
+            _buildDataRow("Ctas. por cobrar Vencido:",
+                currencyFormat.format(summary.overdueReceivables),
+                valueColor: summary.overdueReceivables > 0
+                    ? AppColors.negativeValue
+                    : AppColors.textPrimary),
+            _buildDataRow("Total Ctas. por cobrar:",
+                currencyFormat.format(summary.totalReceivables)),
+            Divider(),
+            _buildDataRow("Ctas. por pagar Vencido:",
+                currencyFormat.format(summary.overduePayables),
+                valueColor: summary.overduePayables > 0
+                    ? AppColors.negativeValue
+                    : AppColors.textPrimary),
+            _buildDataRow("Total Ctas. por pagar:",
+                currencyFormat.format(summary.totalPayables)),
+          ]),
+          SizedBox(height: 16),
+          _buildSectionCard("IMPUESTOS", [
+            _buildDataRow("I.V.A. en ventas (Débito Fiscal):",
+                currencyFormat.format(summary.salesVat)),
+            _buildDataRow("I.V.A. en compras (Crédito Fiscal):",
+                currencyFormat.format(summary.purchasesVat)),
+            _buildDataRow("Total I.V.A. por pagar:",
+                currencyFormat.format(summary.salesVat - summary.purchasesVat),
+                isTotal: true),
+          ]),
         ],
       ),
     );
