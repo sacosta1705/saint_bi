@@ -25,9 +25,6 @@ class ManagementSummaryCalculator {
     required List<Purchase> purchases,
     required List<InventoryOperation> inventoryOps,
   }) {
-    developer.log('Inicializando calculadora de operaciones.');
-    // --- INICIO DE LÓGICA DE CÁLCULOS ---
-
     // 1. Lógica de Ventas, Impuestos y Comisiones
     double totalNetSalesCredit = 0.0;
     double totalNetSalesCash = 0.0;
@@ -100,23 +97,6 @@ class ManagementSummaryCalculator {
     final double netProfitOrLoss = grossProfit - commissionsPayable;
 
     // 8. Retornamos el objeto de resumen completamente poblado con todos los valores calculados
-    developer.log(totalNetSalesCredit.toString());
-    developer.log(totalNetSalesCash.toString());
-    developer.log(totalNetSales.toString());
-    developer.log(costOfGoodsSold.toString());
-    developer.log(grossProfit.toString());
-    developer.log(inventoryCharges.toString());
-    developer.log(inventoryDischarges.toString());
-    developer.log(commissionsPayable.toString());
-    developer.log(netProfitOrLoss.toString());
-    developer.log(currentInventory.toString());
-    developer.log(overdueReceivables.toString());
-    developer.log(customerAdvances.toString());
-    developer.log(supplierAdvances.toString());
-    developer.log(overduePayables.toString());
-    developer.log(totalPayables.toString());
-    developer.log(salesVat.toString());
-    developer.log(purchasesVat.toString());
 
     return ManagementSummary(
       totalNetSalesCredit: totalNetSalesCredit,

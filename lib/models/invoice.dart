@@ -37,7 +37,7 @@ class Invoice {
       type: json['tipofac']?.toString() ?? '',
       clientid: json['codclie']?.toString() ?? '',
       client: json['descrip']?.toString() ?? '',
-      salesperson: json['codvend'] as String,
+      salesperson: json['codvend']?.toString() ?? '',
       date: json['fechae']?.toString() ?? '',
       amount: (json['monto'] as num?)?.toDouble() ?? 0.0,
       amountex: (json['montomex'] as num?)?.toDouble() ?? 0.0,

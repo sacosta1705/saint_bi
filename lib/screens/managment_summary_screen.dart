@@ -406,9 +406,9 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             Divider(),
             _buildDataRow("Comisiones por pagar:",
                 currencyFormat.format(summary.commissionsPayable)),
-            _buildDataRow("Costos fijos aproximados:",
-                currencyFormat.format(summary.fixedCosts)),
-            _buildDataRow("Utilidad o pérdida aprox.:",
+            _buildDataRow(
+                "Costos fijos:", currencyFormat.format(summary.fixedCosts)),
+            _buildDataRow("Utilidad o perdida:",
                 currencyFormat.format(summary.netProfitOrLoss),
                 isTotal: true,
                 valueColor: summary.netProfitOrLoss >= 0
@@ -530,7 +530,7 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
   Widget _buildDataRow(String label, String value,
       {Color valueColor = AppColors.textPrimary, bool isTotal = false}) {
     final labelStyle = TextStyle(
-        fontSize: 15,
+        fontSize: 16,
         color: AppColors.textSecondary,
         fontWeight: isTotal ? FontWeight.bold : FontWeight.normal);
     final valueStyle = TextStyle(
