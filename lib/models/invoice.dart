@@ -33,12 +33,12 @@ class Invoice {
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
     return Invoice(
-      docnumber: json['numerod'] as String,
-      type: json['tipofac'] as String,
-      clientid: json['codclie'] as String,
-      client: json['descrip'] as String,
+      docnumber: json['numerod']?.toString() ?? '',
+      type: json['tipofac']?.toString() ?? '',
+      clientid: json['codclie']?.toString() ?? '',
+      client: json['descrip']?.toString() ?? '',
       salesperson: json['codvend'] as String,
-      date: json['fechae'] as String,
+      date: json['fechae']?.toString() ?? '',
       amount: (json['monto'] as num?)?.toDouble() ?? 0.0,
       amountex: (json['montomex'] as num?)?.toDouble() ?? 0.0,
       amounttax: (json['mtotax'] as num?)?.toDouble() ?? 0.0,

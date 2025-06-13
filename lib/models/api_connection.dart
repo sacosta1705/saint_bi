@@ -77,14 +77,15 @@ class ApiConnection {
   /// deserializar un objeto desde una fuente como una base de datos.
   factory ApiConnection.fromMap(Map<String, dynamic> map) {
     return ApiConnection(
-      id: map['id'] as int?,
-      baseUrl: map['baseUrl'] as String,
-      username: map['username'] as String,
-      password: map['password'] as String,
-      pollingIntervalSeconds: map['pollingIntervalSeconds'] as int,
-      companyName: map['companyName'] as String,
-      companyAlias: map['companyAlias'] as String,
-      terminal: map['terminal'] as String? ?? 'saint_bi',
+      id: int.tryParse(map['id']?.toString() ?? '') ?? 0,
+      baseUrl: map['baseUrl']?.toString() ?? '',
+      username: map['username']?.toString() ?? '',
+      password: map['password']?.toString() ?? '',
+      pollingIntervalSeconds:
+          int.tryParse(map['pollingIntervalSeconds']?.toString() ?? '') ?? 60,
+      companyName: map['companyName']?.toString() ?? '',
+      companyAlias: map['companyAlias']?.toString() ?? '',
+      terminal: map['terminal']?.toString() ?? 'saint_bi',
       permissions: map['permissions'] != null
           ? Permissions.fromJson(map['permissions'])
           : Permissions(),

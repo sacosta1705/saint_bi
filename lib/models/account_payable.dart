@@ -17,7 +17,7 @@ class AccountPayable {
 
   factory AccountPayable.fromJson(Map<String, dynamic> json) {
     return AccountPayable(
-      docNumber: json['numerod'] as String,
+      docNumber: json['numerod']?.toString() ?? '',
       balance: (json['saldo'] as num?)?.toDouble() ?? 0.0,
       emissionDate: json['fechae'] != null
           ? DateTime.parse(json['fechav'])
@@ -25,7 +25,7 @@ class AccountPayable {
       dueDate: json['fechav'] != null
           ? DateTime.parse(json['fechav'])
           : DateTime(1900),
-      type: json['tipocxp'] ?? '',
+      type: json['tipocxp']?.toString() ?? '',
       comission: (json['comision'] as num?)?.toDouble() ?? 0.0,
     );
   }

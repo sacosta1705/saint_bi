@@ -245,36 +245,39 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
           ),
         ],
       ),
-      body: Consumer<ManagementSummaryNotifier>(
-        builder: (context, notifier, child) {
-          if (notifier.isLoading && !notifier.isAuthenticated) {
-            return Center(child: _buildLoadingState(notifier: notifier));
-          }
-          if (notifier.errorMsg != null) {
-            return Center(child: _buildErrorState(notifier, context));
-          }
-          if (!notifier.isAuthenticated || notifier.activeConnection == null) {
-            return Center(child: _buildErrorState(notifier, context));
-          }
+      body: SafeArea(
+        child: Consumer<ManagementSummaryNotifier>(
+          builder: (context, notifier, child) {
+            if (notifier.isLoading && !notifier.isAuthenticated) {
+              return Center(child: _buildLoadingState(notifier: notifier));
+            }
+            if (notifier.errorMsg != null) {
+              return Center(child: _buildErrorState(notifier, context));
+            }
+            if (!notifier.isAuthenticated ||
+                notifier.activeConnection == null) {
+              return Center(child: _buildErrorState(notifier, context));
+            }
 
-          final permissions = notifier.activeConnection!.permissions;
-          if (!permissions.canViewSales) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  'No tienes permisos para ver ningún resumen.\nContacta al administrador.',
-                  textAlign: TextAlign.center,
-                  style:
-                      TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            final permissions = notifier.activeConnection!.permissions;
+            if (!permissions.canViewSales) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text(
+                    'No tienes permisos para ver ningún resumen.\nContacta al administrador.',
+                    textAlign: TextAlign.center,
+                    style:
+                        TextStyle(fontSize: 16, color: AppColors.textSecondary),
+                  ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          // CAMBIO: El cuerpo principal ahora llama al nuevo widget del Resumen Gerencial
-          return _buildManagementSummaryBody(notifier, context);
-        },
+            // CAMBIO: El cuerpo principal ahora llama al nuevo widget del Resumen Gerencial
+            return _buildManagementSummaryBody(notifier, context);
+          },
+        ),
       ),
     );
   }
@@ -373,8 +376,9 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
   Widget _buildManagementSummaryBody(
       ManagementSummaryNotifier notifier, BuildContext context) {
     final summary = notifier.summary;
-    final currencyFormat = NumberFormat.currency(
-        locale: 'es_VE', symbol: 'Bs. ', decimalDigits: 2);
+    final deviceLocale = Localizations.localeOf(context).toString();
+    final currencyFormat = NumberFormat.decimalPatternDigits(
+        locale: deviceLocale, decimalDigits: 2);
 
     return RefreshIndicator(
       onRefresh: () => notifier.fetchInitialData(),

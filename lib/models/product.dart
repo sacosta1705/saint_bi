@@ -13,8 +13,8 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      code: json['codprod'],
-      description: json['descrip'],
+      code: json['codprod']?.toString() ?? '',
+      description: json['descrip']?.toString() ?? '',
       cost: (json['costact'] as num?)?.toDouble() ?? 0.0,
       stock: (json['existen'] as num?)?.toDouble() ?? 0.0,
     );

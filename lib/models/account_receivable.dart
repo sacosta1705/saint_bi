@@ -40,7 +40,7 @@ class AccountReceivable {
   /// Dicho `json` debe estar en formato [Map<String, dynamic>]
   factory AccountReceivable.fromJson(Map<String, dynamic> json) {
     return AccountReceivable(
-      docNumber: json['numerod'] as String,
+      docNumber: json['numerod']?.toString() ?? '',
       balance: (json['saldo'] as num?)?.toDouble() ?? 0.0,
       emissionDate: json['fechae'] != null
           ? DateTime.parse(json['fechae'])
@@ -48,7 +48,7 @@ class AccountReceivable {
       dueDate: json['fechav'] != null
           ? DateTime.parse(json['fechav'])
           : DateTime(1900),
-      type: json['tipocxc'] ?? '',
+      type: json['tipocxc']?.toString() ?? '',
       commission: (json['comision'] as num?)?.toDouble() ?? 0.0,
     );
   }

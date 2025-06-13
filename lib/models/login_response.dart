@@ -45,12 +45,12 @@ class LoginResponse {
     String? pragmaToken,
   }) {
     return LoginResponse(
-      username: json['user'] ?? '', // Ajustado a "user"
-      firstname: json['firstname'] ?? '',
-      lastname: json['lastname'] ?? '',
-      userrole: json['role'] ?? '', // Ajustado a "role"
-      company: json['enterprise'] ?? '', // Ajustado a "enterprise"
-      authToken: pragmaToken, // NUEVO: Asignar el token
+      username: json['user']?.toString() ?? '', // Ajustado a "user"
+      firstname: json['firstname']?.toString() ?? '',
+      lastname: json['lastname']?.toString() ?? '',
+      userrole: json['role']?.toString() ?? '', // Ajustado a "role"
+      company: json['enterprise']?.toString() ?? '', // Ajustado a "enterprise"
+      authToken: pragmaToken?.toString() ?? '', // NUEVO: Asignar el token
     );
   }
 
