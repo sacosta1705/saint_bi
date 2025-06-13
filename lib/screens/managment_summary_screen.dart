@@ -1,11 +1,8 @@
-// Archivo: lib/screens/management_summary_screen.dart (Evolución de InvoiceScreen)
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:saint_bi/models/api_connection.dart';
 
-// CAMBIO: Se importa el Notifier correcto y los modelos necesarios.
 import 'package:saint_bi/providers/managment_summary_notifier.dart';
 import 'package:saint_bi/screens/connection_settings_screen.dart';
 import 'package:saint_bi/config/app_colors.dart';
@@ -13,7 +10,6 @@ import 'package:saint_bi/screens/login_screen.dart';
 import 'package:saint_bi/services/database_service.dart';
 import 'package:saint_bi/utils/security_service.dart';
 
-// CAMBIO: Se ajustan las constantes de texto para el nuevo propósito de la pantalla.
 const String _screenTitleText = 'Saint BI: Resumen Gerencial';
 const String _reloadDataTooltipText = 'Recargar Datos';
 const String _settingsTooltipText = 'Configurar Conexiones';

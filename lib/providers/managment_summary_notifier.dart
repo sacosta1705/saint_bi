@@ -396,28 +396,21 @@ class ManagementSummaryNotifier extends ChangeNotifier {
             baseUrl: _activeConnection!.baseUrl,
             authtoken: _authtoken!,
             params: dateParams),
-        _api.getConfig(
-            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
       ]);
       developer.log(results.toString());
 
       // 2. Parsear los resultados a listas de nuestros modelos
-      final invoices =
-          (results[0] as List).map((e) => Invoice.fromJson(e)).toList();
+      final invoices = (results[0]).map((e) => Invoice.fromJson(e)).toList();
       final invoiceItems =
-          (results[1] as List).map((e) => InvoiceItem.fromJson(e)).toList();
-      final products =
-          (results[2] as List).map((e) => Product.fromJson(e)).toList();
-      final receivables = (results[3] as List)
-          .map((e) => AccountReceivable.fromJson(e))
-          .toList();
+          (results[1]).map((e) => InvoiceItem.fromJson(e)).toList();
+      final products = (results[2]).map((e) => Product.fromJson(e)).toList();
+      final receivables =
+          (results[3]).map((e) => AccountReceivable.fromJson(e)).toList();
       final payables =
-          (results[4] as List).map((e) => AccountPayable.fromJson(e)).toList();
-      final purchases =
-          (results[5] as List).map((e) => Purchase.fromJson(e)).toList();
-      final inventoryOps = (results[6] as List)
-          .map((e) => InventoryOperation.fromJson(e))
-          .toList();
+          (results[4]).map((e) => AccountPayable.fromJson(e)).toList();
+      final purchases = (results[5]).map((e) => Purchase.fromJson(e)).toList();
+      final inventoryOps =
+          (results[6]).map((e) => InventoryOperation.fromJson(e)).toList();
       final config = Configuration.fromJson(results[7] as Map<String, dynamic>);
 
       // 3. Delegar el cálculo al servicio dedicado

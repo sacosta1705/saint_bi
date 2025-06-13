@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 import 'dart:convert';
 import 'dart:io';
 
@@ -48,7 +47,7 @@ class SaintApi {
         }
         throw UnknownApiExpection('Error: ${response.statusCode}: $message');
       }
-    } on FormatException catch (e) {
+    } on FormatException {
       throw UnknownApiExpection('Error al procesar la respuesta del servidor');
     }
   }
@@ -217,21 +216,6 @@ class SaintApi {
     //     'Leyendo Operaciones de inventario con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'stocks',
-      baseUrl: baseUrl,
-      authtoken: authtoken,
-      params: params,
-    );
-  }
-
-  Future<Map<String, dynamic>> getConfig({
-    required String baseUrl,
-    required String authtoken,
-    Map<String, String>? params,
-  }) async {
-    // developer
-    //     .log('Leyendo Configuracion con datos: URL:$baseUrl Pragma:$authtoken');
-    return await _fetchData(
-      'config',
       baseUrl: baseUrl,
       authtoken: authtoken,
       params: params,
