@@ -19,7 +19,6 @@ import 'package:saint_bi/models/account_receivable.dart';
 import 'package:saint_bi/models/account_payable.dart';
 import 'package:saint_bi/models/purchase.dart';
 import 'package:saint_bi/models/inventory_operation.dart';
-import 'package:saint_bi/models/configuration.dart';
 
 // Constantes de mensajes para la UI
 const String _uiAuthErrorMessage =
@@ -323,15 +322,23 @@ class ManagementSummaryNotifier extends ChangeNotifier {
         _stopPolling();
       }
     } on AuthenticationException catch (e, stackTrace) {
+      developer.log(e.toString());
+      developer.log(stackTrace.toString());
       _handleError(_uiAuthErrorMessage,
           isAuthenticationIssue: true, error: e, stackTrace: stackTrace);
       _stopPolling();
     } on NetworkException catch (e, stackTrace) {
+      developer.log(e.toString());
+      developer.log(stackTrace.toString());
       _handleError(_uiNetworkErrorMessage, error: e, stackTrace: stackTrace);
     } on UnknownApiExpection catch (e, stackTrace) {
+      developer.log(e.toString());
+      developer.log(stackTrace.toString());
       _handleError(_uiGenericErrorMessage, error: e, stackTrace: stackTrace);
       _stopPolling();
     } catch (e, stackTrace) {
+      developer.log(e.toString());
+      developer.log(stackTrace.toString());
       _handleError(_uiGenericErrorMessage, error: e, stackTrace: stackTrace);
       _stopPolling();
     } finally {
@@ -411,7 +418,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
       final purchases = (results[5]).map((e) => Purchase.fromJson(e)).toList();
       final inventoryOps =
           (results[6]).map((e) => InventoryOperation.fromJson(e)).toList();
-      final config = Configuration.fromJson(results[7] as Map<String, dynamic>);
 
       // 3. Delegar el cálculo al servicio dedicado
       _summary = _summaryCalculator.calculate(
@@ -442,14 +448,22 @@ class ManagementSummaryNotifier extends ChangeNotifier {
       await fetchInitialData();
       return;
     } on AuthenticationException catch (e, stackTrace) {
+      developer.log(e.toString());
+      developer.log(stackTrace.toString());
       _handleError(_uiAuthErrorMessage,
           isAuthenticationIssue: true, error: e, stackTrace: stackTrace);
       _stopPolling();
     } on NetworkException catch (e, stackTrace) {
+      developer.log(e.toString());
+      developer.log(stackTrace.toString());
       _handleError(_uiNetworkErrorMessage, error: e, stackTrace: stackTrace);
     } on UnknownApiExpection catch (e, stackTrace) {
+      developer.log(e.toString());
+      developer.log(stackTrace.toString());
       _handleError(_uiGenericErrorMessage, error: e, stackTrace: stackTrace);
     } catch (e, stackTrace) {
+      developer.log(e.toString());
+      developer.log(stackTrace.toString());
       _handleError(_uiGenericErrorMessage, error: e, stackTrace: stackTrace);
     } finally {
       if (_isLoading &&

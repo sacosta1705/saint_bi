@@ -9,7 +9,7 @@ class InventoryOperation {
 
   factory InventoryOperation.fromJson(Map<String, dynamic> json) {
     return InventoryOperation(
-      type: json['tipoopi'] as String,
+      type: json['tipoopi'] as String? ?? '',
       amount: (json['monto'] as num?)?.toDouble() ?? 0.0,
     );
   }

@@ -27,17 +27,17 @@ class Purchase {
 
   factory Purchase.fromJson(Map<String, dynamic> json) {
     return Purchase(
-      uniqueNum: json['nrounico'],
-      type: json['tipofac'],
-      docNumber: json['numerod'],
-      date: json['fechae'],
-      exchange: json['factor'],
-      amountEx: json['montomex'],
-      amount: json['monto'],
-      amountTax: json['mtotax'],
-      debit: json['contado'],
-      credit: json['credito'],
-      sign: json['signo'],
+      uniqueNum: json['nrounico']?.toString() ?? '',
+      type: json['tipofac'] ?? '',
+      docNumber: json['numerod'] ?? '',
+      date: json['fechae'] ?? '',
+      exchange: (json['factor'] as num?)?.toDouble() ?? 0.0,
+      amountEx: (json['montomex'] as num?)?.toDouble() ?? 0.0,
+      amount: (json['monto'] as num?)?.toDouble() ?? 0.0,
+      amountTax: (json['mtotax'] as num?)?.toDouble() ?? 0.0,
+      debit: (json['contado'] as num?)?.toDouble() ?? 0.0,
+      credit: (json['credito'] as num?)?.toDouble() ?? 0.0,
+      sign: (json['signo'] as num?)?.toDouble() ?? 0,
     );
   }
 }
