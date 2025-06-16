@@ -414,9 +414,7 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                 valueColor: summary.netProfitOrLoss >= 0
                     ? AppColors.positiveValue
                     : AppColors.negativeValue),
-          ]),
-          SizedBox(height: 16),
-          _buildSectionCard("RESUMEN GERENCIAL", [
+            Divider(),
             _buildDataRow("Inventario actual:",
                 currencyFormat.format(summary.currentInventory)),
             _buildDataRow("Ctas. por cobrar Vencido:",
@@ -437,9 +435,9 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
           ]),
           SizedBox(height: 16),
           _buildSectionCard("IMPUESTOS", [
-            _buildDataRow("I.V.A. en ventas (Débito Fiscal):",
-                currencyFormat.format(summary.salesVat)),
-            _buildDataRow("I.V.A. en compras (Crédito Fiscal):",
+            _buildDataRow(
+                "I.V.A. en ventas:", currencyFormat.format(summary.salesVat)),
+            _buildDataRow("I.V.A. en compras:",
                 currencyFormat.format(summary.purchasesVat)),
             _buildDataRow("Total I.V.A. por pagar:",
                 currencyFormat.format(summary.salesVat - summary.purchasesVat),
@@ -464,7 +462,7 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
           borderRadius: BorderRadius.circular(12.0),
           boxShadow: [
             BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
+                color: Colors.grey,
                 spreadRadius: 1,
                 blurRadius: 5,
                 offset: const Offset(0, 2))
@@ -530,11 +528,11 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
   Widget _buildDataRow(String label, String value,
       {Color valueColor = AppColors.textPrimary, bool isTotal = false}) {
     final labelStyle = TextStyle(
-        fontSize: 16,
-        color: AppColors.textSecondary,
+        fontSize: 18,
+        color: AppColors.textPrimary,
         fontWeight: isTotal ? FontWeight.bold : FontWeight.normal);
-    final valueStyle = TextStyle(
-        fontSize: 15.5, fontWeight: FontWeight.w600, color: valueColor);
+    final valueStyle =
+        TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: valueColor);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),

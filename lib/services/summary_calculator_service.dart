@@ -42,8 +42,17 @@ class ManagementSummaryCalculator {
     double commissionsPayable = 0.0;
 
     for (final inv in validSaleInvoices) {
-      totalNetSalesCredit += inv.credit;
-      totalNetSalesCash += inv.cash;
+      final double invoiceTaxableBase = inv.amount;
+      final double invoiceTotalPaid = inv.credit + inv.cash;
+
+      if (invoiceTotalPaid > 0) {
+        final double creditProportion = inv.credit / invoiceTotalPaid;
+        final double cashProportion = inv.cash / invoiceTotalPaid;
+
+        totalNetSalesCredit += invoiceTaxableBase * creditProportion;
+        totalNetSalesCash += invoiceTaxableBase * cashProportion;
+      }
+
       salesVat += inv.amounttax;
       commissionsPayable += (inv.collectionComision + inv.saleCommission);
     }
