@@ -1,6 +1,3 @@
-import 'dart:developer' as developer;
-
-import 'package:saint_bi/models/configuration.dart';
 import 'package:saint_bi/models/management_summary.dart';
 import 'package:saint_bi/models/invoice.dart';
 import 'package:saint_bi/models/invoice_item.dart';
@@ -25,23 +22,30 @@ class ManagementSummaryCalculator {
     required List<Purchase> purchases,
     required List<InventoryOperation> inventoryOps,
   }) {
+    final Set<String> returnedDocNumbers = invoices
+        .where((inv) => inv.type == 'B')
+        .map((inv) => inv.docnumber)
+        .toSet();
+
+    final List<Invoice> validSaleInvoices = invoices
+        .where((inv) =>
+            inv.type == 'A' && !returnedDocNumbers.contains(inv.docnumber))
+        .toList();
+
+    final Set<String> validSaleDocNumber =
+        validSaleInvoices.map((inv) => inv.docnumber).toSet();
+
     // 1. Lógica de Ventas, Impuestos y Comisiones
     double totalNetSalesCredit = 0.0;
     double totalNetSalesCash = 0.0;
     double salesVat = 0.0;
     double commissionsPayable = 0.0;
 
-    for (final inv in invoices) {
-      // El signo determina si es una venta (+) o una devolución (-)
-      final sign = (inv.type == 'A') ? 1.0 : -1.0;
-
-      totalNetSalesCredit += inv.credit * sign;
-      totalNetSalesCash += inv.cash * sign;
-      salesVat += inv.amounttax * sign;
-
-      // Sumamos ambas comisiones (venta y cobro) para el total a pagar
-      commissionsPayable +=
-          (inv.collectionComision + inv.collectionComision) * sign;
+    for (final inv in validSaleInvoices) {
+      totalNetSalesCredit += inv.credit;
+      totalNetSalesCash += inv.cash;
+      salesVat += inv.amounttax;
+      commissionsPayable += (inv.collectionComision + inv.saleCommission);
     }
     final double totalNetSales = totalNetSalesCredit + totalNetSalesCash;
 
@@ -52,8 +56,9 @@ class ManagementSummaryCalculator {
     }
 
     // 3. Lógica de Costos y Utilidad
-    final double costOfGoodsSold = invoiceItems.fold(
-        0.0, (previousValue, item) => previousValue + (item.cost * item.qty));
+    final double costOfGoodsSold = invoiceItems
+        .where((item) => validSaleDocNumber.contains(item.docNumber))
+        .fold(0.0, (sum, item) => sum + (item.cost * item.qty));
     final double grossProfit = totalNetSales - costOfGoodsSold;
 
     // 4. Lógica de Inventario
