@@ -27,6 +27,12 @@ class ManagementSummary {
   final double salesVat;
   final double purchasesVat;
 
+  // --- SECCIÓN RETENCIONES ---
+  final double salesIvaWithheld;
+  final double salesIslrWithheld;
+  final double purchasesIvaWithheld;
+  final double purchasesIslrWithheld;
+
   // --- CONSTRUCTOR ---
   ManagementSummary({
     // Inicializamos todos los valores en 0.0 por defecto
@@ -50,5 +56,9 @@ class ManagementSummary {
     this.totalPayables = 0.0,
     this.salesVat = 0.0,
     this.purchasesVat = 0.0,
+    this.salesIvaWithheld = 0.0,
+    this.salesIslrWithheld = 0.0,
+    this.purchasesIvaWithheld = 0.0,
+    this.purchasesIslrWithheld = 0.0,
   });
 }

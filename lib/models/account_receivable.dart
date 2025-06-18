@@ -10,6 +10,8 @@ class AccountReceivable {
   /// estara en este servicio con el mismo numero de documento.
   final String docNumber;
 
+  final double amount;
+
   /// Monto de la deuda a cobrar
   final double balance;
 
@@ -29,6 +31,7 @@ class AccountReceivable {
   /// Constructor de la clase. Crea una instancia de [AccountReceivable]
   AccountReceivable({
     required this.docNumber,
+    required this.amount,
     required this.balance,
     required this.emissionDate,
     required this.dueDate,
@@ -41,6 +44,7 @@ class AccountReceivable {
   factory AccountReceivable.fromJson(Map<String, dynamic> json) {
     return AccountReceivable(
       docNumber: json['numerod']?.toString() ?? '',
+      amount: (json['monto'] as num?)?.toDouble() ?? 0.0,
       balance: (json['saldo'] as num?)?.toDouble() ?? 0.0,
       emissionDate: json['fechae'] != null
           ? DateTime.parse(json['fechae'])

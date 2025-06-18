@@ -140,7 +140,6 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
-    // developer.log('Leyendo Compras con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'purchases',
       baseUrl: baseUrl,
@@ -154,8 +153,6 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
-    // developer.log(
-    //     'Leyendo Items vendidos con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'invoiceitems',
       baseUrl: baseUrl,
@@ -169,7 +166,6 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
-    // developer.log('Leyendo CxC con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'accreceivables',
       baseUrl: baseUrl,
@@ -183,7 +179,6 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
-    // developer.log('Leyendo CxP con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'accpayables',
       baseUrl: baseUrl,
@@ -197,8 +192,6 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
-    // developer
-    //     .log('Leyendo Productos con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'products',
       baseUrl: baseUrl,

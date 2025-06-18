@@ -13,6 +13,8 @@ class Invoice {
   final double cash;
   final double saleCommission;
   final double collectionComision;
+  final double ivaWithheld;
+  final double islrWithheld;
 
   Invoice({
     required this.docnumber,
@@ -29,6 +31,8 @@ class Invoice {
     required this.cash,
     required this.saleCommission,
     required this.collectionComision,
+    required this.ivaWithheld,
+    required this.islrWithheld,
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
@@ -47,6 +51,8 @@ class Invoice {
       cash: (json['contado'] as num?)?.toDouble() ?? 0.0,
       saleCommission: (json['mtocomivta'] as num?)?.toDouble() ?? 0.0,
       collectionComision: (json['mtocomicob'] as num?)?.toDouble() ?? 0.0,
+      ivaWithheld: (json['reteniva'] as num?)?.toDouble() ?? 0.0,
+      islrWithheld: (json['canceli'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
