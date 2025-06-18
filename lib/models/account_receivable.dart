@@ -12,6 +12,10 @@ class AccountReceivable {
 
   final double amount;
 
+  final double netAmount;
+
+  final double taxAmount;
+
   /// Monto de la deuda a cobrar
   final double balance;
 
@@ -32,6 +36,8 @@ class AccountReceivable {
   AccountReceivable({
     required this.docNumber,
     required this.amount,
+    required this.netAmount,
+    required this.taxAmount,
     required this.balance,
     required this.emissionDate,
     required this.dueDate,
@@ -45,6 +51,8 @@ class AccountReceivable {
     return AccountReceivable(
       docNumber: json['numerod']?.toString() ?? '',
       amount: (json['monto'] as num?)?.toDouble() ?? 0.0,
+      netAmount: (json['montoneto'] as num?)?.toDouble() ?? 0.0,
+      taxAmount: (json['mtotax'] as num?)?.toDouble() ?? 0.0,
       balance: (json['saldo'] as num?)?.toDouble() ?? 0.0,
       emissionDate: json['fechae'] != null
           ? DateTime.parse(json['fechae'])

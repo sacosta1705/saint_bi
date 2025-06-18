@@ -404,10 +404,10 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                     ? AppColors.positiveValue
                     : AppColors.negativeValue),
             Divider(),
-            _buildDataRow("Comisiones por pagar:",
+            _buildDataRow("Comisiones:",
                 currencyFormat.format(summary.commissionsPayable)),
-            _buildDataRow(
-                "Costos fijos:", currencyFormat.format(summary.fixedCosts)),
+            // _buildDataRow(
+            //     "Costos fijos:", currencyFormat.format(summary.fixedCosts)),
             _buildDataRow("Utilidad o perdida:",
                 currencyFormat.format(summary.netProfitOrLoss),
                 isTotal: true,

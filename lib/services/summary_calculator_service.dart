@@ -87,6 +87,14 @@ class ManagementSummaryCalculator {
       salesIvaWithheld += inv.ivaWithheld;
       salesIslrWithheld += inv.islrWithheld;
     }
+
+    for (final ar in receivables) {
+      if (ar.type == '10') {
+        totalNetSalesCredit += ar.netAmount;
+        salesVat += ar.taxAmount;
+        commissionsPayable += ar.commission;
+      }
+    }
     // La Venta Neta Total es la suma de la base imponible a crédito y a contado.
     final double totalNetSales = totalNetSalesCredit + totalNetSalesCash;
 
