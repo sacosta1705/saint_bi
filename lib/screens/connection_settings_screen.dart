@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import 'package:saint_bi/models/permissions.dart';
-import 'package:saint_bi/models/api_connection.dart';
-import 'package:saint_bi/models/login_response.dart';
-import 'package:saint_bi/screens/login_screen.dart';
-import 'package:saint_bi/services/database_service.dart';
-import 'package:saint_bi/services/saint_api.dart';
-import 'package:saint_bi/services/saint_api_exceptions.dart';
-import 'package:saint_bi/providers/managment_summary_notifier.dart';
-import 'package:saint_bi/config/app_colors.dart';
+import 'package:saint_intelligence/models/permissions.dart';
+import 'package:saint_intelligence/models/api_connection.dart';
+import 'package:saint_intelligence/models/login_response.dart';
+import 'package:saint_intelligence/screens/login_screen.dart';
+import 'package:saint_intelligence/services/database_service.dart';
+import 'package:saint_intelligence/services/saint_api.dart';
+import 'package:saint_intelligence/services/saint_api_exceptions.dart';
+import 'package:saint_intelligence/providers/managment_summary_notifier.dart';
+import 'package:saint_intelligence/config/app_colors.dart';
 
 class ConnectionSettingsScreen extends StatefulWidget {
   const ConnectionSettingsScreen({super.key});
@@ -109,7 +109,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     _baseUrlController.clear();
     _passwordController.clear();
     _pollingIntervalController.text = '300';
-    _terminalController.text = 'saint_bi_flutter_app';
+    _terminalController.text = 'saint_intelligence_flutter_app';
     _companyNameController.clear();
     _companyAliasController.clear();
     if (mounted) {

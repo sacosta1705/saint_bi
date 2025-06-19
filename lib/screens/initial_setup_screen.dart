@@ -1,10 +1,10 @@
 // lib/screens/initial_setup_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // IMPORTANTE: Añadir para usar formatters
-import 'package:saint_bi/config/app_colors.dart';
-import 'package:saint_bi/screens/connection_settings_screen.dart';
-import 'package:saint_bi/services/database_service.dart';
-import 'package:saint_bi/utils/security_service.dart';
+import 'package:saint_intelligence/config/app_colors.dart';
+import 'package:saint_intelligence/screens/connection_settings_screen.dart';
+import 'package:saint_intelligence/services/database_service.dart';
+import 'package:saint_intelligence/utils/security_service.dart';
 
 // --- NUEVO: Formatter para convertir texto a mayúsculas en tiempo real ---
 class UpperCaseTextFormatter extends TextInputFormatter {

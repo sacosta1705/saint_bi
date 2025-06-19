@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:saint_bi/models/api_connection.dart';
+import 'package:saint_intelligence/models/api_connection.dart';
 
-import 'package:saint_bi/providers/managment_summary_notifier.dart';
-import 'package:saint_bi/screens/connection_settings_screen.dart';
-import 'package:saint_bi/config/app_colors.dart';
-import 'package:saint_bi/screens/login_screen.dart';
-import 'package:saint_bi/services/database_service.dart';
-import 'package:saint_bi/utils/security_service.dart';
+import 'package:saint_intelligence/providers/managment_summary_notifier.dart';
+import 'package:saint_intelligence/screens/connection_settings_screen.dart';
+import 'package:saint_intelligence/config/app_colors.dart';
+import 'package:saint_intelligence/screens/login_screen.dart';
+import 'package:saint_intelligence/services/database_service.dart';
+import 'package:saint_intelligence/utils/security_service.dart';
 
-const String _screenTitleText = 'Saint BI: Resumen Gerencial';
+// const String _screenTitleText = 'Saint BI: Resumen Gerencial';
 const String _reloadDataTooltipText = 'Recargar Datos';
 const String _settingsTooltipText = 'Configurar Conexiones';
 const String _logoutTooltipText = 'Cerrar Sesión';
@@ -20,10 +20,10 @@ const String _defaultUiErrorText = "Ha ocurrido un error inesperado.";
 const String _tryConnectButtonLabel = 'Intentar Conectar / Reintentar';
 const String _reAuthenticatingMessageFromNotifier =
     'Sesión expirada. Intentando re-autenticar...';
-const String _selectDateRangeTooltipText = 'Seleccionar Rango';
-const String _todayButtonText = 'Hoy';
-const String _clearFilterButtonText = 'Quitar Filtro';
-const String _allDatesText = 'Todas las fechas';
+// const String _selectDateRangeTooltipText = 'Seleccionar Rango';
+// const String _todayButtonText = 'Hoy';
+// const String _clearFilterButtonText = 'Quitar Filtro';
+// const String _allDatesText = 'Todas las fechas';
 const String _goToSettingsButtonText = 'Ir a Configuración';
 const String _uiNoConnectionsAvailableMessage =
     'No hay conexiones disponibles. Por favor agregar una en la configuracion.';
@@ -43,7 +43,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
   }
 
   Future<void> _logout(BuildContext context) async {
-    // CAMBIO: Se usa el Notifier correcto.
     final notifier =
         Provider.of<ManagementSummaryNotifier>(context, listen: false);
     await notifier.logout();
@@ -66,7 +65,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             builder: (context) => const ConnectionSettingsScreen()),
       );
 
-      // CAMBIO: Se usa el Notifier correcto.
       final notifier =
           Provider.of<ManagementSummaryNotifier>(context, listen: false);
 
@@ -80,7 +78,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
     }
   }
 
-  // El diálogo de contraseña no necesita cambios, es lógica interna de la UI.
   Future<bool?> _showAdminPasswordDialog(BuildContext context) {
     final passController = TextEditingController();
     final formKey = GlobalKey<FormState>();
@@ -173,50 +170,49 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
       },
     );
   }
+  // Future<void> _pickDateRange(
+  //     BuildContext context, ManagementSummaryNotifier notifier) async {
+  //   if (notifier.activeConnection == null) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+  //           content: Text('Por favor, primero seleccione una empresa.'),
+  //           backgroundColor: AppColors.statusMessageWarning));
+  //     }
+  //     return;
+  //   }
 
-  // El selector de fechas también debe usar el Notifier correcto.
-  Future<void> _pickDateRange(
-      BuildContext context, ManagementSummaryNotifier notifier) async {
-    if (notifier.activeConnection == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Por favor, primero seleccione una empresa.'),
-            backgroundColor: AppColors.statusMessageWarning));
-      }
-      return;
-    }
+  //   final DateTimeRange? pickedRange = await showDateRangePicker(
+  //     context: context,
+  //     initialDateRange: (notifier.startDate != null && notifier.endDate != null)
+  //         ? DateTimeRange(start: notifier.startDate!, end: notifier.endDate!)
+  //         : null,
+  //     firstDate: DateTime(2000),
+  //     lastDate: DateTime.now().add(const Duration(days: 365)),
+  //     locale: const Locale('es', 'ES'),
+  //     helpText: 'SELECCIONAR RANGO',
+  //     cancelText: 'CANCELAR',
+  //     confirmText: 'APLICAR',
+  //     builder: (context, child) => child!,
+  //   );
 
-    final DateTimeRange? pickedRange = await showDateRangePicker(
-      context: context,
-      initialDateRange: (notifier.startDate != null && notifier.endDate != null)
-          ? DateTimeRange(start: notifier.startDate!, end: notifier.endDate!)
-          : null,
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      locale: const Locale('es', 'ES'),
-      helpText: 'SELECCIONAR RANGO',
-      cancelText: 'CANCELAR',
-      confirmText: 'APLICAR',
-      builder: (context, child) => child!,
-    );
-
-    if (pickedRange != null && mounted) {
-      bool hasChanged =
-          (notifier.startDate?.isAtSameMomentAs(pickedRange.start) != true) ||
-              (notifier.endDate?.isAtSameMomentAs(pickedRange.end) != true);
-      if (hasChanged) {
-        await notifier.filterByDateRange(pickedRange.start, pickedRange.end);
-      }
-    }
-  }
+  //   if (pickedRange != null && mounted) {
+  //     bool hasChanged =
+  //         (notifier.startDate?.isAtSameMomentAs(pickedRange.start) != true) ||
+  //             (notifier.endDate?.isAtSameMomentAs(pickedRange.end) != true);
+  //     if (hasChanged) {
+  //       await notifier.filterByDateRange(pickedRange.start, pickedRange.end);
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackground,
       appBar: AppBar(
-        title: const Text(_screenTitleText,
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        automaticallyImplyLeading: true,
+        titleSpacing: 16,
+        title: Image.asset('assets/saint_logo_blanco.png', height: 38),
         backgroundColor: AppColors.appBarBackground,
         foregroundColor: AppColors.appBarForeground,
         elevation: 2,
@@ -274,7 +270,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
               );
             }
 
-            // CAMBIO: El cuerpo principal ahora llama al nuevo widget del Resumen Gerencial
             return _buildManagementSummaryBody(notifier, context);
           },
         ),
@@ -282,8 +277,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
     );
   }
 
-  // --- WIDGETS DE ESTADO (LOADING / ERROR) ---
-  // (La lógica existente es robusta y se mantiene)
   Widget _buildLoadingState({required ManagementSummaryNotifier notifier}) {
     String displayMessage = _connectingApiText;
     if (notifier.isLoading) {
@@ -370,9 +363,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
     );
   }
 
-  // --- NUEVOS WIDGETS PARA LA PANTALLA DE RESUMEN GERENCIAL ---
-
-  // Este es el widget principal que reemplaza a _buildSalesCard
   Widget _buildManagementSummaryBody(
       ManagementSummaryNotifier notifier, BuildContext context) {
     final summary = notifier.summary;
@@ -385,150 +375,84 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
       child: ListView(
         padding: const EdgeInsets.all(12.0),
         children: [
-          _buildDateFilterBar(notifier, context),
-          _buildSectionCard("OPERACIONES", [
-            _buildDataRow("Total ventas netas a CRÉDITO:",
-                currencyFormat.format(summary.totalNetSalesCredit)),
-            _buildDataRow("Total ventas netas de CONTADO:",
-                currencyFormat.format(summary.totalNetSalesCash)),
-            _buildDataRow("Total ventas netas:",
-                currencyFormat.format(summary.totalNetSales),
-                isTotal: true),
-            Divider(),
-            _buildDataRow("Costo de productos y servicios:",
-                currencyFormat.format(summary.costOfGoodsSold)),
-            _buildDataRow(
-                "Utilidad bruta:", currencyFormat.format(summary.grossProfit),
-                isTotal: true,
-                valueColor: summary.grossProfit >= 0
-                    ? AppColors.positiveValue
-                    : AppColors.negativeValue),
-            Divider(),
-            _buildDataRow("Comisiones:",
-                currencyFormat.format(summary.commissionsPayable)),
-            // _buildDataRow(
-            //     "Costos fijos:", currencyFormat.format(summary.fixedCosts)),
-            _buildDataRow("Utilidad o perdida:",
-                currencyFormat.format(summary.netProfitOrLoss),
-                isTotal: true,
-                valueColor: summary.netProfitOrLoss >= 0
-                    ? AppColors.positiveValue
-                    : AppColors.negativeValue),
-            Divider(),
-            _buildDataRow("Inventario actual:",
-                currencyFormat.format(summary.currentInventory)),
-            _buildDataRow("Ctas. por cobrar Vencido:",
-                currencyFormat.format(summary.overdueReceivables),
-                valueColor: summary.overdueReceivables > 0
-                    ? AppColors.negativeValue
-                    : AppColors.textPrimary),
-            _buildDataRow("Total Ctas. por cobrar:",
-                currencyFormat.format(summary.totalReceivables),
-                isTotal: true),
-            Divider(),
-            _buildDataRow("Ctas. por pagar Vencido:",
-                currencyFormat.format(summary.overduePayables),
-                valueColor: summary.overduePayables > 0
-                    ? AppColors.negativeValue
-                    : AppColors.textPrimary),
-            _buildDataRow("Total Ctas. por pagar:",
-                currencyFormat.format(summary.totalPayables),
-                isTotal: true),
-          ]),
-          SizedBox(height: 16),
-          _buildSectionCard("IMPUESTOS", [
-            _buildDataRow(
-                "I.V.A. en ventas:", currencyFormat.format(summary.salesVat)),
-            _buildDataRow('I.V.A. Retenido por clientes',
-                currencyFormat.format(summary.salesIvaWithheld)),
-            _buildDataRow('I.S.L.R. Retenido por clientes',
-                currencyFormat.format(summary.salesIslrWithheld)),
-            Divider(),
-            _buildDataRow("I.V.A. en compras:",
-                currencyFormat.format(summary.purchasesVat)),
-            _buildDataRow('I.V.A. Retenido a proveedores',
-                currencyFormat.format(summary.purchasesIvaWithheld)),
-            _buildDataRow('I.S.L.R. Retenido a proveedores',
-                currencyFormat.format(summary.purchasesIslrWithheld)),
-            Divider(),
-            _buildDataRow("Total I.V.A. por pagar:",
-                currencyFormat.format(summary.salesVat - summary.purchasesVat),
-                isTotal: true),
-          ]),
-        ],
-      ),
-    );
-  }
-
-  // Barra de filtros de fecha. Se extrae de _buildSalesCard para reutilizarla.
-  Widget _buildDateFilterBar(
-      ManagementSummaryNotifier notifier, BuildContext context) {
-    final dateFormat = DateFormat('dd/MM/yyyy', 'es_ES');
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
-      margin:
-          const EdgeInsets.only(bottom: 8.0, top: 8.0, left: 8.0, right: 8.0),
-      decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(12.0),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.grey,
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 2))
-          ]),
-      child: Column(
-        children: [
-          Text(
-              (notifier.startDate == null && notifier.endDate == null)
-                  ? _allDatesText
-                  : 'Rango: ${dateFormat.format(notifier.startDate!)} - ${dateFormat.format(notifier.endDate!)}',
-              style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primaryBlue),
-              textAlign: TextAlign.center),
-          const SizedBox(height: 10),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8.0,
-            runSpacing: 4.0,
+          _buildStyledSectionCard(
+            title: "RESUMEN DE OPERACIONES",
+            icon: Icons.show_chart,
+            context: context,
             children: [
-              TextButton.icon(
-                  icon: const Icon(Icons.date_range,
-                      size: 20, color: AppColors.primaryOrange),
-                  label: const Text(_selectDateRangeTooltipText,
-                      style: TextStyle(
-                          color: AppColors.primaryOrange,
-                          fontWeight: FontWeight.w500)),
-                  onPressed: notifier.isLoading
-                      ? null
-                      : () => _pickDateRange(context, notifier)),
-              TextButton(
-                  onPressed: notifier.isLoading
-                      ? null
-                      : () {
-                          final now = DateTime.now();
-                          final todayNormalized =
-                              DateTime(now.year, now.month, now.day);
-                          notifier.filterByDateRange(
-                              todayNormalized, todayNormalized);
-                        },
-                  child: const Text(_todayButtonText,
-                      style: TextStyle(
-                          color: AppColors.primaryBlue,
-                          fontWeight: FontWeight.w500))),
-              if (notifier.startDate != null || notifier.endDate != null)
-                TextButton(
-                    onPressed: notifier.isLoading
-                        ? null
-                        : () => notifier.filterByDateRange(null, null),
-                    child: const Text(_clearFilterButtonText,
-                        style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w500))),
+              _buildDataRow("Ventas netas a crédito:",
+                  currencyFormat.format(summary.totalNetSalesCredit)),
+              _buildDataRow("Ventas netas de contado:",
+                  currencyFormat.format(summary.totalNetSalesCash)),
+              _buildDataRow("Total ventas netas:",
+                  currencyFormat.format(summary.totalNetSales),
+                  isTotal: true),
+              const Divider(height: 24, thickness: 0.5),
+              _buildDataRow("Costo de mercancia vendida:",
+                  currencyFormat.format(summary.costOfGoodsSold)),
+              _buildDataRow(
+                  "Utilidad bruta:", currencyFormat.format(summary.grossProfit),
+                  isTotal: true,
+                  valueColor: summary.grossProfit >= 0
+                      ? AppColors.positiveValue
+                      : AppColors.negativeValue),
+              const Divider(height: 24, thickness: 0.5),
+              _buildDataRow("Gastos operativos:",
+                  currencyFormat.format(summary.commissionsPayable)),
+              _buildDataRow("Utilidad o pérdida operativa:",
+                  currencyFormat.format(summary.netProfitOrLoss),
+                  isTotal: true,
+                  valueColor: summary.netProfitOrLoss >= 0
+                      ? AppColors.positiveValue
+                      : AppColors.negativeValue),
+            ],
+          ),
+          _buildStyledSectionCard(
+            title: "ESTADO FINANCIERO",
+            icon: Icons.account_balance_wallet,
+            context: context,
+            children: [
+              _buildDataRow("Valor de inventario actual:",
+                  currencyFormat.format(summary.currentInventory)),
+              const Divider(height: 24, thickness: 0.5),
+              _buildDataRow("Cuentas por cobrar vencidas:",
+                  currencyFormat.format(summary.overduePayables),
+                  valueColor: summary.overduePayables > 0
+                      ? AppColors.negativeValue
+                      : null),
+              _buildDataRow("Total cuentas por cobrar:",
+                  currencyFormat.format(summary.totalReceivables),
+                  isTotal: true),
+              const Divider(height: 24, thickness: 0.5),
+              _buildDataRow("Cuentas por Pagar Vencidas:",
+                  currencyFormat.format(summary.overduePayables),
+                  valueColor: summary.overduePayables > 0
+                      ? AppColors.negativeValue
+                      : null),
+              _buildDataRow("Total Cuentas por Pagar:",
+                  currencyFormat.format(summary.totalPayables),
+                  isTotal: true),
+              _buildStyledSectionCard(
+                title: "RESUMEN DE IMPUESTOS",
+                icon: Icons.receipt_long,
+                context: context,
+                children: [
+                  _buildDataRow("I.V.A. en Ventas (Débito Fiscal):",
+                      currencyFormat.format(summary.salesVat)),
+                  _buildDataRow("I.V.A. en Compras (Crédito Fiscal):",
+                      currencyFormat.format(summary.purchasesVat)),
+                  _buildDataRow(
+                      "Total I.V.A. por Pagar:",
+                      currencyFormat
+                          .format(summary.salesVat - summary.purchasesVat),
+                      isTotal: true),
+                  const Divider(height: 24, thickness: 0.5),
+                  _buildDataRow("IVA Retenido por Clientes (a favor):",
+                      currencyFormat.format(summary.salesIvaWithheld)),
+                  _buildDataRow("IVA Retenido a Proveedores (por pagar):",
+                      currencyFormat.format(summary.purchasesIvaWithheld)),
+                ],
+              ),
             ],
           ),
         ],
@@ -536,59 +460,161 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
     );
   }
 
-  // Se mantiene tu _buildDataRow, es un buen diseño.
-  Widget _buildDataRow(String label, String value,
-      {Color valueColor = AppColors.textPrimary, bool isTotal = false}) {
-    final labelStyle = TextStyle(
-        fontSize: 18,
-        color: AppColors.textPrimary,
-        fontWeight: isTotal ? FontWeight.bold : FontWeight.normal);
-    final valueStyle =
-        TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: valueColor);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildStyledSectionCard({
+    required String title,
+    required IconData icon,
+    required BuildContext context,
+    required List<Widget> children,
+  }) {
+    return Card(
+      elevation: 2.0,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadiusGeometry.circular(12)),
+      margin: const EdgeInsets.only(bottom: 16.0),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-              flex: 5,
-              child:
-                  Text(label, style: labelStyle, textAlign: TextAlign.start)),
-          const SizedBox(width: 12),
-          Expanded(
-              flex: 7,
-              child: Text(value, style: valueStyle, textAlign: TextAlign.end)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: AppColors.accentColor,
+            child: Row(
+              children: [
+                Icon(icon, color: AppColors.iconOnPrimary, size: 22),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textOnPrimaryBlue,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              children: children,
+            ),
+          )
         ],
       ),
     );
   }
 
-  // Widget reutilizable para las tarjetas de sección
-  Widget _buildSectionCard(String title, List<Widget> children) {
-    return Card(
-      elevation: 2.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: AppColors.cardBackground,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor),
+  Widget _buildDataRow(String label, String value,
+      {Color? valueColor, bool isTotal = false}) {
+    final Color finalValueColor = valueColor ?? AppColors.textPrimary;
+
+    final labelStyle = TextStyle(
+        fontSize: 16,
+        color: AppColors.textSecondary,
+        fontWeight: isTotal ? FontWeight.w500 : FontWeight.normal);
+
+    final valueStyle = TextStyle(
+        fontSize: 17,
+        fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
+        color: finalValueColor);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 6,
+            child: Text(label, style: labelStyle),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 5,
+            child: Text(
+              value,
+              style: valueStyle,
+              textAlign: TextAlign.end,
             ),
-            const Divider(thickness: 1, height: 24),
-            ...children,
-          ],
-        ),
+          )
+        ],
       ),
     );
   }
+
+  // Barra de filtros de fecha. Se extrae de _buildSalesCard para reutilizarla.
+  // Widget _buildDateFilterBar(
+  //     ManagementSummaryNotifier notifier, BuildContext context) {
+  //   final dateFormat = DateFormat('dd/MM/yyyy', 'es_ES');
+
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+  //     margin:
+  //         const EdgeInsets.only(bottom: 8.0, top: 8.0, left: 8.0, right: 8.0),
+  //     decoration: BoxDecoration(
+  //         color: AppColors.cardBackground,
+  //         borderRadius: BorderRadius.circular(12.0),
+  //         boxShadow: [
+  //           BoxShadow(
+  //               color: Colors.grey,
+  //               spreadRadius: 1,
+  //               blurRadius: 5,
+  //               offset: const Offset(0, 2))
+  //         ]),
+  //     child: Column(
+  //       children: [
+  //         Text(
+  //             (notifier.startDate == null && notifier.endDate == null)
+  //                 ? _allDatesText
+  //                 : 'Rango: ${dateFormat.format(notifier.startDate!)} - ${dateFormat.format(notifier.endDate!)}',
+  //             style: const TextStyle(
+  //                 fontSize: 15,
+  //                 fontWeight: FontWeight.w600,
+  //                 color: AppColors.primaryBlue),
+  //             textAlign: TextAlign.center),
+  //         const SizedBox(height: 10),
+  //         Wrap(
+  //           alignment: WrapAlignment.center,
+  //           spacing: 8.0,
+  //           runSpacing: 4.0,
+  //           children: [
+  //             TextButton.icon(
+  //                 icon: const Icon(Icons.date_range,
+  //                     size: 20, color: AppColors.primaryOrange),
+  //                 label: const Text(_selectDateRangeTooltipText,
+  //                     style: TextStyle(
+  //                         color: AppColors.primaryOrange,
+  //                         fontWeight: FontWeight.w500)),
+  //                 onPressed: notifier.isLoading
+  //                     ? null
+  //                     : () => _pickDateRange(context, notifier)),
+  //             TextButton(
+  //                 onPressed: notifier.isLoading
+  //                     ? null
+  //                     : () {
+  //                         final now = DateTime.now();
+  //                         final todayNormalized =
+  //                             DateTime(now.year, now.month, now.day);
+  //                         notifier.filterByDateRange(
+  //                             todayNormalized, todayNormalized);
+  //                       },
+  //                 child: const Text(_todayButtonText,
+  //                     style: TextStyle(
+  //                         color: AppColors.primaryBlue,
+  //                         fontWeight: FontWeight.w500))),
+  //             if (notifier.startDate != null || notifier.endDate != null)
+  //               TextButton(
+  //                   onPressed: notifier.isLoading
+  //                       ? null
+  //                       : () => notifier.filterByDateRange(null, null),
+  //                   child: const Text(_clearFilterButtonText,
+  //                       style: TextStyle(
+  //                           color: AppColors.textSecondary,
+  //                           fontWeight: FontWeight.w500))),
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }

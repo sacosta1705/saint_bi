@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
-import 'package:saint_bi/services/saint_api_exceptions.dart';
-import 'package:saint_bi/models/login_response.dart';
+import 'package:saint_intelligence/services/saint_api_exceptions.dart';
+import 'package:saint_intelligence/models/login_response.dart';
 
 class SaintApi {
   final String apikey = 'B5D31933-C996-476C-B116-EF212A41479A';

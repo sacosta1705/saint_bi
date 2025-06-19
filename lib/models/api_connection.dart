@@ -1,4 +1,4 @@
-import 'package:saint_bi/models/permissions.dart';
+import 'package:saint_intelligence/models/permissions.dart';
 
 /// Representa la configuración completa para una conexión a la API. 🔌
 ///

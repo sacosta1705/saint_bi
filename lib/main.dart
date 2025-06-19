@@ -1,7 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:saint_bi/app.dart';
+import 'package:saint_intelligence/app.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

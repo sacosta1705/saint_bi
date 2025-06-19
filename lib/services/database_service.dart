@@ -1,11 +1,11 @@
 // lib/services/database_service.dart
 import 'package:path/path.dart';
-import 'package:saint_bi/models/permissions.dart';
+import 'package:saint_intelligence/models/permissions.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:saint_bi/models/api_connection.dart';
+import 'package:saint_intelligence/models/api_connection.dart';
 
 class DatabaseService {
-  static const String _databaseName = "saint_bi_connections.db";
+  static const String _databaseName = "saint_intelligence_connections.db";
   static const int _databaseVersion = 2;
 
   // --- Tabla de Conexiones ---

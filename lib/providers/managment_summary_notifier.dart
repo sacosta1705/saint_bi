@@ -3,22 +3,22 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 
-import 'package:saint_bi/services/saint_api.dart';
-import 'package:saint_bi/services/saint_api_exceptions.dart';
-import 'package:saint_bi/services/database_service.dart';
-import 'package:saint_bi/models/api_connection.dart';
-import 'package:saint_bi/models/login_response.dart';
+import 'package:saint_intelligence/services/saint_api.dart';
+import 'package:saint_intelligence/services/saint_api_exceptions.dart';
+import 'package:saint_intelligence/services/database_service.dart';
+import 'package:saint_intelligence/models/api_connection.dart';
+import 'package:saint_intelligence/models/login_response.dart';
 
 // --- Importaciones para el Resumen Gerencial ---
-import 'package:saint_bi/services/summary_calculator_service.dart';
-import 'package:saint_bi/models/management_summary.dart';
-import 'package:saint_bi/models/invoice.dart';
-import 'package:saint_bi/models/invoice_item.dart';
-import 'package:saint_bi/models/product.dart';
-import 'package:saint_bi/models/account_receivable.dart';
-import 'package:saint_bi/models/account_payable.dart';
-import 'package:saint_bi/models/purchase.dart';
-import 'package:saint_bi/models/inventory_operation.dart';
+import 'package:saint_intelligence/services/summary_calculator_service.dart';
+import 'package:saint_intelligence/models/management_summary.dart';
+import 'package:saint_intelligence/models/invoice.dart';
+import 'package:saint_intelligence/models/invoice_item.dart';
+import 'package:saint_intelligence/models/product.dart';
+import 'package:saint_intelligence/models/account_receivable.dart';
+import 'package:saint_intelligence/models/account_payable.dart';
+import 'package:saint_intelligence/models/purchase.dart';
+import 'package:saint_intelligence/models/inventory_operation.dart';
 
 // Constantes de mensajes para la UI
 const String _uiAuthErrorMessage =

@@ -7,7 +7,7 @@ class AppColors {
 
   // Colores de Texto
   static const Color textPrimary = Color(0xFF212121);
-  static const Color textSecondary = Color(0xFF757575);
+  static const Color textSecondary = Color.fromARGB(255, 0, 0, 0);
   static const Color textOnPrimaryBlue = Colors.white;
   static const Color textOnPrimaryOrange = Colors.white;
   static const Color textLight = Colors.white70;
@@ -18,7 +18,7 @@ class AppColors {
   static const Color dialogBackground = Colors.white;
 
   // Colores de Énfasis y Acento
-  static const Color accentColor = primaryOrange;
+  static const Color accentColor = Color.fromARGB(255, 241, 120, 55);
   static const Color positiveValue = Colors.green;
   static const Color negativeValue = Colors.red;
   static const Color neutralValue = primaryBlue;

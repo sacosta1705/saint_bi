@@ -2,18 +2,18 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:saint_bi/config/app_colors.dart';
-import 'package:saint_bi/models/api_connection.dart';
+import 'package:saint_intelligence/config/app_colors.dart';
+import 'package:saint_intelligence/models/api_connection.dart';
 
 // CAMBIO: Se importa el Notifier correcto y la nueva pantalla de resumen.
-import 'package:saint_bi/providers/managment_summary_notifier.dart';
+import 'package:saint_intelligence/providers/managment_summary_notifier.dart';
 
-import 'package:saint_bi/screens/connection_settings_screen.dart';
-import 'package:saint_bi/screens/managment_summary_screen.dart';
-import 'package:saint_bi/services/database_service.dart';
-import 'package:saint_bi/services/saint_api.dart';
-import 'package:saint_bi/services/saint_api_exceptions.dart';
-import 'package:saint_bi/utils/security_service.dart';
+import 'package:saint_intelligence/screens/connection_settings_screen.dart';
+import 'package:saint_intelligence/screens/managment_summary_screen.dart';
+import 'package:saint_intelligence/services/database_service.dart';
+import 'package:saint_intelligence/services/saint_api.dart';
+import 'package:saint_intelligence/services/saint_api_exceptions.dart';
+import 'package:saint_intelligence/utils/security_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -263,8 +263,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.security_rounded,
-                        color: AppColors.primaryBlue, size: 50),
+                    Container(
+                        constraints: const BoxConstraints(
+                          maxHeight: 120,
+                          maxWidth: 400,
+                          minHeight: 50,
+                        ),
+                        child: Image.asset('assets/saint_logo_azul.png')),
                     const SizedBox(height: 16),
                     const Text(
                       'Bienvenido',

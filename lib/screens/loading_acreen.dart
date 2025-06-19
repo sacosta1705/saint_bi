@@ -1,9 +1,9 @@
 // lib/screens/loading_screen.dart
 import 'package:flutter/material.dart';
-import 'package:saint_bi/config/app_colors.dart';
-import 'package:saint_bi/screens/initial_setup_screen.dart';
-import 'package:saint_bi/screens/login_screen.dart';
-import 'package:saint_bi/services/database_service.dart';
+import 'package:saint_intelligence/config/app_colors.dart';
+import 'package:saint_intelligence/screens/initial_setup_screen.dart';
+import 'package:saint_intelligence/screens/login_screen.dart';
+import 'package:saint_intelligence/services/database_service.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -17,6 +17,13 @@ class _LoadingScreenState extends State<LoadingScreen> {
   void initState() {
     super.initState();
     _checkInitialSetup();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    precacheImage(const AssetImage('assets/saint_logo_blanco.png'), context);
+    precacheImage(const AssetImage('assets/saint_logo_azul.png'), context);
   }
 
   Future<void> _checkInitialSetup() async {

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
-import 'package:saint_bi/providers/managment_summary_notifier.dart';
-import 'package:saint_bi/screens/loading_acreen.dart';
+import 'package:saint_intelligence/providers/managment_summary_notifier.dart';
+import 'package:saint_intelligence/screens/loading_acreen.dart';
 
 class App extends StatelessWidget {
   const App({super.key});

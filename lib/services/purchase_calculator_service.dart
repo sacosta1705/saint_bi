@@ -1,5 +1,5 @@
-import 'package:saint_bi/models/purchase.dart';
-import 'package:saint_bi/models/purchase_summary.dart';
+import 'package:saint_intelligence/models/purchase.dart';
+import 'package:saint_intelligence/models/purchase_summary.dart';
 
 class PurchaseCalculatorService {
   PurchaseSummary calculateSummary({
