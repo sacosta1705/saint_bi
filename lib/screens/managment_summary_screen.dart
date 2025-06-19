@@ -416,7 +416,7 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                   currencyFormat.format(summary.currentInventory)),
               const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Cuentas por cobrar vencidas:",
-                  currencyFormat.format(summary.overduePayables),
+                  currencyFormat.format(summary.overdueReceivables),
                   valueColor: summary.overduePayables > 0
                       ? AppColors.negativeValue
                       : null),
