@@ -200,13 +200,24 @@ class SaintApi {
     );
   }
 
+  Future<List<dynamic>> getPurchaseItems({
+    required String baseUrl,
+    required String authtoken,
+    Map<String, String>? params,
+  }) async {
+    return await _fetchData(
+      'purchaseitems',
+      baseUrl: baseUrl,
+      authtoken: authtoken,
+      params: params,
+    );
+  }
+
   Future<List<dynamic>> getInventoryOperations({
     required String baseUrl,
     required String authtoken,
     Map<String, String>? params,
   }) async {
-    // developer.log(
-    //     'Leyendo Operaciones de inventario con datos: URL:$baseUrl Pragma:$authtoken');
     return await _fetchData(
       'stocks',
       baseUrl: baseUrl,

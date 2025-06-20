@@ -11,6 +11,7 @@ class ManagementSummary {
   final double inventoryDischarges;
   final double fixedCosts;
   final double commissionsPayable;
+  final double operatingExpenses;
   final double netProfitOrLoss;
 
   // --- SECCIÓN ACTIVOS Y PASIVOS ---
@@ -45,6 +46,7 @@ class ManagementSummary {
     this.inventoryDischarges = 0.0,
     this.fixedCosts = 0.0,
     this.commissionsPayable = 0.0,
+    this.operatingExpenses = 0.0,
     this.netProfitOrLoss = 0.0,
     this.currentInventory = 0.0,
     this.overdueReceivables = 0.0,

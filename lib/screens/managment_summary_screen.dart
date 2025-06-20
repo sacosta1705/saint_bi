@@ -205,6 +205,17 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
   //   }
   // }
 
+  String _formatNumber(double number, String locale) {
+    if (number.abs() < 1000000) {
+      return NumberFormat.decimalPatternDigits(
+        locale: locale,
+        decimalDigits: 2,
+      ).format(number);
+    } else {
+      return NumberFormat.compact(locale: locale).format(number);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -381,26 +392,26 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             context: context,
             children: [
               _buildDataRow("Ventas netas a crédito:",
-                  currencyFormat.format(summary.totalNetSalesCredit)),
+                  _formatNumber(summary.totalNetSalesCredit, deviceLocale)),
               _buildDataRow("Ventas netas de contado:",
-                  currencyFormat.format(summary.totalNetSalesCash)),
+                  _formatNumber(summary.totalNetSalesCash, deviceLocale)),
               _buildDataRow("Total ventas netas:",
-                  currencyFormat.format(summary.totalNetSales),
+                  _formatNumber(summary.totalNetSales, deviceLocale),
                   isTotal: true),
               const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Costo de mercancia vendida:",
-                  currencyFormat.format(summary.costOfGoodsSold)),
-              _buildDataRow(
-                  "Utilidad bruta:", currencyFormat.format(summary.grossProfit),
+                  _formatNumber(summary.costOfGoodsSold, deviceLocale)),
+              _buildDataRow("Utilidad bruta:",
+                  _formatNumber(summary.grossProfit, deviceLocale),
                   isTotal: true,
                   valueColor: summary.grossProfit >= 0
                       ? AppColors.positiveValue
                       : AppColors.negativeValue),
               const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Gastos operativos:",
-                  currencyFormat.format(summary.commissionsPayable)),
+                  _formatNumber(summary.operatingExpenses, deviceLocale)),
               _buildDataRow("Utilidad o pérdida operativa:",
-                  currencyFormat.format(summary.netProfitOrLoss),
+                  _formatNumber(summary.netProfitOrLoss, deviceLocale),
                   isTotal: true,
                   valueColor: summary.netProfitOrLoss >= 0
                       ? AppColors.positiveValue
@@ -413,24 +424,24 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             context: context,
             children: [
               _buildDataRow("Valor de inventario actual:",
-                  currencyFormat.format(summary.currentInventory)),
+                  _formatNumber(summary.currentInventory, deviceLocale)),
               const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Cuentas por cobrar vencidas:",
-                  currencyFormat.format(summary.overdueReceivables),
+                  _formatNumber(summary.overdueReceivables, deviceLocale),
                   valueColor: summary.overduePayables > 0
                       ? AppColors.negativeValue
                       : null),
               _buildDataRow("Total cuentas por cobrar:",
-                  currencyFormat.format(summary.totalReceivables),
+                  _formatNumber(summary.totalReceivables, deviceLocale),
                   isTotal: true),
               const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Cuentas por Pagar Vencidas:",
-                  currencyFormat.format(summary.overduePayables),
+                  _formatNumber(summary.overduePayables, deviceLocale),
                   valueColor: summary.overduePayables > 0
                       ? AppColors.negativeValue
                       : null),
               _buildDataRow("Total Cuentas por Pagar:",
-                  currencyFormat.format(summary.totalPayables),
+                  _formatNumber(summary.totalPayables, deviceLocale),
                   isTotal: true),
               _buildStyledSectionCard(
                 title: "RESUMEN DE IMPUESTOS",
@@ -438,19 +449,21 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                 context: context,
                 children: [
                   _buildDataRow("I.V.A. en Ventas (Débito Fiscal):",
-                      currencyFormat.format(summary.salesVat)),
+                      _formatNumber(summary.salesVat, deviceLocale)),
                   _buildDataRow("I.V.A. en Compras (Crédito Fiscal):",
-                      currencyFormat.format(summary.purchasesVat)),
+                      _formatNumber(summary.purchasesVat, deviceLocale)),
                   _buildDataRow(
                       "Total I.V.A. por Pagar:",
-                      currencyFormat
-                          .format(summary.salesVat - summary.purchasesVat),
+                      _formatNumber((summary.salesVat - summary.purchasesVat),
+                          deviceLocale),
                       isTotal: true),
                   const Divider(height: 24, thickness: 0.5),
                   _buildDataRow("IVA Retenido por Clientes (a favor):",
-                      currencyFormat.format(summary.salesIvaWithheld)),
-                  _buildDataRow("IVA Retenido a Proveedores (por pagar):",
-                      currencyFormat.format(summary.purchasesIvaWithheld)),
+                      _formatNumber(summary.salesIvaWithheld, deviceLocale)),
+                  _buildDataRow(
+                      "IVA Retenido a Proveedores (por pagar):",
+                      _formatNumber(
+                          summary.purchasesIvaWithheld, deviceLocale)),
                 ],
               ),
             ],

@@ -6,6 +6,7 @@ import 'package:saint_intelligence/models/account_receivable.dart';
 import 'package:saint_intelligence/models/account_payable.dart';
 import 'package:saint_intelligence/models/purchase.dart';
 import 'package:saint_intelligence/models/inventory_operation.dart';
+import 'package:saint_intelligence/models/purchase_item.dart';
 
 /// Una clase pura y sin estado dedicada exclusivamente a realizar los cálculos
 /// para el Resumen Gerencial.
@@ -21,6 +22,7 @@ class ManagementSummaryCalculator {
     required List<AccountPayable> payables,
     required List<Purchase> purchases,
     required List<InventoryOperation> inventoryOps,
+    required List<PurchaseItem> purchaseItems,
   }) {
     // ---------------------------------------------------------------------------
     /// PASO 1: IDENTIFICACIÓN Y AISLAMIENTO DE DEVOLUCIONES
@@ -169,13 +171,22 @@ class ManagementSummaryCalculator {
         .fold(0.0, (previousValue, ap) => previousValue + ap.balance);
 
     // ---------------------------------------------------------------------------
-    /// PASO 8: CÁLCULO DE UTILIDAD O PÉRDIDA NETA (OPERATIVA)
+    /// PASO 8: CÁLCULO DE COSTOS OPERATIVOS
+    // ---------------------------------------------------------------------------
+    final double costOfPurchasedServices = purchaseItems
+        .where((item) => item.isService)
+        .fold(0.0, (sum, item) => sum + (item.cost * item.qty));
+
+    final double operatingExpenses =
+        costOfPurchasedServices + commissionsPayable;
+    // ---------------------------------------------------------------------------
+    /// PASO 9: CÁLCULO DE UTILIDAD O PÉRDIDA NETA (OPERATIVA)
     /// Refleja la utilidad después de considerar los costos y comisiones de venta.
     // ---------------------------------------------------------------------------
-    final double netProfitOrLoss = grossProfit - commissionsPayable;
+    final double netProfitOrLoss = grossProfit - operatingExpenses;
 
     // ---------------------------------------------------------------------------
-    /// Paso 9: Calculo de retenciones de compra y venta
+    /// Paso 10: Calculo de retenciones de compra y venta
     // ---------------------------------------------------------------------------
 
     // Retenciones en Compras (lo que nosotros retenemos a proveedores)
@@ -188,7 +199,7 @@ class ManagementSummaryCalculator {
         .fold(0.0, (prev, ap) => prev + ap.amount);
 
     // ---------------------------------------------------------------------------
-    /// PASO 10: RETORNO DEL OBJETO DE RESUMEN
+    /// PASO 11: RETORNO DEL OBJETO DE RESUMEN
     /// Se construye y devuelve el objeto ManagementSummary con todos los valores calculados.
     // ---------------------------------------------------------------------------
     return ManagementSummary(
@@ -214,6 +225,7 @@ class ManagementSummaryCalculator {
       salesIslrWithheld: salesIslrWithheld,
       purchasesIvaWithheld: purchasesIvaWithheld,
       purchasesIslrWithheld: purchasesIslrWithheld,
+      operatingExpenses: operatingExpenses,
     );
   }
 }

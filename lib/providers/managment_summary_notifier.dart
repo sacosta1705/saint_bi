@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
+import 'package:saint_intelligence/models/purchase_item.dart';
 
 import 'package:saint_intelligence/services/saint_api.dart';
 import 'package:saint_intelligence/services/saint_api_exceptions.dart';
@@ -403,6 +404,11 @@ class ManagementSummaryNotifier extends ChangeNotifier {
             baseUrl: _activeConnection!.baseUrl,
             authtoken: _authtoken!,
             params: dateParams),
+        _api.getPurchaseItems(
+          baseUrl: _activeConnection!.baseUrl,
+          authtoken: _authtoken!,
+          params: dateParams,
+        )
       ]);
       developer.log(results.toString());
 
@@ -418,6 +424,8 @@ class ManagementSummaryNotifier extends ChangeNotifier {
       final purchases = (results[5]).map((e) => Purchase.fromJson(e)).toList();
       final inventoryOps =
           (results[6]).map((e) => InventoryOperation.fromJson(e)).toList();
+      final purchaseItems =
+          (results[7]).map((e) => PurchaseItem.fromJson(e)).toList();
 
       // 3. Delegar el cálculo al servicio dedicado
       _summary = _summaryCalculator.calculate(
@@ -428,6 +436,7 @@ class ManagementSummaryNotifier extends ChangeNotifier {
         payables: payables,
         purchases: purchases,
         inventoryOps: inventoryOps,
+        purchaseItems: purchaseItems,
       );
 
       if (_errorMsg != _uiSessionExpiredMessage) _errorMsg = null;
