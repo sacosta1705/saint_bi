@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:saint_intelligence/models/api_connection.dart';
+import 'package:saint_intelligence/models/invoice.dart';
 
 import 'package:saint_intelligence/providers/managment_summary_notifier.dart';
 import 'package:saint_intelligence/screens/connection_settings_screen.dart';
 import 'package:saint_intelligence/config/app_colors.dart';
 import 'package:saint_intelligence/screens/login_screen.dart';
+import 'package:saint_intelligence/screens/transaction_list_screen.dart';
 import 'package:saint_intelligence/services/database_service.dart';
 import 'package:saint_intelligence/utils/security_service.dart';
 
@@ -378,8 +380,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
       ManagementSummaryNotifier notifier, BuildContext context) {
     final summary = notifier.summary;
     final deviceLocale = Localizations.localeOf(context).toString();
-    final currencyFormat = NumberFormat.decimalPatternDigits(
-        locale: deviceLocale, decimalDigits: 2);
 
     return RefreshIndicator(
       onRefresh: () => notifier.fetchInitialData(),
@@ -392,7 +392,40 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             context: context,
             children: [
               _buildDataRow("Ventas netas a crédito:",
-                  _formatNumber(summary.totalNetSalesCredit, deviceLocale)),
+                  _formatNumber(summary.totalNetSalesCredit, deviceLocale),
+                  onTap: () {
+                final notifier = Provider.of<ManagementSummaryNotifier>(context,
+                    listen: false);
+
+                final creditInvoices = notifier.allInvoices
+                    .where((inv) => inv.type == 'A' && inv.credit > 0)
+                    .toList();
+
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => TransactionListScreen<Invoice>(
+                              title: "Facturas a credito",
+                              items: creditInvoices,
+                              itemBuilder: (context, invoice) {
+                                final date = DateFormat('yyyy/MM/dd')
+                                    .format(DateTime.parse(invoice.date));
+
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
+                                  child: ListTile(
+                                    title: Text(
+                                        '${invoice.client} - Doc: ${invoice.docnumber}'),
+                                    subtitle: Text('Fecha: $date'),
+                                    trailing: Text(_formatNumber(
+                                        invoice.credit, deviceLocale)),
+                                    onTap: () {},
+                                  ),
+                                );
+                              },
+                            )));
+              }),
               _buildDataRow("Ventas netas de contado:",
                   _formatNumber(summary.totalNetSalesCash, deviceLocale)),
               _buildDataRow("Total ventas netas:",
@@ -518,7 +551,7 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
   }
 
   Widget _buildDataRow(String label, String value,
-      {Color? valueColor, bool isTotal = false}) {
+      {Color? valueColor, bool isTotal = false, VoidCallback? onTap}) {
     final Color finalValueColor = valueColor ?? AppColors.textPrimary;
 
     final labelStyle = TextStyle(
@@ -531,26 +564,37 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
         fontWeight: isTotal ? FontWeight.bold : FontWeight.w600,
         color: finalValueColor);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 6,
-            child: Text(label, style: labelStyle),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 5,
-            child: Text(
-              value,
-              style: valueStyle,
-              textAlign: TextAlign.end,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 6,
+              child: Text(label, style: labelStyle),
             ),
-          )
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 5,
+              child: Text(
+                value,
+                style: valueStyle,
+                textAlign: TextAlign.end,
+              ),
+            ),
+            if (onTap != null)
+              const Padding(
+                padding: EdgeInsets.only(left: 8),
+                child: Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
