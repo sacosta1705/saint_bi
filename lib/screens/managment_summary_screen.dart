@@ -378,8 +378,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
       ManagementSummaryNotifier notifier, BuildContext context) {
     final summary = notifier.summary;
     final deviceLocale = Localizations.localeOf(context).toString();
-    final currencyFormat = NumberFormat.decimalPatternDigits(
-        locale: deviceLocale, decimalDigits: 2);
 
     return RefreshIndicator(
       onRefresh: () => notifier.fetchInitialData(),
@@ -391,13 +389,14 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             icon: Icons.show_chart,
             context: context,
             children: [
+              _buildDataRow("Total ventas netas:",
+                  _formatNumber(summary.totalNetSales, deviceLocale),
+                  isTotal: true),
+              const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Ventas netas a crédito:",
                   _formatNumber(summary.totalNetSalesCredit, deviceLocale)),
               _buildDataRow("Ventas netas de contado:",
                   _formatNumber(summary.totalNetSalesCash, deviceLocale)),
-              _buildDataRow("Total ventas netas:",
-                  _formatNumber(summary.totalNetSales, deviceLocale),
-                  isTotal: true),
               const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Costo de mercancia vendida:",
                   _formatNumber(summary.costOfGoodsSold, deviceLocale)),
@@ -423,6 +422,13 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             icon: Icons.account_balance_wallet,
             context: context,
             children: [
+              _buildDataRow("Total Cuentas por Pagar:",
+                  _formatNumber(summary.totalPayables, deviceLocale),
+                  isTotal: true),
+              _buildDataRow("Total cuentas por Cobrar:",
+                  _formatNumber(summary.totalReceivables, deviceLocale),
+                  isTotal: true),
+              const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Valor de inventario actual:",
                   _formatNumber(summary.currentInventory, deviceLocale)),
               const Divider(height: 24, thickness: 0.5),
@@ -431,39 +437,39 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                   valueColor: summary.overduePayables > 0
                       ? AppColors.negativeValue
                       : null),
-              _buildDataRow("Total cuentas por cobrar:",
-                  _formatNumber(summary.totalReceivables, deviceLocale),
-                  isTotal: true),
-              const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Cuentas por Pagar Vencidas:",
                   _formatNumber(summary.overduePayables, deviceLocale),
                   valueColor: summary.overduePayables > 0
                       ? AppColors.negativeValue
                       : null),
-              _buildDataRow("Total Cuentas por Pagar:",
-                  _formatNumber(summary.totalPayables, deviceLocale),
-                  isTotal: true),
               _buildStyledSectionCard(
                 title: "RESUMEN DE IMPUESTOS",
                 icon: Icons.receipt_long,
                 context: context,
                 children: [
-                  _buildDataRow("I.V.A. en Ventas (Débito Fiscal):",
-                      _formatNumber(summary.salesVat, deviceLocale)),
-                  _buildDataRow("I.V.A. en Compras (Crédito Fiscal):",
-                      _formatNumber(summary.purchasesVat, deviceLocale)),
                   _buildDataRow(
                       "Total I.V.A. por Pagar:",
                       _formatNumber((summary.salesVat - summary.purchasesVat),
                           deviceLocale),
                       isTotal: true),
                   const Divider(height: 24, thickness: 0.5),
-                  _buildDataRow("IVA Retenido por Clientes (a favor):",
+                  _buildDataRow("I.V.A. en Ventas:",
+                      _formatNumber(summary.salesVat, deviceLocale)),
+                  _buildDataRow("IVA Retenido por Clientes:",
                       _formatNumber(summary.salesIvaWithheld, deviceLocale)),
+                  _buildDataRow("I.S.L.R. Retenido por Clientes:",
+                      _formatNumber(summary.salesIslrWithheld, deviceLocale)),
+                  const Divider(height: 24, thickness: 0.5),
+                  _buildDataRow("I.V.A. en Compras:",
+                      _formatNumber(summary.purchasesVat, deviceLocale)),
                   _buildDataRow(
-                      "IVA Retenido a Proveedores (por pagar):",
+                      "IVA Retenido a Proveedores:",
                       _formatNumber(
                           summary.purchasesIvaWithheld, deviceLocale)),
+                  _buildDataRow(
+                      "I.S.L.R. Retenido a Proveedores:",
+                      _formatNumber(
+                          summary.purchasesIslrWithheld, deviceLocale)),
                 ],
               ),
             ],
