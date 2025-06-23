@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:saint_intelligence/models/account_payable.dart';
+import 'package:saint_intelligence/models/account_receivable.dart';
 import 'package:saint_intelligence/models/api_connection.dart';
 import 'package:saint_intelligence/models/invoice.dart';
 
 import 'package:saint_intelligence/providers/managment_summary_notifier.dart';
+import 'package:saint_intelligence/screens/builders/transaction_list_item.dart';
 import 'package:saint_intelligence/screens/connection_settings_screen.dart';
 import 'package:saint_intelligence/config/app_colors.dart';
 import 'package:saint_intelligence/screens/login_screen.dart';
 import 'package:saint_intelligence/screens/transaction_list_screen.dart';
 import 'package:saint_intelligence/services/database_service.dart';
 import 'package:saint_intelligence/utils/security_service.dart';
+import 'package:saint_intelligence/utils/formatters.dart';
 
 // const String _screenTitleText = 'Saint BI: Resumen Gerencial';
 const String _reloadDataTooltipText = 'Recargar Datos';
@@ -207,17 +210,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
   //   }
   // }
 
-  String _formatNumber(double number, String locale) {
-    if (number.abs() < 1000000) {
-      return NumberFormat.decimalPatternDigits(
-        locale: locale,
-        decimalDigits: 2,
-      ).format(number);
-    } else {
-      return NumberFormat.compact(locale: locale).format(number);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -391,8 +383,12 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             icon: Icons.show_chart,
             context: context,
             children: [
+              _buildDataRow("Total ventas netas:",
+                  formatNumber(summary.totalNetSales, deviceLocale),
+                  isTotal: true),
+              const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Ventas netas a crédito:",
-                  _formatNumber(summary.totalNetSalesCredit, deviceLocale),
+                  formatNumber(summary.totalNetSalesCredit, deviceLocale),
                   onTap: () {
                 final notifier = Provider.of<ManagementSummaryNotifier>(context,
                     listen: false);
@@ -402,49 +398,32 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                     .toList();
 
                 Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => TransactionListScreen<Invoice>(
-                              title: "Facturas a credito",
-                              items: creditInvoices,
-                              itemBuilder: (context, invoice) {
-                                final date = DateFormat('yyyy/MM/dd')
-                                    .format(DateTime.parse(invoice.date));
-
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
-                                  child: ListTile(
-                                    title: Text(
-                                        '${invoice.client} - Doc: ${invoice.docnumber}'),
-                                    subtitle: Text('Fecha: $date'),
-                                    trailing: Text(_formatNumber(
-                                        invoice.credit, deviceLocale)),
-                                    onTap: () {},
-                                  ),
-                                );
-                              },
-                            )));
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TransactionListScreen<Invoice>(
+                      title: "Facturas a credito",
+                      items: creditInvoices,
+                      itemBuilder: buildInvoiceListItem,
+                    ),
+                  ),
+                );
               }),
               _buildDataRow("Ventas netas de contado:",
-                  _formatNumber(summary.totalNetSalesCash, deviceLocale)),
-              _buildDataRow("Total ventas netas:",
-                  _formatNumber(summary.totalNetSales, deviceLocale),
-                  isTotal: true),
+                  formatNumber(summary.totalNetSalesCash, deviceLocale)),
               const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Costo de mercancia vendida:",
-                  _formatNumber(summary.costOfGoodsSold, deviceLocale)),
+                  formatNumber(summary.costOfGoodsSold, deviceLocale)),
               _buildDataRow("Utilidad bruta:",
-                  _formatNumber(summary.grossProfit, deviceLocale),
+                  formatNumber(summary.grossProfit, deviceLocale),
                   isTotal: true,
                   valueColor: summary.grossProfit >= 0
                       ? AppColors.positiveValue
                       : AppColors.negativeValue),
               const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Gastos operativos:",
-                  _formatNumber(summary.operatingExpenses, deviceLocale)),
+                  formatNumber(summary.operatingExpenses, deviceLocale)),
               _buildDataRow("Utilidad o pérdida operativa:",
-                  _formatNumber(summary.netProfitOrLoss, deviceLocale),
+                  formatNumber(summary.netProfitOrLoss, deviceLocale),
                   isTotal: true,
                   valueColor: summary.netProfitOrLoss >= 0
                       ? AppColors.positiveValue
@@ -456,47 +435,137 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             icon: Icons.account_balance_wallet,
             context: context,
             children: [
+              _buildDataRow(
+                "Total Cuentas por Pagar:",
+                formatNumber(summary.totalPayables, deviceLocale),
+                isTotal: true,
+                onTap: () {
+                  final notifier = Provider.of<ManagementSummaryNotifier>(
+                      context,
+                      listen: false);
+                  final payables = notifier.allPayables
+                      .where((ap) => ap.balance > 0 && ap.type != '50')
+                      .toList();
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          TransactionListScreen<AccountPayable>(
+                              title: 'Total Cuentas por pagar',
+                              items: payables,
+                              itemBuilder: buildAccountPayableListItem),
+                    ),
+                  );
+                },
+              ),
+              _buildDataRow("Total cuentas por Cobrar:",
+                  formatNumber(summary.totalReceivables, deviceLocale),
+                  isTotal: true, onTap: () {
+                final notifier = Provider.of<ManagementSummaryNotifier>(context,
+                    listen: false);
+
+                final receivables = notifier.allReceivables
+                    .where((ar) => ar.balance > 0 && ar.type != '50')
+                    .toList();
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        TransactionListScreen<AccountReceivable>(
+                            title: 'Total cuentas por cobrar',
+                            items: receivables,
+                            itemBuilder: buildAccountReceivableListItem),
+                  ),
+                );
+              }),
+              const Divider(height: 24, thickness: 0.5),
               _buildDataRow("Valor de inventario actual:",
-                  _formatNumber(summary.currentInventory, deviceLocale)),
+                  formatNumber(summary.currentInventory, deviceLocale)),
               const Divider(height: 24, thickness: 0.5),
-              _buildDataRow("Cuentas por cobrar vencidas:",
-                  _formatNumber(summary.overdueReceivables, deviceLocale),
-                  valueColor: summary.overduePayables > 0
-                      ? AppColors.negativeValue
-                      : null),
-              _buildDataRow("Total cuentas por cobrar:",
-                  _formatNumber(summary.totalReceivables, deviceLocale),
-                  isTotal: true),
-              const Divider(height: 24, thickness: 0.5),
-              _buildDataRow("Cuentas por Pagar Vencidas:",
-                  _formatNumber(summary.overduePayables, deviceLocale),
-                  valueColor: summary.overduePayables > 0
-                      ? AppColors.negativeValue
-                      : null),
-              _buildDataRow("Total Cuentas por Pagar:",
-                  _formatNumber(summary.totalPayables, deviceLocale),
-                  isTotal: true),
+              _buildDataRow(
+                "Cuentas por cobrar vencidas:",
+                formatNumber(summary.overdueReceivables, deviceLocale),
+                valueColor: summary.overduePayables > 0
+                    ? AppColors.negativeValue
+                    : null,
+                onTap: () {
+                  final notifier = Provider.of<ManagementSummaryNotifier>(
+                      context,
+                      listen: false);
+
+                  final now = DateTime.now();
+                  final overdue = notifier.allReceivables
+                      .where((ar) => ar.balance > 0 && ar.dueDate.isBefore(now))
+                      .toList();
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          TransactionListScreen<AccountReceivable>(
+                        title: 'Cuentas por cobrar vencidas',
+                        items: overdue,
+                        itemBuilder: buildAccountReceivableListItem,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              _buildDataRow(
+                "Cuentas por Pagar Vencidas:",
+                formatNumber(summary.overduePayables, deviceLocale),
+                valueColor: summary.overduePayables > 0
+                    ? AppColors.negativeValue
+                    : null,
+                onTap: () {
+                  final notifier = Provider.of<ManagementSummaryNotifier>(
+                      context,
+                      listen: false);
+                  final now = DateTime.now();
+                  final overdue = notifier.allPayables
+                      .where((ap) => ap.balance > 0 && ap.dueDate.isBefore(now))
+                      .toList();
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TransactionListScreen(
+                        title: 'Cuentas por pagar vencidas',
+                        items: overdue,
+                        itemBuilder: buildAccountPayableListItem,
+                      ),
+                    ),
+                  );
+                },
+              ),
               _buildStyledSectionCard(
                 title: "RESUMEN DE IMPUESTOS",
                 icon: Icons.receipt_long,
                 context: context,
                 children: [
-                  _buildDataRow("I.V.A. en Ventas (Débito Fiscal):",
-                      _formatNumber(summary.salesVat, deviceLocale)),
-                  _buildDataRow("I.V.A. en Compras (Crédito Fiscal):",
-                      _formatNumber(summary.purchasesVat, deviceLocale)),
                   _buildDataRow(
                       "Total I.V.A. por Pagar:",
-                      _formatNumber((summary.salesVat - summary.purchasesVat),
+                      formatNumber((summary.salesVat - summary.purchasesVat),
                           deviceLocale),
                       isTotal: true),
                   const Divider(height: 24, thickness: 0.5),
-                  _buildDataRow("IVA Retenido por Clientes (a favor):",
-                      _formatNumber(summary.salesIvaWithheld, deviceLocale)),
+                  _buildDataRow("I.V.A. en Ventas:",
+                      formatNumber(summary.salesVat, deviceLocale)),
+                  _buildDataRow("IVA Retenido por Clientes:",
+                      formatNumber(summary.salesIvaWithheld, deviceLocale)),
+                  _buildDataRow("I.S.L.R. Retenido por Clientes:",
+                      formatNumber(summary.salesIslrWithheld, deviceLocale)),
+                  const Divider(height: 24, thickness: 0.5),
+                  _buildDataRow("I.V.A. en Compras:",
+                      formatNumber(summary.purchasesVat, deviceLocale)),
+                  _buildDataRow("IVA Retenido a Proveedores:",
+                      formatNumber(summary.purchasesIvaWithheld, deviceLocale)),
                   _buildDataRow(
-                      "IVA Retenido a Proveedores (por pagar):",
-                      _formatNumber(
-                          summary.purchasesIvaWithheld, deviceLocale)),
+                      "I.S.L.R. Retenido a Proveedores:",
+                      formatNumber(
+                          summary.purchasesIslrWithheld, deviceLocale)),
                 ],
               ),
             ],
