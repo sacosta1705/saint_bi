@@ -40,6 +40,15 @@ class ManagementSummaryNotifier extends ChangeNotifier {
       ManagementSummaryCalculator();
   final DatabaseService _dbService = DatabaseService.instance;
 
+  List<Invoice> allInvoices = [];
+  List<InvoiceItem> allInvoiceItems = [];
+  List<Product> allProducts = [];
+  List<AccountReceivable> allReceivables = [];
+  List<Purchase> allPurchases = [];
+  List<PurchaseItem> allPurchaseItems = [];
+  List<AccountPayable> allPayables = [];
+  List<InventoryOperation> allInventoryOps = [];
+
   // --- Estado unificado para el Resumen Gerencial ---
   ManagementSummary _summary = ManagementSummary();
   bool _isLoading = false;
@@ -413,30 +422,30 @@ class ManagementSummaryNotifier extends ChangeNotifier {
       developer.log(results.toString());
 
       // 2. Parsear los resultados a listas de nuestros modelos
-      final invoices = (results[0]).map((e) => Invoice.fromJson(e)).toList();
-      final invoiceItems =
+      allInvoices = (results[0]).map((e) => Invoice.fromJson(e)).toList();
+      allInvoiceItems =
           (results[1]).map((e) => InvoiceItem.fromJson(e)).toList();
-      final products = (results[2]).map((e) => Product.fromJson(e)).toList();
-      final receivables =
+      allProducts = (results[2]).map((e) => Product.fromJson(e)).toList();
+      allReceivables =
           (results[3]).map((e) => AccountReceivable.fromJson(e)).toList();
-      final payables =
+      allPayables =
           (results[4]).map((e) => AccountPayable.fromJson(e)).toList();
-      final purchases = (results[5]).map((e) => Purchase.fromJson(e)).toList();
-      final inventoryOps =
+      allPurchases = (results[5]).map((e) => Purchase.fromJson(e)).toList();
+      allInventoryOps =
           (results[6]).map((e) => InventoryOperation.fromJson(e)).toList();
-      final purchaseItems =
+      allPurchaseItems =
           (results[7]).map((e) => PurchaseItem.fromJson(e)).toList();
 
       // 3. Delegar el cálculo al servicio dedicado
       _summary = _summaryCalculator.calculate(
-        invoices: invoices,
-        invoiceItems: invoiceItems,
-        products: products,
-        receivables: receivables,
-        payables: payables,
-        purchases: purchases,
-        inventoryOps: inventoryOps,
-        purchaseItems: purchaseItems,
+        invoices: allInvoices,
+        invoiceItems: allInvoiceItems,
+        products: allProducts,
+        receivables: allReceivables,
+        payables: allPayables,
+        purchases: allPurchases,
+        inventoryOps: allInventoryOps,
+        purchaseItems: allPurchaseItems,
       );
 
       if (_errorMsg != _uiSessionExpiredMessage) _errorMsg = null;

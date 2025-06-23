@@ -1,0 +1,79 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:saint_intelligence/models/account_payable.dart';
+import 'package:saint_intelligence/models/account_receivable.dart';
+
+import 'package:saint_intelligence/models/invoice.dart';
+import 'package:saint_intelligence/screens/details/invoice_detail_screen.dart';
+import 'package:saint_intelligence/screens/details/payable_detail_screen.dart';
+import 'package:saint_intelligence/screens/details/receivable_detail_screen.dart';
+import 'package:saint_intelligence/utils/formatters.dart';
+
+Widget buildInvoiceListItem(BuildContext context, Invoice invoice) {
+  final deviceLocale = Localizations.localeOf(context).toString();
+  final date = DateFormat('yyyy-MM-dd').format(DateTime.parse(invoice.date));
+
+  return Card(
+    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    child: ListTile(
+      title: Text('${invoice.client} - Doc: ${invoice.docnumber}'),
+      subtitle: Text('Fecha de Emision: $date'),
+      trailing: invoice.credit > 0
+          ? Text(formatNumber(invoice.credit, deviceLocale))
+          : Text(formatNumber(invoice.cash, deviceLocale)),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => InvoiceDetailScreen(invoice: invoice),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+Widget buildAccountReceivableListItem(
+    BuildContext context, AccountReceivable ar) {
+  final deviceLocale = Localizations.localeOf(context).toString();
+  final date = DateFormat('yyyy-MM-dd').format(ar.emissionDate);
+
+  return Card(
+    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    child: ListTile(
+      title: Text('Cliente: ${ar.docNumber} - Doc: ${ar.docNumber}'),
+      subtitle: Text('Fecha de Emision: $date'),
+      trailing: Text(formatNumber(ar.balance, deviceLocale)),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReceivableDetailScreen(accountReceivable: ar),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+Widget buildAccountPayableListItem(BuildContext context, AccountPayable ap) {
+  final deviceLocale = Localizations.localeOf(context).toString();
+  final date = DateFormat('yyyy-MM-dd').format(ap.emissionDate);
+
+  return Card(
+    margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    child: ListTile(
+      title: Text('Doc: ${ap.docNumber}'),
+      subtitle: Text('Fecha de Emision: $date'),
+      trailing: Text(formatNumber(ap.balance, deviceLocale)),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PayableDetailScreen(accountPayable: ap),
+          ),
+        );
+      },
+    ),
+  );
+}
