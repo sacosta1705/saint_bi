@@ -1,13 +1,10 @@
-// Archivo: lib/screens/login_screen.dart (Corregido)
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
 import 'package:saint_intelligence/config/app_colors.dart';
 import 'package:saint_intelligence/models/api_connection.dart';
-
-// CAMBIO: Se importa el Notifier correcto y la nueva pantalla de resumen.
 import 'package:saint_intelligence/providers/managment_summary_notifier.dart';
-
 import 'package:saint_intelligence/screens/connection_settings_screen.dart';
 import 'package:saint_intelligence/screens/managment_summary_screen.dart';
 import 'package:saint_intelligence/services/database_service.dart';
@@ -35,10 +32,22 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
+  String _version = '';
+
   @override
   void initState() {
     super.initState();
     _loadInitialData();
+    _loadVersionInfo();
+  }
+
+  Future<void> _loadVersionInfo() async {
+    final PackageInfo info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _version = 'v${info.version}';
+      });
+    }
   }
 
   Future<void> _loadInitialData() async {
@@ -310,7 +319,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
+                            color: Colors.red,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.red)),
                         child: const Text(
@@ -367,6 +376,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text('Ingresar',
                               style: TextStyle(fontSize: 16)),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      _version,
+                      style: const TextStyle(
+                          color: AppColors.textSecondary, fontSize: 12),
                     ),
                   ],
                 ),

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import 'package:saint_intelligence/analysis/screens/sales_forecast_screen.dart';
 import 'package:saint_intelligence/models/account_payable.dart';
 import 'package:saint_intelligence/models/account_receivable.dart';
 import 'package:saint_intelligence/models/api_connection.dart';
 import 'package:saint_intelligence/models/invoice.dart';
-
 import 'package:saint_intelligence/providers/managment_summary_notifier.dart';
 import 'package:saint_intelligence/screens/builders/transaction_list_item.dart';
 import 'package:saint_intelligence/screens/connection_settings_screen.dart';
@@ -15,7 +16,6 @@ import 'package:saint_intelligence/services/database_service.dart';
 import 'package:saint_intelligence/utils/security_service.dart';
 import 'package:saint_intelligence/utils/formatters.dart';
 
-// const String _screenTitleText = 'Saint BI: Resumen Gerencial';
 const String _reloadDataTooltipText = 'Recargar Datos';
 const String _settingsTooltipText = 'Configurar Conexiones';
 const String _logoutTooltipText = 'Cerrar Sesión';
@@ -25,10 +25,6 @@ const String _defaultUiErrorText = "Ha ocurrido un error inesperado.";
 const String _tryConnectButtonLabel = 'Intentar Conectar / Reintentar';
 const String _reAuthenticatingMessageFromNotifier =
     'Sesión expirada. Intentando re-autenticar...';
-// const String _selectDateRangeTooltipText = 'Seleccionar Rango';
-// const String _todayButtonText = 'Hoy';
-// const String _clearFilterButtonText = 'Quitar Filtro';
-// const String _allDatesText = 'Todas las fechas';
 const String _goToSettingsButtonText = 'Ir a Configuración';
 const String _uiNoConnectionsAvailableMessage =
     'No hay conexiones disponibles. Por favor agregar una en la configuracion.';
@@ -175,40 +171,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
       },
     );
   }
-  // Future<void> _pickDateRange(
-  //     BuildContext context, ManagementSummaryNotifier notifier) async {
-  //   if (notifier.activeConnection == null) {
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-  //           content: Text('Por favor, primero seleccione una empresa.'),
-  //           backgroundColor: AppColors.statusMessageWarning));
-  //     }
-  //     return;
-  //   }
-
-  //   final DateTimeRange? pickedRange = await showDateRangePicker(
-  //     context: context,
-  //     initialDateRange: (notifier.startDate != null && notifier.endDate != null)
-  //         ? DateTimeRange(start: notifier.startDate!, end: notifier.endDate!)
-  //         : null,
-  //     firstDate: DateTime(2000),
-  //     lastDate: DateTime.now().add(const Duration(days: 365)),
-  //     locale: const Locale('es', 'ES'),
-  //     helpText: 'SELECCIONAR RANGO',
-  //     cancelText: 'CANCELAR',
-  //     confirmText: 'APLICAR',
-  //     builder: (context, child) => child!,
-  //   );
-
-  //   if (pickedRange != null && mounted) {
-  //     bool hasChanged =
-  //         (notifier.startDate?.isAtSameMomentAs(pickedRange.start) != true) ||
-  //             (notifier.endDate?.isAtSameMomentAs(pickedRange.end) != true);
-  //     if (hasChanged) {
-  //       await notifier.filterByDateRange(pickedRange.start, pickedRange.end);
-  //     }
-  //   }
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -378,6 +340,31 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
       child: ListView(
         padding: const EdgeInsets.all(12.0),
         children: [
+          Card(
+            clipBehavior: Clip.antiAlias,
+            elevation: 2.0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: const Icon(Icons.insights,
+                  color: AppColors.primaryOrange, size: 32),
+              title: const Text("Análisis y Proyecciones",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text("Estimar ventas futuras y más."),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const SalesForecastScreen()),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
           _buildStyledSectionCard(
             title: "RESUMEN DE OPERACIONES",
             icon: Icons.show_chart,
@@ -570,7 +557,10 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                       "Total I.V.A. por Pagar:",
                       formatNumber((summary.salesVat - summary.purchasesVat),
                           deviceLocale),
-                      isTotal: true),
+                      isTotal: true,
+                      valueColor: (summary.salesVat - summary.purchasesVat) < 0
+                          ? AppColors.statusMessageError
+                          : AppColors.statusMessageSuccess),
                   const Divider(height: 24, thickness: 0.5),
                   _buildDataRow("I.V.A. en Ventas:",
                       formatNumber(summary.salesVat, deviceLocale)),
@@ -688,80 +678,4 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
       ),
     );
   }
-
-  // Barra de filtros de fecha. Se extrae de _buildSalesCard para reutilizarla.
-  // Widget _buildDateFilterBar(
-  //     ManagementSummaryNotifier notifier, BuildContext context) {
-  //   final dateFormat = DateFormat('dd/MM/yyyy', 'es_ES');
-
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
-  //     margin:
-  //         const EdgeInsets.only(bottom: 8.0, top: 8.0, left: 8.0, right: 8.0),
-  //     decoration: BoxDecoration(
-  //         color: AppColors.cardBackground,
-  //         borderRadius: BorderRadius.circular(12.0),
-  //         boxShadow: [
-  //           BoxShadow(
-  //               color: Colors.grey,
-  //               spreadRadius: 1,
-  //               blurRadius: 5,
-  //               offset: const Offset(0, 2))
-  //         ]),
-  //     child: Column(
-  //       children: [
-  //         Text(
-  //             (notifier.startDate == null && notifier.endDate == null)
-  //                 ? _allDatesText
-  //                 : 'Rango: ${dateFormat.format(notifier.startDate!)} - ${dateFormat.format(notifier.endDate!)}',
-  //             style: const TextStyle(
-  //                 fontSize: 15,
-  //                 fontWeight: FontWeight.w600,
-  //                 color: AppColors.primaryBlue),
-  //             textAlign: TextAlign.center),
-  //         const SizedBox(height: 10),
-  //         Wrap(
-  //           alignment: WrapAlignment.center,
-  //           spacing: 8.0,
-  //           runSpacing: 4.0,
-  //           children: [
-  //             TextButton.icon(
-  //                 icon: const Icon(Icons.date_range,
-  //                     size: 20, color: AppColors.primaryOrange),
-  //                 label: const Text(_selectDateRangeTooltipText,
-  //                     style: TextStyle(
-  //                         color: AppColors.primaryOrange,
-  //                         fontWeight: FontWeight.w500)),
-  //                 onPressed: notifier.isLoading
-  //                     ? null
-  //                     : () => _pickDateRange(context, notifier)),
-  //             TextButton(
-  //                 onPressed: notifier.isLoading
-  //                     ? null
-  //                     : () {
-  //                         final now = DateTime.now();
-  //                         final todayNormalized =
-  //                             DateTime(now.year, now.month, now.day);
-  //                         notifier.filterByDateRange(
-  //                             todayNormalized, todayNormalized);
-  //                       },
-  //                 child: const Text(_todayButtonText,
-  //                     style: TextStyle(
-  //                         color: AppColors.primaryBlue,
-  //                         fontWeight: FontWeight.w500))),
-  //             if (notifier.startDate != null || notifier.endDate != null)
-  //               TextButton(
-  //                   onPressed: notifier.isLoading
-  //                       ? null
-  //                       : () => notifier.filterByDateRange(null, null),
-  //                   child: const Text(_clearFilterButtonText,
-  //                       style: TextStyle(
-  //                           color: AppColors.textSecondary,
-  //                           fontWeight: FontWeight.w500))),
-  //           ],
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 }
