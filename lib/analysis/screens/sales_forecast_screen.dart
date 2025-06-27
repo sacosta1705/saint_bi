@@ -94,7 +94,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
 
     if (mounted) {
       setState(() {
-        _isLoading = true;
+        _isLoading = false;
       });
     }
   }
