@@ -9,8 +9,6 @@ import 'package:saint_intelligence/analysis/services/forecasting_service.dart';
 import 'package:saint_intelligence/config/app_colors.dart';
 import 'package:saint_intelligence/providers/managment_summary_notifier.dart';
 
-enum ChartGranularity { daily, weekly, monthly, yearly }
-
 class SalesForecastScreen extends StatefulWidget {
   const SalesForecastScreen({super.key});
 
@@ -24,7 +22,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
   List<TimeSeriesPoint> _displayHistoricalData = [];
   List<TimeSeriesPoint> _displayForecastedData = [];
 
-  bool _isLoading = false;
+  bool _isLoading = true;
   int _forecastedPeriods = 12;
   double _alpha = 0.4;
 
@@ -87,6 +85,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
         historicalData: historicalForForecast,
         periodsToForecast: _forecastedPeriods,
         alpha: _alpha,
+        granularity: selectedGranularity,
       );
     } else {
       _displayForecastedData = [];
@@ -100,6 +99,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
   }
 
   List<TimeSeriesPoint> _aggregateDataByWeek(List<TimeSeriesPoint> dailyData) {
+    if (dailyData.isEmpty) return [];
     final weeklyGroups =
         groupBy(dailyData, (p) => '${p.time.year}-${_weekNumber(p.time)}');
     return weeklyGroups.values.map((pointsInWeek) {
@@ -112,6 +112,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
   }
 
   List<TimeSeriesPoint> _aggregateDataByMonth(List<TimeSeriesPoint> dailyData) {
+    if (dailyData.isEmpty) return [];
     final monthlyGroups =
         groupBy(dailyData, (p) => '${p.time.year}-${p.time.month}');
 
@@ -126,6 +127,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
   }
 
   List<TimeSeriesPoint> _aggregateDataByYear(List<TimeSeriesPoint> dailyData) {
+    if (dailyData.isEmpty) return [];
     final yearlyGroups = groupBy(dailyData, (p) => p.time.year);
     return yearlyGroups.values.map((pointsInYear) {
       final totalValue =
@@ -143,35 +145,53 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final totalDataPoints =
+        _displayHistoricalData.length + _displayForecastedData.length;
+    final double pointWidth = 50.0;
+    final double calculatedChartWidth = totalDataPoints * pointWidth;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Proyeccion de ventas'),
+        title: const Text('Proyección de ventas'),
         backgroundColor: AppColors.appBarBackground,
         foregroundColor: AppColors.appBarForeground,
       ),
-      body: _isLoading
+      body: _historicalSales.isEmpty && _isLoading
           ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Calculando proyeccion...'),
+                  Text('Calculando proyección...'),
                 ],
               ),
             )
-          : _historicalSales.isEmpty
+          : _historicalSales.isEmpty && !_isLoading
               ? const Center(
-                  child: Text('No hay suficientes datos para una proyeccion.'),
+                  child: Text('No hay suficientes datos para una proyección.'),
                 )
               : Column(
                   children: [
                     _buildControls(),
                     Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
-                        child: LineChart(_buildChartData()),
-                      ),
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : SingleChildScrollView(
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                padding:
+                                    const EdgeInsets.fromLTRB(0, 16, 16, 32),
+                                child: SizedBox(
+                                  width: calculatedChartWidth > screenWidth
+                                      ? calculatedChartWidth
+                                      : screenWidth,
+                                  height: 400,
+                                  child: LineChart(_buildChartData()),
+                                ),
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -183,7 +203,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
     String forecastLabel;
     switch (selectedGranularity) {
       case ChartGranularity.daily:
-        forecastLabel = 'Dias a proyectar';
+        forecastLabel = 'Días a proyectar';
         break;
       case ChartGranularity.weekly:
         forecastLabel = 'Semanas a proyectar';
@@ -192,7 +212,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
         forecastLabel = 'Meses a proyectar';
         break;
       case ChartGranularity.yearly:
-        forecastLabel = 'Años a proyectar';
+        forecastLabel = 'Pronóstico no disponible';
         break;
     }
     return Padding(
@@ -203,73 +223,97 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Parametros del Modelo (Suavizado Exponencial)'),
-              SegmentedButton<ChartGranularity>(
-                segments: [
-                  ButtonSegment(
-                      value: ChartGranularity.daily, label: Text('Diario')),
-                  ButtonSegment(
-                      value: ChartGranularity.daily, label: Text('Semanal')),
-                  ButtonSegment(
-                      value: ChartGranularity.daily, label: Text('Mensual')),
-                  ButtonSegment(
-                      value: ChartGranularity.daily, label: Text('Anual')),
-                ],
-                selected: _selection,
-                onSelectionChanged: (newSelection) {
-                  setState(() {
-                    _selection = newSelection;
-                    _prepareAndRunForecast();
-                  });
-                },
+              Text('Parámetros del Modelo',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<ChartGranularity>(
+                  segments: const [
+                    ButtonSegment(
+                        value: ChartGranularity.daily,
+                        label: Text('Diario', style: TextStyle(fontSize: 12))),
+                    ButtonSegment(
+                        value: ChartGranularity.weekly,
+                        label: Text('Semanal', style: TextStyle(fontSize: 12))),
+                    ButtonSegment(
+                        value: ChartGranularity.monthly,
+                        label: Text('Mensual', style: TextStyle(fontSize: 12))),
+                    ButtonSegment(
+                        value: ChartGranularity.yearly,
+                        label: Text('Anual', style: TextStyle(fontSize: 12))),
+                  ],
+                  selected: _selection,
+                  // --- MODIFICADO: Lógica de selección para prevenir el error ---
+                  onSelectionChanged: (newSelection) {
+                    if (newSelection.isNotEmpty) {
+                      final newGranularity = newSelection.first;
+                      int updatedPeriods = _forecastedPeriods;
+
+                      // Define el nuevo máximo basado en la granularidad seleccionada.
+                      final int newMax =
+                          (newGranularity == ChartGranularity.daily) ? 30 : 24;
+
+                      // Si el valor actual excede el nuevo máximo, ajústalo.
+                      if (updatedPeriods > newMax) {
+                        updatedPeriods = newMax;
+                      }
+
+                      // Actualiza el estado con los valores nuevos y correctos antes de reconstruir.
+                      setState(() {
+                        _selection = newSelection;
+                        _forecastedPeriods = updatedPeriods;
+                        _prepareAndRunForecast();
+                      });
+                    }
+                  },
+                  multiSelectionEnabled: false,
+                  showSelectedIcon: false,
+                ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text('$forecastLabel:'),
-                  Expanded(
-                    child: Slider(
-                      value: _forecastedPeriods.toDouble(),
-                      min: 1,
-                      max: selectedGranularity == ChartGranularity.daily
-                          ? 90
-                          : 24,
-                      divisions: selectedGranularity == ChartGranularity.daily
-                          ? 89
-                          : 23,
-                      label: _forecastedPeriods.toString(),
-                      onChanged: (v) =>
-                          setState(() => _forecastedPeriods = v.round()),
-                      onChangeEnd: (v) => _prepareAndRunForecast(),
+              if (selectedGranularity != ChartGranularity.yearly) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text('$forecastLabel:', style: TextStyle(fontSize: 13)),
+                    Expanded(
+                      child: Slider(
+                        value: _forecastedPeriods.toDouble(),
+                        min: 1,
+                        max: selectedGranularity == ChartGranularity.daily
+                            ? 30
+                            : 24,
+                        divisions: selectedGranularity == ChartGranularity.daily
+                            ? 29
+                            : 23,
+                        label: _forecastedPeriods.toString(),
+                        onChanged: (v) =>
+                            setState(() => _forecastedPeriods = v.round()),
+                        onChangeEnd: (v) => _prepareAndRunForecast(),
+                      ),
                     ),
-                  ),
-                  Text(_forecastedPeriods.toString())
-                ],
-              ),
-              Row(
-                children: [
-                  const Text('Sensibilidad:'),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Slider(
-                      value: _alpha,
-                      min: 0.1,
-                      max: 0.9,
-                      divisions: 8,
-                      label: _alpha.toStringAsPrecision(1),
-                      onChanged: (value) {
-                        setState(
-                          () {
-                            _alpha = value;
-                          },
-                        );
-                      },
-                      onChangeEnd: (value) => _prepareAndRunForecast(),
+                    Text(_forecastedPeriods.toString())
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('Sensibilidad:', style: TextStyle(fontSize: 13)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Slider(
+                        value: _alpha,
+                        min: 0.1,
+                        max: 0.9,
+                        divisions: 8,
+                        label: _alpha.toStringAsPrecision(1),
+                        onChanged: (value) => setState(() => _alpha = value),
+                        onChangeEnd: (value) => _prepareAndRunForecast(),
+                      ),
                     ),
-                  ),
-                  Text(_alpha.toStringAsPrecision(1))
-                ],
-              ),
+                    Text(_alpha.toStringAsPrecision(1))
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -277,16 +321,47 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
     );
   }
 
+  Widget _leftTitleWidgets(double value, TitleMeta meta) {
+    if (value == meta.min) {
+      return Container();
+    }
+    final style = const TextStyle(fontSize: 10, color: Colors.black54);
+    final text = NumberFormat.compact().format(value);
+
+    return SideTitleWidget(
+      space: 8.0,
+      meta: meta,
+      child: Text(text, style: style),
+    );
+  }
+
   LineChartData _buildChartData() {
-    final List<FlSpot> historicalSpots = _displayHistoricalData
+    final historicalSpots = _displayHistoricalData
         .asMap()
         .entries
         .map((e) => FlSpot(e.key.toDouble(), e.value.value))
         .toList();
-    final List<FlSpot> forecastSpots = [];
+    final forecastSpots = <FlSpot>[];
+
+    double minY = 0;
+    double maxY = 100;
+    final allValues = [
+      ..._displayHistoricalData.map((p) => p.value),
+      ..._displayForecastedData.map((p) => p.value)
+    ];
+
+    if (allValues.isNotEmpty) {
+      maxY = allValues.reduce((a, b) => a > b ? a : b);
+    }
+    maxY *= 1.2;
+    if (maxY == 0) {
+      maxY = 100;
+    }
 
     if (_displayForecastedData.isNotEmpty) {
-      forecastSpots.add(historicalSpots.last);
+      if (historicalSpots.isNotEmpty) {
+        forecastSpots.add(historicalSpots.last);
+      }
       for (int i = 0; i < _displayForecastedData.length; i++) {
         forecastSpots.add(FlSpot(
             (historicalSpots.length - 1 + i + 1).toDouble(),
@@ -295,6 +370,9 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
     }
 
     return LineChartData(
+      minY: minY,
+      maxY: maxY,
+      clipData: FlClipData.all(),
       lineTouchData: LineTouchData(
         handleBuiltInTouches: true,
         touchTooltipData: LineTouchTooltipData(
@@ -303,20 +381,24 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
       ),
       gridData: const FlGridData(show: true),
       titlesData: FlTitlesData(
-        leftTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: true, reservedSize: 40)),
-        bottomTitles: AxisTitles(
+        leftTitles: AxisTitles(
             sideTitles: SideTitles(
                 showTitles: true,
-                reservedSize: 30,
-                getTitlesWidget: _bottomTitleWidgets)),
+                reservedSize: 60,
+                getTitlesWidget: _leftTitleWidgets)),
+        bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+          showTitles: true,
+          reservedSize: 35,
+          getTitlesWidget: _bottomTitleWidgets,
+          interval: 1,
+        )),
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         rightTitles:
             const AxisTitles(sideTitles: SideTitles(showTitles: false)),
       ),
       borderData: FlBorderData(show: true),
       lineBarsData: [
-        // Línea de datos históricos
         LineChartBarData(
           spots: historicalSpots,
           isCurved: true,
@@ -324,15 +406,15 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
           barWidth: 3,
           dotData: const FlDotData(show: false),
         ),
-        // Línea de proyección
-        LineChartBarData(
-          spots: forecastSpots,
-          isCurved: true,
-          color: AppColors.primaryOrange,
-          barWidth: 3,
-          dotData: const FlDotData(show: false),
-          dashArray: [5, 5], // Línea punteada
-        ),
+        if (forecastSpots.isNotEmpty)
+          LineChartBarData(
+            spots: forecastSpots,
+            isCurved: true,
+            color: AppColors.primaryOrange,
+            barWidth: 3,
+            dotData: const FlDotData(show: false),
+            dashArray: [5, 5],
+          ),
       ],
     );
   }
@@ -355,26 +437,24 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
 
           switch (granularity) {
             case ChartGranularity.daily:
-              dateText =
-                  DateFormat('EEEm dd MMM yyyy').format(timeSeriesPoint.time);
+              dateText = DateFormat('EEE, dd MMM yy', 'es_ES')
+                  .format(timeSeriesPoint.time);
               break;
-
             case ChartGranularity.weekly:
               dateText =
                   "Semana del ${DateFormat('dd/MM/yy').format(timeSeriesPoint.time)}";
               break;
-
             case ChartGranularity.monthly:
-              dateText = DateFormat('MMMM yyyy').format(timeSeriesPoint.time);
+              dateText =
+                  DateFormat('MMMM yyyy', 'es_ES').format(timeSeriesPoint.time);
               break;
-
             case ChartGranularity.yearly:
               dateText = DateFormat('yyyy').format(timeSeriesPoint.time);
               break;
           }
 
           return LineTooltipItem(
-            '${timeSeriesPoint.value.toStringAsFixed(2)}\n',
+            '${NumberFormat.decimalPattern('es_ES').format(timeSeriesPoint.value)}\n',
             const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             children: [
               TextSpan(
@@ -392,7 +472,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
   }
 
   Widget _bottomTitleWidgets(double value, TitleMeta meta) {
-    const style = TextStyle(fontSize: 10, color: Colors.black54);
+    final style = TextStyle(fontSize: 10, color: Colors.black54);
     String text = '';
     int index = value.toInt();
     final granularity = _selection.first;
@@ -409,17 +489,10 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
 
     if (pointIndex >= 0 && pointIndex < dataList.length) {
       final DateTime date = dataList[pointIndex].time;
-      // Lógica de intervalo para evitar sobreposición en vistas densas.
       int interval = 1;
-      if (granularity == ChartGranularity.daily) {
-        interval = _displayHistoricalData.length > 30 ? 7 : 5;
-      }
-      if (granularity == ChartGranularity.weekly) {
-        interval = _displayHistoricalData.length > 20 ? 2 : 1;
-      }
-      if (granularity == ChartGranularity.monthly) {
-        interval = _displayHistoricalData.length > 24 ? 3 : 1;
-      }
+      if (granularity == ChartGranularity.daily) interval = 2;
+      if (granularity == ChartGranularity.weekly) interval = 1;
+      if (granularity == ChartGranularity.monthly) interval = 1;
 
       if (index % interval == 0) {
         switch (granularity) {
@@ -428,7 +501,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
             break;
           case ChartGranularity.weekly:
             text = DateFormat('dd/MM').format(date);
-            break; // Muestra inicio de semana
+            break;
           case ChartGranularity.monthly:
             text = DateFormat('MMM yy', 'es_ES').format(date);
             break;
@@ -440,8 +513,9 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
     }
 
     return SideTitleWidget(
-      meta: meta,
       space: 8.0,
+      meta: meta,
+      angle: -0.7,
       child: Text(text, style: style),
     );
   }

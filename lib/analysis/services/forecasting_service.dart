@@ -1,13 +1,10 @@
-import 'package:stats/stats.dart';
-
 import 'package:saint_intelligence/analysis/models/time_series_point.dart';
 
 class ForecastingService {
-  // Calcula una proyeccion de ventas usando el
-  // Pronostico Suavizada Exponencial Simple
   List<TimeSeriesPoint> calculateSES({
     required List<TimeSeriesPoint> historicalData,
     required int periodsToForecast,
+    required ChartGranularity granularity,
     double alpha = 0.4,
   }) {
     if (historicalData.isEmpty) return [];
@@ -22,15 +19,29 @@ class ForecastingService {
     }
 
     double forecastValue = smoothedData.last;
+    if (forecastValue < 0) forecastValue = 0;
 
     final List<TimeSeriesPoint> forecastPoints = [];
     DateTime lastDate = historicalData.last.time;
 
     for (int i = 1; i <= periodsToForecast; i++) {
-      lastDate = lastDate.add(const Duration(days: 1));
+      switch (granularity) {
+        case ChartGranularity.daily:
+          lastDate = lastDate.add(const Duration(days: 1));
+          break;
+        case ChartGranularity.weekly:
+          lastDate = lastDate.add(const Duration(days: 7));
+          break;
+        case ChartGranularity.monthly:
+          lastDate = DateTime(lastDate.year, lastDate.month + 1, lastDate.day);
+          break;
+        case ChartGranularity.yearly:
+          lastDate = DateTime(lastDate.year + 1, lastDate.month, lastDate.day);
+          break;
+      }
       forecastPoints.add(TimeSeriesPoint(
         time: lastDate,
-        value: forecastValue < 0 ? 0 : forecastValue,
+        value: forecastValue,
       ));
     }
     return forecastPoints;

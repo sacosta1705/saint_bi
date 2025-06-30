@@ -46,6 +46,7 @@ dependencies:
   package_info_plus: ^8.3.0
   fl_chart: ^1.0.0
   stats: ^3.0.0
+  collection: ^1.19.1
 
 dev_dependencies:
   flutter_test:

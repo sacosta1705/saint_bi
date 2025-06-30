@@ -1,3 +1,5 @@
+enum ChartGranularity { daily, weekly, monthly, yearly }
+
 class TimeSeriesPoint {
   final DateTime time;
   final double value;
