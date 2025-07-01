@@ -244,22 +244,18 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
                         label: Text('Anual', style: TextStyle(fontSize: 12))),
                   ],
                   selected: _selection,
-                  // --- MODIFICADO: Lógica de selección para prevenir el error ---
                   onSelectionChanged: (newSelection) {
                     if (newSelection.isNotEmpty) {
                       final newGranularity = newSelection.first;
                       int updatedPeriods = _forecastedPeriods;
 
-                      // Define el nuevo máximo basado en la granularidad seleccionada.
                       final int newMax =
                           (newGranularity == ChartGranularity.daily) ? 30 : 24;
 
-                      // Si el valor actual excede el nuevo máximo, ajústalo.
                       if (updatedPeriods > newMax) {
                         updatedPeriods = newMax;
                       }
 
-                      // Actualiza el estado con los valores nuevos y correctos antes de reconstruir.
                       setState(() {
                         _selection = newSelection;
                         _forecastedPeriods = updatedPeriods;

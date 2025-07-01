@@ -29,10 +29,11 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
   final _terminalController = TextEditingController();
   final _companyNameController = TextEditingController();
   final _companyAliasController = TextEditingController();
+  final _configIdController = TextEditingController(text: '1');
 
   bool _canViewSales = true;
-  // bool _canViewPurchases = true;  // Descomentar para futuras implementaciones
-  // bool _canViewInventory = true; // Descomentar para futuras implementaciones
+  // bool _canViewPurchases = true;
+  // bool _canViewInventory = true;
 
   ApiConnection? _connectionBeingEdited;
   String? _defaultApiUser;
@@ -109,7 +110,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     _baseUrlController.clear();
     _passwordController.clear();
     _pollingIntervalController.text = '300';
-    _terminalController.text = 'saint_intelligence_flutter_app';
+    _terminalController.text = 'terminal';
     _companyNameController.clear();
     _companyAliasController.clear();
     if (mounted) {
@@ -126,7 +127,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_defaultApiUser == null || _defaultApiUser!.isEmpty) {
       _setErrorMessage(
-          "Error crítico: No se encontró el usuario API por defecto. Reinicie la aplicación.");
+          "Error crítico: No se encontró el usuario API por defecto. Reinstale la aplicación.");
       return;
     }
 
@@ -142,13 +143,16 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         int.tryParse(_pollingIntervalController.text.trim());
     final terminal = _terminalController.text.trim();
     final username = _defaultApiUser!;
+    final configId = _configIdController.text;
 
     try {
       final LoginResponse? loginResponse = await _saintApi.login(
-          baseurl: baseUrl,
-          username: username,
-          password: password,
-          terminal: terminal);
+        baseurl: baseUrl,
+        username: username,
+        password: password,
+        terminal: terminal,
+      );
+
       if (loginResponse == null ||
           loginResponse.authToken == null ||
           loginResponse.authToken!.isEmpty) {

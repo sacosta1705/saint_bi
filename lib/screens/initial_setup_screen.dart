@@ -1,12 +1,11 @@
 // lib/screens/initial_setup_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // IMPORTANTE: Añadir para usar formatters
+import 'package:flutter/services.dart';
 import 'package:saint_intelligence/config/app_colors.dart';
 import 'package:saint_intelligence/screens/connection_settings_screen.dart';
 import 'package:saint_intelligence/services/database_service.dart';
 import 'package:saint_intelligence/utils/security_service.dart';
 
-// --- NUEVO: Formatter para convertir texto a mayúsculas en tiempo real ---
 class UpperCaseTextFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -32,6 +31,11 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
   final _confirmAdminPassController = TextEditingController();
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    super.initState();
+  }
+
   Future<void> _saveSettings() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -40,7 +44,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // --- CORRECCIÓN: Asegurarse de guardar en mayúsculas ---
       final apiUser = _apiUserControlller.text.trim().toUpperCase();
       final adminPass = _adminPassController.text;
       final adminPassHash = SecurityService.hashPassword(adminPass);
@@ -59,7 +62,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
         ),
       );
 
-      // Navegamos a la pantalla de Login, que es el siguiente paso lógico
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const ConnectionSettingsScreen()),
         (route) => false,
@@ -123,7 +125,6 @@ class _InitialSetupScreenState extends State<InitialSetupScreen> {
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _apiUserControlller,
-                      // --- CORRECCIÓN: Aplicar el formatter y la capitalización ---
                       textCapitalization: TextCapitalization.characters,
                       inputFormatters: [
                         UpperCaseTextFormatter(),
