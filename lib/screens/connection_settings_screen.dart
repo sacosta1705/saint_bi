@@ -111,6 +111,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     _terminalController.text = 'terminal';
     _companyNameController.clear();
     _companyAliasController.clear();
+    _configIdController.text = '1';
     if (mounted) {
       setState(() {
         _connectionBeingEdited = null;
@@ -141,7 +142,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         int.tryParse(_pollingIntervalController.text.trim());
     final terminal = _terminalController.text.trim();
     final username = _defaultApiUser!;
-    final configId = _configIdController.text;
+    final configId = int.tryParse(_configIdController.text.trim());
 
     try {
       final LoginResponse? loginResponse = await _saintApi.login(
@@ -191,6 +192,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
         companyAlias: companyAlias,
         terminal: terminal,
         permissions: permissionsToSave,
+        configId: configId!,
       );
 
       final notifier =
@@ -288,6 +290,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
     _pollingIntervalController.dispose();
     _terminalController.dispose();
     _companyNameController.dispose();
+    _configIdController.dispose();
     super.dispose();
   }
 
@@ -454,6 +457,28 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                             (value == null || value.trim().isEmpty)
                                 ? 'Ingresa el nombre del terminal'
                                 : null,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _configIdController,
+                        decoration: _inputDecoration('ID de la configuracion *',
+                            'Ej: 1', Icons.settings_input_component),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: <TextInputFormatter>[
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Ingresa el ID de la configuración';
+                          }
+
+                          final id = int.tryParse(value.trim());
+                          if (id == null || id <= 0) {
+                            return 'El ID debe ser un valor númerico mayor a cero (0).';
+                          }
+
+                          return null;
+                        },
                       ),
                       const Divider(height: 32),
                       Text('Permisos para este equipo',

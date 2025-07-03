@@ -135,11 +135,12 @@ class SaintApi {
     );
   }
 
-  Future<List<dynamic>> getConfiguration(
-      {required int id,
-      required String baseUrl,
-      required String authtoken,
-      Map<String, String>? params}) async {
+  Future<dynamic> getConfiguration({
+    required int id,
+    required String baseUrl,
+    required String authtoken,
+    Map<String, String>? params,
+  }) async {
     return await _fetchData(
       'config/$id',
       baseUrl: baseUrl,

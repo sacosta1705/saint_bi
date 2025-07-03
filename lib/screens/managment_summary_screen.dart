@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 import 'package:saint_intelligence/analysis/screens/sales_forecast_screen.dart';
 import 'package:saint_intelligence/models/account_payable.dart';
@@ -41,6 +42,7 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
   @override
   void initState() {
     super.initState();
+    // La inicialización de fechas ahora se hace en el Notifier
   }
 
   Future<void> _logout(BuildContext context) async {
@@ -237,11 +239,88 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
               );
             }
 
-            return _buildManagementSummaryBody(notifier, context);
+            return Column(
+              children: [
+                _buildDateFilter(context, notifier), // WIDGET AÑADIDO
+                Expanded(
+                  child: _buildManagementSummaryBody(notifier, context),
+                ),
+              ],
+            );
           },
         ),
       ),
     );
+  }
+
+  // --- WIDGET NUEVO: Selector de Fechas ---
+  Widget _buildDateFilter(
+      BuildContext context, ManagementSummaryNotifier notifier) {
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    final startDateText = notifier.startDate != null
+        ? dateFormat.format(notifier.startDate!)
+        : 'Inicio';
+    final endDateText =
+        notifier.endDate != null ? dateFormat.format(notifier.endDate!) : 'Fin';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      child: Card(
+        elevation: 2,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              const Icon(Icons.calendar_today, color: AppColors.primaryBlue),
+              const SizedBox(width: 16),
+              Expanded(
+                child: InkWell(
+                  onTap: () => _selectDateRange(context, notifier),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Período de Análisis',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary)),
+                      Text('$startDateText - $endDateText',
+                          style:
+                              const TextStyle(color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.filter_list_off),
+                tooltip: 'Limpiar filtro',
+                onPressed: () => notifier.filterByDateRange(null, null),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectDateRange(
+      BuildContext context, ManagementSummaryNotifier notifier) async {
+    final initialRange = DateTimeRange(
+      start: notifier.startDate ?? DateTime.now(),
+      end: notifier.endDate ?? DateTime.now(),
+    );
+
+    final newRange = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: initialRange,
+      locale: const Locale('es', 'ES'),
+    );
+
+    if (newRange != null) {
+      notifier.filterByDateRange(newRange.start, newRange.end);
+    }
   }
 
   Widget _buildLoadingState({required ManagementSummaryNotifier notifier}) {
@@ -428,21 +507,17 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                       ? AppColors.positiveValue
                       : AppColors.negativeValue),
               const Divider(height: 24, thickness: 0.5),
-              _buildDataRow("Gastos operativos:",
-                  formatNumber(summary.operatingExpenses, deviceLocale)),
+              _buildDataRow('Gastos fijos (Prorrateado):',
+                  formatNumber(summary.fixedCosts, deviceLocale)),
+              // _buildDataRow("Gastos operativos:",
+              //     formatNumber(summary.operatingExpenses, deviceLocale)),
               _buildDataRow("Utilidad o pérdida operativa:",
                   formatNumber(summary.netProfitOrLoss, deviceLocale),
                   isTotal: true,
                   valueColor: summary.netProfitOrLoss >= 0
                       ? AppColors.positiveValue
                       : AppColors.negativeValue),
-            ],
-          ),
-          _buildStyledSectionCard(
-            title: "ESTADO FINANCIERO",
-            icon: Icons.account_balance_wallet,
-            context: context,
-            children: [
+
               _buildDataRow(
                 "Total Cuentas por Pagar:",
                 formatNumber(summary.totalPayables, deviceLocale),
@@ -548,37 +623,35 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                   );
                 },
               ),
-              _buildStyledSectionCard(
-                title: "RESUMEN DE IMPUESTOS",
-                icon: Icons.receipt_long,
-                context: context,
-                children: [
-                  _buildDataRow(
-                      "Total I.V.A. por Pagar:",
-                      formatNumber((summary.salesVat - summary.purchasesVat),
-                          deviceLocale),
-                      isTotal: true,
-                      valueColor: (summary.salesVat - summary.purchasesVat) < 0
-                          ? AppColors.statusMessageError
-                          : AppColors.statusMessageSuccess),
-                  const Divider(height: 24, thickness: 0.5),
-                  _buildDataRow("I.V.A. en Ventas:",
-                      formatNumber(summary.salesVat, deviceLocale)),
-                  _buildDataRow("IVA Retenido por Clientes:",
-                      formatNumber(summary.salesIvaWithheld, deviceLocale)),
-                  _buildDataRow("I.S.L.R. Retenido por Clientes:",
-                      formatNumber(summary.salesIslrWithheld, deviceLocale)),
-                  const Divider(height: 24, thickness: 0.5),
-                  _buildDataRow("I.V.A. en Compras:",
-                      formatNumber(summary.purchasesVat, deviceLocale)),
-                  _buildDataRow("IVA Retenido a Proveedores:",
-                      formatNumber(summary.purchasesIvaWithheld, deviceLocale)),
-                  _buildDataRow(
-                      "I.S.L.R. Retenido a Proveedores:",
-                      formatNumber(
-                          summary.purchasesIslrWithheld, deviceLocale)),
-                ],
-              ),
+            ],
+          ),
+          _buildStyledSectionCard(
+            title: "RESUMEN DE IMPUESTOS",
+            icon: Icons.receipt_long,
+            context: context,
+            children: [
+              _buildDataRow(
+                  "Total I.V.A. por Pagar:",
+                  formatNumber(
+                      (summary.salesVat - summary.purchasesVat), deviceLocale),
+                  isTotal: true,
+                  valueColor: (summary.salesVat - summary.purchasesVat) < 0
+                      ? AppColors.statusMessageError
+                      : AppColors.statusMessageSuccess),
+              const Divider(height: 24, thickness: 0.5),
+              _buildDataRow("I.V.A. en Ventas:",
+                  formatNumber(summary.salesVat, deviceLocale)),
+              _buildDataRow("IVA Retenido por Clientes:",
+                  formatNumber(summary.salesIvaWithheld, deviceLocale)),
+              _buildDataRow("I.S.L.R. Retenido por Clientes:",
+                  formatNumber(summary.salesIslrWithheld, deviceLocale)),
+              const Divider(height: 24, thickness: 0.5),
+              _buildDataRow("I.V.A. en Compras:",
+                  formatNumber(summary.purchasesVat, deviceLocale)),
+              _buildDataRow("IVA Retenido a Proveedores:",
+                  formatNumber(summary.purchasesIvaWithheld, deviceLocale)),
+              _buildDataRow("I.S.L.R. Retenido a Proveedores:",
+                  formatNumber(summary.purchasesIslrWithheld, deviceLocale)),
             ],
           ),
         ],
@@ -603,7 +676,7 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: AppColors.accentColor,
+            color: AppColors.primaryBlue,
             child: Row(
               children: [
                 Icon(icon, color: AppColors.iconOnPrimary, size: 22),

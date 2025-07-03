@@ -40,6 +40,10 @@ class ApiConnection {
   /// Define qué acciones puede realizar el usuario. Ver [Permissions].
   final Permissions permissions;
 
+  /// El id de la configuracion a la que se conecta la instancia del servidor web
+  /// configurado en la aplicacion
+  final int configId;
+
   /// Crea una nueva instancia de configuración de conexión a la API.
   const ApiConnection({
     this.id,
@@ -51,6 +55,7 @@ class ApiConnection {
     required this.companyName,
     this.terminal = 'saint_bi',
     required this.permissions,
+    required this.configId,
   });
 
   /// Convierte la instancia de [ApiConnection] a un mapa.
@@ -68,6 +73,7 @@ class ApiConnection {
       'companyAlias': companyAlias,
       'terminal': terminal,
       'permissions': permissions.toJson(),
+      'configId': configId,
     };
   }
 
@@ -89,6 +95,7 @@ class ApiConnection {
       permissions: map['permissions'] != null
           ? Permissions.fromJson(map['permissions'])
           : Permissions(),
+      configId: int.tryParse(map['configId']?.toString() ?? '1') ?? 1,
     );
   }
 
@@ -106,18 +113,21 @@ class ApiConnection {
     String? companyAlias,
     String? terminal,
     Permissions? permissions,
+    int? configId,
   }) {
     return ApiConnection(
-        id: id ?? this.id,
-        baseUrl: baseUrl ?? this.baseUrl,
-        username: username ?? this.username,
-        password: password ?? this.password,
-        pollingIntervalSeconds:
-            pollingIntervalSeconds ?? this.pollingIntervalSeconds,
-        companyName: companyName ?? this.companyName,
-        companyAlias: companyAlias ?? this.companyAlias,
-        terminal: terminal ?? this.terminal,
-        permissions: permissions ?? this.permissions);
+      id: id ?? this.id,
+      baseUrl: baseUrl ?? this.baseUrl,
+      username: username ?? this.username,
+      password: password ?? this.password,
+      pollingIntervalSeconds:
+          pollingIntervalSeconds ?? this.pollingIntervalSeconds,
+      companyName: companyName ?? this.companyName,
+      companyAlias: companyAlias ?? this.companyAlias,
+      terminal: terminal ?? this.terminal,
+      permissions: permissions ?? this.permissions,
+      configId: configId ?? this.configId,
+    );
   }
 
   /// Devuelve una representación en `String` del objeto para depuración.
@@ -148,7 +158,8 @@ class ApiConnection {
         other.pollingIntervalSeconds == pollingIntervalSeconds &&
         other.companyName == companyName &&
         other.companyAlias == companyAlias &&
-        other.terminal == terminal;
+        other.terminal == terminal &&
+        other.configId == configId;
   }
 
   /// Sobrescribe el `hashCode` para mantener la consistencia con [operator ==].
@@ -161,6 +172,7 @@ class ApiConnection {
         pollingIntervalSeconds.hashCode ^
         companyName.hashCode ^
         companyAlias.hashCode ^
-        terminal.hashCode;
+        terminal.hashCode ^
+        configId.hashCode;
   }
 }

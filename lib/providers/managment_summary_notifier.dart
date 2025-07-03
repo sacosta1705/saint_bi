@@ -20,6 +20,7 @@ import 'package:saint_intelligence/models/account_receivable.dart';
 import 'package:saint_intelligence/models/account_payable.dart';
 import 'package:saint_intelligence/models/purchase.dart';
 import 'package:saint_intelligence/models/inventory_operation.dart';
+import 'package:saint_intelligence/models/configuration.dart';
 
 // Constantes de mensajes para la UI
 const String _uiAuthErrorMessage =
@@ -76,12 +77,16 @@ class ManagementSummaryNotifier extends ChangeNotifier {
   List<ApiConnection> get availableConnections => _availableConnections;
 
   ManagementSummaryNotifier() {
+    _initializeDefaultDateRange();
     refreshAvailableConnections();
   }
 
-  // --- MÉTODOS DE GESTIÓN DE CONEXIÓN Y AUTENTICACIÓN ---
-  // (Estos métodos no requieren cambios lógicos internos, solo cambiar
-  // _invoiceSummary por _summary en los resets)
+  void _initializeDefaultDateRange() {
+    final now = DateTime.now();
+    _startDate = DateTime(now.year, now.month, 1);
+    _endDate =
+        DateTime(now.year, now.month + 1, 0); // Último día del mes actual
+  }
 
   Future<void> refreshAvailableConnections({
     ApiConnection? newlySelectedFromSettings,
@@ -194,8 +199,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
     _activeConnection = connection;
     _authtoken = null;
     _summary = ManagementSummary();
-    _startDate = null;
-    _endDate = null;
     _errorMsg = null;
     _isLoading = fetchFullData;
     _isReAuthenticating = false;
@@ -218,8 +221,7 @@ class ManagementSummaryNotifier extends ChangeNotifier {
     _isLoading = false;
     _isReAuthenticating = false;
     _stopPolling();
-    _startDate = null;
-    _endDate = null;
+    _initializeDefaultDateRange();
     if (notify) notifyListeners();
   }
 
@@ -350,7 +352,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
       developer.log(e.toString());
       developer.log(stackTrace.toString());
       _handleError(_uiGenericErrorMessage, error: e, stackTrace: stackTrace);
-      _stopPolling();
     } finally {
       if (_isLoading &&
           (_errorMsg != _uiSessionExpiredMessage || !_isReAuthenticating)) {
@@ -360,7 +361,6 @@ class ManagementSummaryNotifier extends ChangeNotifier {
     }
   }
 
-  // --- MÉTODO DE OBTENCIÓN DE DATOS COMPLETAMENTE RECONSTRUIDO ---
   Future<void> _fetchSummaryData({
     bool isInitialFetchForCurrentOp = false,
   }) async {
@@ -382,15 +382,20 @@ class ManagementSummaryNotifier extends ChangeNotifier {
     }
 
     try {
-      final dateParams = (_startDate != null && _endDate != null)
-          ? {
-              'fechae>=': _startDate!.toIso8601String().substring(0, 10),
-              'fechae<=': _endDate!.toIso8601String().substring(0, 10)
-            }
-          : null;
+      Map<String, String>? dateParams;
+      if (_startDate != null && _endDate != null) {
+        final adjustedStartDate = _startDate!.subtract(const Duration(days: 1));
+        final adjustedEndDate = _endDate!.add(const Duration(days: 1));
 
-      // 1. Orquestar todas las llamadas a la API en paralelo
+        dateParams = {
+          'fechae>': adjustedStartDate.toIso8601String().substring(0, 10),
+          'fechae<': adjustedEndDate.toIso8601String().substring(0, 10),
+        };
+      }
+
+      // Se aplican los dateParams solo a los endpoints que los soportan.
       final results = await Future.wait([
+        // Endpoints transaccionales CON filtro de fecha
         _api.getInvoices(
             baseUrl: _activeConnection!.baseUrl,
             authtoken: _authtoken!,
@@ -399,17 +404,7 @@ class ManagementSummaryNotifier extends ChangeNotifier {
             baseUrl: _activeConnection!.baseUrl,
             authtoken: _authtoken!,
             params: dateParams),
-        _api.getProducts(
-            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
-        _api.getAccountsReceivable(
-            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
-        _api.getAccountsPayable(
-            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
         _api.getPurchases(
-            baseUrl: _activeConnection!.baseUrl,
-            authtoken: _authtoken!,
-            params: dateParams),
-        _api.getInventoryOperations(
             baseUrl: _activeConnection!.baseUrl,
             authtoken: _authtoken!,
             params: dateParams),
@@ -417,26 +412,60 @@ class ManagementSummaryNotifier extends ChangeNotifier {
           baseUrl: _activeConnection!.baseUrl,
           authtoken: _authtoken!,
           params: dateParams,
-        )
+        ),
+
+        // Endpoints de estado/maestros SIN filtro de fecha
+        _api.getInventoryOperations(
+            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
+        _api.getProducts(
+            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
+        _api.getAccountsReceivable(
+            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
+        _api.getAccountsPayable(
+            baseUrl: _activeConnection!.baseUrl, authtoken: _authtoken!),
+        _api.getConfiguration(
+          id: _activeConnection!.configId,
+          baseUrl: _activeConnection!.baseUrl,
+          authtoken: _authtoken!,
+        ),
       ]);
-      developer.log(results.toString());
 
-      // 2. Parsear los resultados a listas de nuestros modelos
-      allInvoices = (results[0]).map((e) => Invoice.fromJson(e)).toList();
-      allInvoiceItems =
-          (results[1]).map((e) => InvoiceItem.fromJson(e)).toList();
-      allProducts = (results[2]).map((e) => Product.fromJson(e)).toList();
-      allReceivables =
-          (results[3]).map((e) => AccountReceivable.fromJson(e)).toList();
-      allPayables =
-          (results[4]).map((e) => AccountPayable.fromJson(e)).toList();
-      allPurchases = (results[5]).map((e) => Purchase.fromJson(e)).toList();
-      allInventoryOps =
-          (results[6]).map((e) => InventoryOperation.fromJson(e)).toList();
-      allPurchaseItems =
-          (results[7]).map((e) => PurchaseItem.fromJson(e)).toList();
+      allInvoices = List.from(results[0])
+          .map<Invoice>((e) => Invoice.fromJson(e))
+          .toList();
+      allInvoiceItems = List.from(results[1])
+          .map<InvoiceItem>((e) => InvoiceItem.fromJson(e))
+          .toList();
+      allPurchases = List.from(results[2])
+          .map<Purchase>((e) => Purchase.fromJson(e))
+          .toList();
+      allPurchaseItems = List.from(results[3])
+          .map<PurchaseItem>((e) => PurchaseItem.fromJson(e))
+          .toList();
+      allInventoryOps = List.from(results[4])
+          .map<InventoryOperation>((e) => InventoryOperation.fromJson(e))
+          .toList();
+      allProducts = List.from(results[5])
+          .map<Product>((e) => Product.fromJson(e))
+          .toList();
+      allReceivables = List.from(results[6])
+          .map<AccountReceivable>((e) => AccountReceivable.fromJson(e))
+          .toList();
+      allPayables = List.from(results[7])
+          .map<AccountPayable>((e) => AccountPayable.fromJson(e))
+          .toList();
 
-      // 3. Delegar el cálculo al servicio dedicado
+      final configResult = results[8];
+      Configuration config;
+
+      if (configResult is Map<String, dynamic>) {
+        config = Configuration.fromJson(configResult);
+      } else if (configResult is List && configResult.isNotEmpty) {
+        config = Configuration.fromJson(configResult.first);
+      } else {
+        config = Configuration(monthlyBudget: 0.0);
+      }
+
       _summary = _summaryCalculator.calculate(
         invoices: allInvoices,
         invoiceItems: allInvoiceItems,
@@ -446,6 +475,9 @@ class ManagementSummaryNotifier extends ChangeNotifier {
         purchases: allPurchases,
         inventoryOps: allInventoryOps,
         purchaseItems: allPurchaseItems,
+        monthlyBudget: config.monthlyBudget,
+        startDate: _startDate,
+        endDate: _endDate,
       );
 
       if (_errorMsg != _uiSessionExpiredMessage) _errorMsg = null;
@@ -506,7 +538,7 @@ class ManagementSummaryNotifier extends ChangeNotifier {
         }
         _fetchSummaryData(isInitialFetchForCurrentOp: false);
       });
-    } else {}
+    }
   }
 
   void _stopPolling() {
@@ -530,8 +562,7 @@ class ManagementSummaryNotifier extends ChangeNotifier {
     _errorMsg = null;
     _isLoading = false;
     _isReAuthenticating = false;
-    _startDate = null;
-    _endDate = null;
+    _initializeDefaultDateRange();
     notifyListeners();
   }
 }

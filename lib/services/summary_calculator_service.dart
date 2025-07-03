@@ -23,6 +23,9 @@ class ManagementSummaryCalculator {
     required List<Purchase> purchases,
     required List<InventoryOperation> inventoryOps,
     required List<PurchaseItem> purchaseItems,
+    required double monthlyBudget,
+    DateTime? startDate,
+    DateTime? endDate,
   }) {
     // ---------------------------------------------------------------------------
     /// PASO 1: IDENTIFICACIÓN Y AISLAMIENTO DE DEVOLUCIONES
@@ -173,17 +176,26 @@ class ManagementSummaryCalculator {
     // ---------------------------------------------------------------------------
     /// PASO 8: CÁLCULO DE COSTOS OPERATIVOS
     // ---------------------------------------------------------------------------
+    double fixedCosts = 0.0;
+    if (startDate != null && endDate != null) {
+      final daysInPeriod = endDate.difference(startDate).inDays + 1;
+      fixedCosts = (monthlyBudget / 30.4) * daysInPeriod;
+    } else {
+      fixedCosts = monthlyBudget;
+    }
+
     final double costOfPurchasedServices = purchaseItems
         .where((item) => item.isService)
         .fold(0.0, (sum, item) => sum + (item.cost * item.qty));
 
     final double operatingExpenses =
-        costOfPurchasedServices + commissionsPayable;
+        costOfPurchasedServices + commissionsPayable + fixedCosts;
     // ---------------------------------------------------------------------------
     /// PASO 9: CÁLCULO DE UTILIDAD O PÉRDIDA NETA (OPERATIVA)
     /// Refleja la utilidad después de considerar los costos y comisiones de venta.
     // ---------------------------------------------------------------------------
-    final double netProfitOrLoss = grossProfit - operatingExpenses;
+    final double netProfitOrLoss =
+        grossProfit - (fixedCosts + commissionsPayable);
 
     // ---------------------------------------------------------------------------
     /// Paso 10: Calculo de retenciones de compra y venta
@@ -226,6 +238,7 @@ class ManagementSummaryCalculator {
       purchasesIvaWithheld: purchasesIvaWithheld,
       purchasesIslrWithheld: purchasesIslrWithheld,
       operatingExpenses: operatingExpenses,
+      fixedCosts: fixedCosts,
     );
   }
 }
