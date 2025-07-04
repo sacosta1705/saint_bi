@@ -438,7 +438,8 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const SalesForecastScreen()),
+                    builder: (context) => const SalesForecastScreen(),
+                  ),
                 );
               },
             ),
@@ -449,10 +450,16 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             icon: Icons.show_chart,
             context: context,
             children: [
-              _buildDataRow("Total ventas netas:",
-                  formatNumber(summary.totalNetSales, deviceLocale),
-                  isTotal: true),
-              const Divider(height: 24, thickness: 0.5),
+              _buildDataRow(
+                "Total ventas netas:",
+                formatNumber(summary.totalNetSales, deviceLocale),
+                isTotal: true,
+              ),
+              const Divider(
+                height: 24,
+                thickness: 0,
+                color: AppColors.primaryOrange,
+              ),
               _buildDataRow("Ventas netas a crédito:",
                   formatNumber(summary.totalNetSalesCredit, deviceLocale),
                   onTap: () {
@@ -497,31 +504,46 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                   );
                 },
               ),
-              const Divider(height: 24, thickness: 0.5),
+              _buildDataRow("N/D a Clientes:",
+                  formatNumber(summary.netDebitNotes, deviceLocale)),
+              _buildDataRow("N/C a Clientes:",
+                  formatNumber(summary.netCreditNotes, deviceLocale)),
+              const Divider(
+                height: 24,
+                thickness: 0.5,
+                color: AppColors.primaryOrange,
+              ),
               _buildDataRow("Costo de mercancia vendida:",
                   formatNumber(summary.costOfGoodsSold, deviceLocale)),
-              _buildDataRow("Utilidad bruta:",
-                  formatNumber(summary.grossProfit, deviceLocale),
-                  isTotal: true,
-                  valueColor: summary.grossProfit >= 0
-                      ? AppColors.positiveValue
-                      : AppColors.negativeValue),
-              const Divider(height: 24, thickness: 0.5),
-              _buildDataRow('Gastos fijos (Prorrateado):',
+              _buildDataRow(
+                "Utilidad bruta:",
+                formatNumber(summary.grossProfit, deviceLocale),
+                isTotal: true,
+                valueColor: summary.grossProfit >= 0
+                    ? AppColors.positiveValue
+                    : AppColors.negativeValue,
+              ),
+              const Divider(
+                height: 24,
+                thickness: 0.5,
+                color: AppColors.primaryOrange,
+              ),
+              _buildDataRow('Gastos y Costos fijos aproximados:',
                   formatNumber(summary.fixedCosts, deviceLocale)),
               // _buildDataRow("Gastos operativos:",
               //     formatNumber(summary.operatingExpenses, deviceLocale)),
-              _buildDataRow("Utilidad o pérdida operativa:",
-                  formatNumber(summary.netProfitOrLoss, deviceLocale),
-                  isTotal: true,
-                  valueColor: summary.netProfitOrLoss >= 0
-                      ? AppColors.positiveValue
-                      : AppColors.negativeValue),
+              _buildDataRow(
+                "Utilidad o pérdida operativa:",
+                formatNumber(summary.netProfitOrLoss, deviceLocale),
+                isTotal: true,
+                valueColor: summary.netProfitOrLoss >= 0
+                    ? AppColors.positiveValue
+                    : AppColors.negativeValue,
+              ),
 
               _buildDataRow(
                 "Total Cuentas por Pagar:",
                 formatNumber(summary.totalPayables, deviceLocale),
-                isTotal: true,
                 onTap: () {
                   final notifier = Provider.of<ManagementSummaryNotifier>(
                       context,
@@ -535,16 +557,17 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                     MaterialPageRoute(
                       builder: (context) =>
                           TransactionListScreen<AccountPayable>(
-                              title: 'Total Cuentas por pagar',
-                              items: payables,
-                              itemBuilder: buildAccountPayableListItem),
+                        title: 'Total Cuentas por pagar',
+                        items: payables,
+                        itemBuilder: buildAccountPayableListItem,
+                      ),
                     ),
                   );
                 },
               ),
               _buildDataRow("Total cuentas por Cobrar:",
                   formatNumber(summary.totalReceivables, deviceLocale),
-                  isTotal: true, onTap: () {
+                  onTap: () {
                 final notifier = Provider.of<ManagementSummaryNotifier>(context,
                     listen: false);
 
@@ -557,16 +580,31 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                   MaterialPageRoute(
                     builder: (context) =>
                         TransactionListScreen<AccountReceivable>(
-                            title: 'Total cuentas por cobrar',
-                            items: receivables,
-                            itemBuilder: buildAccountReceivableListItem),
+                      title: 'Total cuentas por cobrar',
+                      items: receivables,
+                      itemBuilder: buildAccountReceivableListItem,
+                    ),
                   ),
                 );
               }),
-              const Divider(height: 24, thickness: 0.5),
-              _buildDataRow("Valor de inventario actual:",
-                  formatNumber(summary.currentInventory, deviceLocale)),
-              const Divider(height: 24, thickness: 0.5),
+              const Divider(
+                height: 24,
+                thickness: 0.5,
+                color: AppColors.primaryOrange,
+              ),
+              _buildDataRow(
+                  "Inventario total:",
+                  isTotal: true,
+                  formatNumber(
+                      (summary.currentInventory - summary.fixtureInventory),
+                      deviceLocale)),
+              _buildDataRow("Inventario de enseres:",
+                  formatNumber(summary.fixtureInventory, deviceLocale)),
+              const Divider(
+                height: 24,
+                thickness: 0.5,
+                color: AppColors.primaryOrange,
+              ),
               _buildDataRow(
                 "Cuentas por cobrar vencidas:",
                 formatNumber(summary.overdueReceivables, deviceLocale),
@@ -610,7 +648,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                   final overdue = notifier.allPayables
                       .where((ap) => ap.balance > 0 && ap.dueDate.isBefore(now))
                       .toList();
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -638,14 +675,22 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                   valueColor: (summary.salesVat - summary.purchasesVat) < 0
                       ? AppColors.statusMessageError
                       : AppColors.statusMessageSuccess),
-              const Divider(height: 24, thickness: 0.5),
+              const Divider(
+                height: 24,
+                thickness: 0.5,
+                color: AppColors.primaryOrange,
+              ),
               _buildDataRow("I.V.A. en Ventas:",
                   formatNumber(summary.salesVat, deviceLocale)),
               _buildDataRow("IVA Retenido por Clientes:",
                   formatNumber(summary.salesIvaWithheld, deviceLocale)),
               _buildDataRow("I.S.L.R. Retenido por Clientes:",
                   formatNumber(summary.salesIslrWithheld, deviceLocale)),
-              const Divider(height: 24, thickness: 0.5),
+              const Divider(
+                height: 24,
+                thickness: 0.5,
+                color: AppColors.primaryOrange,
+              ),
               _buildDataRow("I.V.A. en Compras:",
                   formatNumber(summary.purchasesVat, deviceLocale)),
               _buildDataRow("IVA Retenido a Proveedores:",

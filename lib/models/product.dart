@@ -3,12 +3,14 @@ class Product {
   final String description;
   final double cost;
   final double stock;
+  final int? isFixture;
 
   Product({
     required this.code,
     required this.description,
     required this.cost,
     required this.stock,
+    this.isFixture,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -17,6 +19,7 @@ class Product {
       description: json['descrip']?.toString() ?? '',
       cost: (json['costact'] as num?)?.toDouble() ?? 0.0,
       stock: (json['existen'] as num?)?.toDouble() ?? 0.0,
+      isFixture: (json['esenser'] as num?)?.toInt() ?? 0,
     );
   }
 }

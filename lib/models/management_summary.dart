@@ -16,13 +16,15 @@ class ManagementSummary {
 
   // --- SECCIÓN ACTIVOS Y PASIVOS ---
   final double currentInventory;
+  final double fixtureInventory;
   final double overdueReceivables;
   final double totalReceivables;
-  final double cashAndBanks;
   final double customerAdvances;
   final double supplierAdvances;
   final double overduePayables;
   final double totalPayables;
+  final double netDebitNotes;
+  final double netCreditNotes;
 
   // --- SECCIÓN IMPUESTOS ---
   final double salesVat;
@@ -51,7 +53,6 @@ class ManagementSummary {
     this.currentInventory = 0.0,
     this.overdueReceivables = 0.0,
     this.totalReceivables = 0.0,
-    this.cashAndBanks = 0.0,
     this.customerAdvances = 0.0,
     this.supplierAdvances = 0.0,
     this.overduePayables = 0.0,
@@ -62,5 +63,8 @@ class ManagementSummary {
     this.salesIslrWithheld = 0.0,
     this.purchasesIvaWithheld = 0.0,
     this.purchasesIslrWithheld = 0.0,
+    this.netCreditNotes = 0.0,
+    this.netDebitNotes = 0.0,
+    this.fixtureInventory = 0.0,
   });
 }

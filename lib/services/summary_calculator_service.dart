@@ -139,6 +139,9 @@ class ManagementSummaryCalculator {
     final double inventoryDischarges = inventoryOps
         .where((op) => op.type == 'P') // 'P' para Descargos de Inventario
         .fold(0.0, (previousValue, op) => previousValue + op.amount);
+    final double fixtureInventory = products
+        .where((prod) => prod.isFixture == 1)
+        .fold(0.0, (sum, prod) => sum + (prod.cost * prod.stock));
 
     // ---------------------------------------------------------------------------
     /// PASO 6: CÁLCULO DE CUENTAS POR COBRAR
@@ -179,7 +182,7 @@ class ManagementSummaryCalculator {
     double fixedCosts = 0.0;
     if (startDate != null && endDate != null) {
       final daysInPeriod = endDate.difference(startDate).inDays + 1;
-      fixedCosts = (monthlyBudget / 30.4) * daysInPeriod;
+      fixedCosts = (monthlyBudget / 30) * daysInPeriod;
     } else {
       fixedCosts = monthlyBudget;
     }
@@ -201,7 +204,7 @@ class ManagementSummaryCalculator {
     /// Paso 10: Calculo de retenciones de compra y venta
     // ---------------------------------------------------------------------------
 
-    // Retenciones en Compras (lo que nosotros retenemos a proveedores)
+    // Retenciones en Compras
     final double purchasesIvaWithheld = payables
         .where((ap) => ap.type == '81') // '81' para Retención de I.V.A. en CxP
         .fold(0.0, (prev, ap) => prev + ap.amount);
@@ -209,6 +212,22 @@ class ManagementSummaryCalculator {
     final double purchasesIslrWithheld = payables
         .where((ap) => ap.type == '21') // '21' para Retención de ISLR en CxP
         .fold(0.0, (prev, ap) => prev + ap.amount);
+
+    // ---------------------------------------------------------------------------
+    /// Paso 11: Calculo de N/D y N/C aplicados a clientes
+    // ---------------------------------------------------------------------------
+
+    final double netDebitNotes =
+        receivables.where((cxc) => cxc.type == '20').fold(
+              0.0,
+              (sum, cxc) => sum + (cxc.amount),
+            );
+
+    final double netCreditNotes =
+        receivables.where((cxc) => cxc.type == '31').fold(
+              0.0,
+              (sum, cxc) => sum + (cxc.amount),
+            );
 
     // ---------------------------------------------------------------------------
     /// PASO 11: RETORNO DEL OBJETO DE RESUMEN
@@ -239,6 +258,9 @@ class ManagementSummaryCalculator {
       purchasesIslrWithheld: purchasesIslrWithheld,
       operatingExpenses: operatingExpenses,
       fixedCosts: fixedCosts,
+      fixtureInventory: fixtureInventory,
+      netCreditNotes: netCreditNotes,
+      netDebitNotes: netDebitNotes,
     );
   }
 }
