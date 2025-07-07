@@ -528,12 +528,12 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                 thickness: 0.5,
                 color: AppColors.primaryOrange,
               ),
-              _buildDataRow('Gastos y Costos fijos aproximados:',
+              _buildDataRow('Gastos y Costos (aproximados):',
                   formatNumber(summary.fixedCosts, deviceLocale)),
               // _buildDataRow("Gastos operativos:",
               //     formatNumber(summary.operatingExpenses, deviceLocale)),
               _buildDataRow(
-                "Utilidad o pérdida operativa:",
+                "Utilidad o pérdida (aproximada):",
                 formatNumber(summary.netProfitOrLoss, deviceLocale),
                 isTotal: true,
                 valueColor: summary.netProfitOrLoss >= 0
@@ -608,7 +608,7 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
               _buildDataRow(
                 "Cuentas por cobrar vencidas:",
                 formatNumber(summary.overdueReceivables, deviceLocale),
-                valueColor: summary.overduePayables > 0
+                valueColor: summary.overdueReceivables > 0
                     ? AppColors.negativeValue
                     : null,
                 onTap: () {
@@ -659,6 +659,10 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                     ),
                   );
                 },
+              ),
+              _buildDataRow(
+                'Pagos anticipados de Clientes',
+                formatNumber(summary.customerAdvances, deviceLocale),
               ),
             ],
           ),

@@ -149,7 +149,8 @@ class ManagementSummaryCalculator {
     // ---------------------------------------------------------------------------
     final now = DateTime.now();
     final double overdueReceivables = receivables
-        .where((ar) => ar.balance > 0 && ar.dueDate.isBefore(now))
+        .where((ar) =>
+            ar.balance > 0 && ar.dueDate.isBefore(now) && ar.type == '20')
         .fold(0.0, (previousValue, ar) => previousValue + ar.balance);
     final double totalReceivables = receivables
         .where((ar) =>

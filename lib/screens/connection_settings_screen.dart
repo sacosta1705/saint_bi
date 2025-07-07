@@ -486,13 +486,13 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
-                      SwitchListTile(
-                        title: const Text("Ver Resumen de Ventas"),
-                        value: _canViewSales,
-                        onChanged: (bool value) =>
-                            setState(() => _canViewSales = value),
-                        secondary: const Icon(Icons.point_of_sale),
-                      ),
+                      // SwitchListTile(
+                      //   title: const Text("Ver Resumen de Ventas"),
+                      //   value: _canViewSales,
+                      //   onChanged: (bool value) =>
+                      //       setState(() => _canViewSales = value),
+                      //   secondary: const Icon(Icons.point_of_sale),
+                      // ),
                       // Aquí irían los otros SwitchListTile para compras, inventario, etc.
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
