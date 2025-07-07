@@ -481,11 +481,11 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                         },
                       ),
                       const Divider(height: 32),
-                      Text('Permisos para este equipo',
-                          style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
+                      // Text('Permisos para este equipo',
+                      //     style: TextStyle(
+                      //         color: AppColors.textSecondary,
+                      //         fontWeight: FontWeight.bold)),
+                      // const SizedBox(height: 8),
                       // SwitchListTile(
                       //   title: const Text("Ver Resumen de Ventas"),
                       //   value: _canViewSales,
@@ -494,7 +494,7 @@ class _ConnectionSettingsScreenState extends State<ConnectionSettingsScreen> {
                       //   secondary: const Icon(Icons.point_of_sale),
                       // ),
                       // Aquí irían los otros SwitchListTile para compras, inventario, etc.
-                      const SizedBox(height: 24),
+                      // const SizedBox(height: 24),
                       ElevatedButton.icon(
                         icon: _isLoading
                             ? Container(
