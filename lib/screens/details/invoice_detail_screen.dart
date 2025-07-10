@@ -15,11 +15,16 @@ class InvoiceDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deviceLocale = getDeviceLocale(context);
+
     final notifier =
         Provider.of<ManagementSummaryNotifier>(context, listen: false);
+
     final List<InvoiceItem> items = notifier.allInvoiceItems
-        .where((item) => item.docNumber == invoice.docnumber)
+        .where((item) =>
+            item.docNumber == invoice.docnumber && item.type == invoice.type)
         .toList();
+
+    final isReturned = invoice.sign == -1;
 
     final List<Product> allProducts = notifier.allProducts;
 
@@ -32,6 +37,30 @@ class InvoiceDetailScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          if (isReturned)
+            Container(
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.warning,
+                    color: Colors.white,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'DEVOLUCIÓN',
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
           _buildDetailCard(
             title: 'Informacion del Cliente',
             icon: Icons.person,

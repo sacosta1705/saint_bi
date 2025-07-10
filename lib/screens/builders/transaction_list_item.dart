@@ -12,11 +12,28 @@ import 'package:saint_intelligence/utils/formatters.dart';
 Widget buildInvoiceListItem(BuildContext context, Invoice invoice) {
   final deviceLocale = Localizations.localeOf(context).toString();
   final date = DateFormat('yyyy-MM-dd').format(DateTime.parse(invoice.date));
+  final isReturned = invoice.sign == -1;
 
   return Card(
     margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     child: ListTile(
-      title: Text('${invoice.client} - Doc: ${invoice.docnumber}'),
+      title: Row(
+        children: [
+          if (isReturned)
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+            ),
+          Expanded(
+            child: Text('${invoice.client} - Doc: ${invoice.docnumber}'),
+          ),
+        ],
+      ),
       subtitle: Text('Fecha de Emision: $date'),
       trailing: invoice.credit > 0
           ? Text(formatNumber(invoice.credit, deviceLocale))

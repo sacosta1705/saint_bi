@@ -460,27 +460,31 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                 thickness: 0,
                 color: AppColors.primaryOrange,
               ),
-              _buildDataRow("Ventas netas a crédito:",
-                  formatNumber(summary.totalNetSalesCredit, deviceLocale),
-                  onTap: () {
-                final notifier = Provider.of<ManagementSummaryNotifier>(context,
-                    listen: false);
+              _buildDataRow(
+                "Ventas netas a crédito:",
+                formatNumber(summary.totalNetSalesCredit, deviceLocale),
+                onTap: () {
+                  final notifier = Provider.of<ManagementSummaryNotifier>(
+                      context,
+                      listen: false);
 
-                final creditInvoices = notifier.allInvoices
-                    .where((inv) => inv.type == 'A' && inv.credit > 0)
-                    .toList();
+                  final creditInvoices = notifier.allInvoices.where((inv) {
+                    return inv.credit > 0 &&
+                        (inv.type == 'A' || inv.type == 'B');
+                  }).toList();
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TransactionListScreen<Invoice>(
-                      title: "Facturas a credito",
-                      items: creditInvoices,
-                      itemBuilder: buildInvoiceListItem,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TransactionListScreen<Invoice>(
+                        title: "Facturas a credito",
+                        items: creditInvoices,
+                        itemBuilder: buildInvoiceListItem,
+                      ),
                     ),
-                  ),
-                );
-              }),
+                  );
+                },
+              ),
               _buildDataRow(
                 "Ventas netas de contado:",
                 formatNumber(summary.totalNetSalesCash, deviceLocale),
@@ -489,25 +493,28 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                       context,
                       listen: false);
 
-                  final cashInvoice = notifier.allInvoices
-                      .where((inv) => inv.type == 'A' && inv.cash > 0)
-                      .toList();
+                  // Filtro corregido: Muestra facturas y devoluciones de contado.
+                  final cashInvoices = notifier.allInvoices.where((inv) {
+                    // Incluye ventas de contado puras y ventas a crédito ya pagadas.
+                    final isPaidCreditSale = inv.credit > 0 &&
+                        !notifier.allReceivables.any((r) =>
+                            r.docNumber == inv.docnumber && r.balance > 0);
+                    return (inv.cash > 0 || isPaidCreditSale) &&
+                        (inv.type == 'A' || inv.type == 'B');
+                  }).toList();
 
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => TransactionListScreen<Invoice>(
-                          title: 'Facturas de contado',
-                          items: cashInvoice,
-                          itemBuilder: buildInvoiceListItem),
+                        title: 'Facturas de contado',
+                        items: cashInvoices,
+                        itemBuilder: buildInvoiceListItem,
+                      ),
                     ),
                   );
                 },
               ),
-              _buildDataRow("N/D a Clientes:",
-                  formatNumber(summary.netDebitNotes, deviceLocale)),
-              _buildDataRow("N/C a Clientes:",
-                  formatNumber(summary.netCreditNotes, deviceLocale)),
               const Divider(
                 height: 24,
                 thickness: 0.5,
@@ -618,7 +625,10 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
 
                   final now = DateTime.now();
                   final overdue = notifier.allReceivables
-                      .where((ar) => ar.balance > 0 && ar.dueDate.isBefore(now))
+                      .where((ar) =>
+                          ar.balance > 0 &&
+                          ar.dueDate.isBefore(now) &&
+                          ar.type != '50')
                       .toList();
 
                   Navigator.push(
@@ -646,8 +656,12 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                       listen: false);
                   final now = DateTime.now();
                   final overdue = notifier.allPayables
-                      .where((ap) => ap.balance > 0 && ap.dueDate.isBefore(now))
+                      .where((ap) =>
+                          ap.balance > 0 &&
+                          ap.dueDate.isBefore(now) &&
+                          ap.type != '50')
                       .toList();
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(

@@ -15,6 +15,7 @@ class Invoice {
   final double collectionComision;
   final double ivaWithheld;
   final double islrWithheld;
+  final int sign;
 
   Invoice({
     required this.docnumber,
@@ -33,6 +34,7 @@ class Invoice {
     required this.collectionComision,
     required this.ivaWithheld,
     required this.islrWithheld,
+    required this.sign,
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,7 @@ class Invoice {
       collectionComision: (json['mtocomicob'] as num?)?.toDouble() ?? 0.0,
       ivaWithheld: (json['reteniva'] as num?)?.toDouble() ?? 0.0,
       islrWithheld: (json['canceli'] as num?)?.toDouble() ?? 0.0,
+      sign: (json['signo'] as num?)?.toInt() ?? 0,
     );
   }
 }
