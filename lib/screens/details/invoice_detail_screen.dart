@@ -30,7 +30,9 @@ class InvoiceDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detalle Factura ${invoice.docnumber}'),
+        title: isReturned
+            ? Text('Detalle Devolución ${invoice.docnumber}')
+            : Text('Detalle Factura ${invoice.docnumber}'),
         backgroundColor: AppColors.appBarBackground,
         foregroundColor: AppColors.appBarForeground,
       ),
@@ -71,7 +73,9 @@ class InvoiceDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _buildDetailCard(
-            title: 'Totales de la factura',
+            title: isReturned
+                ? 'Totales de la devolución'
+                : 'Totales de la factura',
             icon: Icons.monetization_on,
             children: [
               _buildDetailRow(
@@ -91,25 +95,33 @@ class InvoiceDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _buildDetailCard(
-            title: 'Productos Facturados',
+            title: isReturned ? 'Productos Devueltos' : 'Productos Facturados',
             icon: Icons.inventory,
-            children: items.map(
-              (item) {
-                final product = allProducts.firstWhere(
-                    (p) => p.code == item.productCode,
-                    orElse: () => Product(
-                        code: item.productCode,
-                        description: 'Producto no encontrado',
-                        cost: 0,
-                        stock: 0));
-                return ListTile(
-                  title: Text(product.description),
-                  subtitle: Text('Codigo: ${item.productCode}'),
-                  trailing:
-                      Text('Cantidad: ${formatNumber(item.qty, deviceLocale)}'),
-                );
-              },
-            ).toList(),
+            children: items.expand((item) {
+              final product = allProducts.firstWhere(
+                (p) => p.code == item.productCode,
+                orElse: () => Product(
+                    code: item.productCode,
+                    description: 'Producto no encontrado.',
+                    cost: 0,
+                    stock: 0),
+              );
+
+              return [
+                _buildDetailRow('Codigo:', product.code),
+                _buildDetailRow('Nombre:', product.description),
+                _buildDetailRow(
+                    isReturned ? 'Cantidad devuelta:' : 'Cantidad facturada:',
+                    formatNumber(item.qty, deviceLocale)),
+                _buildDetailRow('Costo del producto:',
+                    formatNumber(item.cost, deviceLocale)),
+                _buildDetailRow(
+                    'Precio de venta:', formatNumber(item.price, deviceLocale)),
+                _buildDetailRow(
+                    'Impuesto en venta:', formatNumber(item.tax, deviceLocale)),
+                const Divider(thickness: 0.5, color: AppColors.primaryOrange),
+              ];
+            }).toList(),
           ),
         ],
       ),
