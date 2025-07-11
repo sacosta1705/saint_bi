@@ -103,6 +103,9 @@ class InvoiceDetailScreen extends StatelessWidget {
                 orElse: () => Product(
                     code: item.productCode,
                     description: 'Producto no encontrado.',
+                    price1: 0,
+                    price2: 0,
+                    price3: 0,
                     cost: 0,
                     stock: 0),
               );
@@ -110,6 +113,12 @@ class InvoiceDetailScreen extends StatelessWidget {
               return [
                 _buildDetailRow('Codigo:', product.code),
                 _buildDetailRow('Nombre:', product.description),
+                _buildDetailRow('Precio \'1\' en ficha: ',
+                    formatNumber(product.price1, deviceLocale)),
+                _buildDetailRow('Precio \'2\' en ficha: ',
+                    formatNumber(product.price2, deviceLocale)),
+                _buildDetailRow('Precio \'3\' en ficha: ',
+                    formatNumber(product.price3, deviceLocale)),
                 _buildDetailRow(
                     isReturned ? 'Cantidad devuelta:' : 'Cantidad facturada:',
                     formatNumber(item.qty, deviceLocale)),
