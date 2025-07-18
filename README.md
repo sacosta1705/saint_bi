@@ -1,93 +1,105 @@
-# Saint BI - Business Intelligence App
+# **SAINT BI: Plan de Desarrollo**
 
-## 1. Descripción General
+## **1. Pendientes**
 
-**Saint BI** es una aplicación móvil desarrollada en **Flutter** que funciona como un cliente de Business Intelligence (BI) para el sistema **SAINT Enterprise Administrativo**. La aplicación permite a los usuarios visualizar métricas y resúmenes gerenciales clave de una o varias empresas, conectándose directamente a la API de SAINT.
+### **1.1. Modelos Estadísticos**
 
-El objetivo principal es ofrecer una visión clara y consolidada de la salud financiera y operativa de la empresa, incluyendo ventas, compras, cuentas por cobrar, cuentas por pagar, inventario y más.
+* [ ] **Suavización Exponencial Doble (Holt):**
+    * [ ] Implementar el método `calculateHolt()` en `ForecastingService` para modelar tendencias.
+    * [ ] Crear la pantalla `holt_forecast_screen.dart` con un slider para el parámetro beta (tendencia).
+    * [ ] Añadir opción en el menú de análisis para acceder a la nueva proyección.
 
-## 2. Arquitectura del Proyecto
+* [ ] **Suavización Exponencial Triple (Holt-Winters):**
+    * [ ] Implementar el método `calculateHoltWinters()` en `ForecastingService` para modelar estacionalidad.
+    * [ ] Crear la pantalla `holt_winters_forecast_screen.dart` con controles para el parámetro gamma (estacionalidad) y la longitud del período.
+    * [ ] Validar que existan datos suficientes para el análisis estacional.
 
-El proyecto sigue una arquitectura por capas, limpia y escalable, fuertemente influenciada por el patrón **BLoC (Business Logic Component)** para la gestión del estado.
+* [ ] **Análisis de Canasta de Mercado:**
+    * [ ] Crear `MarketBasketService` para implementar el algoritmo Apriori o FP-Growth sobre los ítems de las facturas.
+    * [ ] Crear la pantalla `market_basket_screen.dart` para visualizar las reglas de asociación de productos.
 
-* **`/lib/core/bloc`**: Contiene todos los componentes de lógica de negocio (BLoC). Cada subcarpeta gestiona el estado de una característica específica, como la autenticación (`auth`), las conexiones (`connection`) o el resumen de datos (`summary`).
+* [ ] **Segmentación de Clientes (Clustering):**
+    * [ ] Crear `CustomerSegmentationService` para calcular métricas RFM (Recencia, Frecuencia, Monto).
+    * [ ] Aplicar el algoritmo K-Means para agrupar clientes y mostrar los segmentos en una nueva pantalla (`customer_segmentation_screen.dart`).
 
-* **`/lib/core/data`**: Encapsula toda la lógica de acceso y manipulación de datos.
-    * **`/models`**: Define las clases y estructuras de datos de la aplicación (ej: `Invoice`, `Product`).
-    * **`/repositories`**: Abstraen el origen de los datos, sirviendo como intermediarios entre los BLoCs y las fuentes de datos.
-    * **`/sources`**: Contiene las implementaciones para acceder a los datos, ya sea desde la API remota (`/remote`) o la base de datos local (`/local`).
+* [ ] **Análisis de Regresión Múltiple:**
+    * [ ] Crear `RegressionService` para analizar la relación entre variables (ej. impacto de comisiones en ventas).
+    * [ ] Desarrollar la pantalla `regression_analysis_screen.dart` que permita al usuario seleccionar variables y ver los resultados del modelo.
 
-* **`/lib/core/services`**: Incluye clases con lógica de negocio específica que no es gestión de estado, como `ManagementSummaryCalculator` para procesar datos brutos o `ForecastingService` para proyecciones.
+### **1.2. Indicadores de Gestión (KPIs)**
 
-* **`/lib/core/utils`**: Alberga utilidades transversales a toda la aplicación, como formateadores (`formatters.dart`), constantes (`constants.dart`) y servicios de seguridad (`security_service.dart`).
+* [ ] **Márgenes de Utilidad:** Calcular y mostrar los márgenes de utilidad bruta y neta en el resumen gerencial.
+* [ ] **Ticket Promedio:** Calcular y mostrar el valor promedio por factura de venta.
+* [ ] **Rotación y Días de Inventario:** Calcular y mostrar ambos KPIs en una nueva sección de inventario.
+* [ ] **Días de Cuentas por Cobrar (DSO):** Calcular y mostrar este indicador en una nueva sección de cobranza.
 
-* **`/lib/ui/pages`**: Contiene los widgets que representan las pantallas completas de la aplicación, como la pantalla de login, la de configuración o la del resumen gerencial.
+### **1.3. Funcionalidades de la Aplicación**
 
-* **`/lib/ui/widgets`**: Almacena widgets reutilizables. Se divide en `common` (widgets genéricos) y `feature_specific` (widgets diseñados para una característica concreta).
+* [ ] **Consolidación Selectiva:**
+    * [ ] Añadir la opción `includeInConsolidation` a la tabla y modelo de `ApiConnection`.
+    * [ ] Agregar un `Switch` en la pantalla de configuración para activar o desactivar cada empresa del consolidado.
+    * [ ] Modificar el `SummaryBloc` para que solo consolide las conexiones marcadas.
 
-* **`/lib/ui/theme`**: Define la apariencia visual de la aplicación, incluyendo la paleta de colores (`app_colors.dart`) y la configuración del tema global (`app_theme.dart`).
+---
 
-* **`/lib/app.dart`**: Es el widget raíz de la aplicación. Aquí se configuran los proveedores de BLoCs y repositorios para la inyección de dependencias en todo el proyecto.
+## **2. Versiones**
 
-* **`/lib/main.dart`**: Es el punto de entrada principal de la aplicación. Su función es inicializar los servicios necesarios (como el formateo de fechas) y ejecutar `App`.
+### **Versión 1.1.0**
+* Agregada la posibilidad de consultar el resumen gerencial consolidado, sumando los datos de todas las conexiones configuradas.
 
-## 3. Herramientas y Versiones
+---
 
-Este proyecto se construye sobre las siguientes tecnologías:
+## **3. Descripción General**
+
+**Saint BI** es una aplicación móvil en **Flutter** para Business Intelligence (BI) del sistema **SAINT Enterprise Administrativo**. Permite visualizar métricas gerenciales de una o varias empresas a través de la API de SAINT, ofreciendo una visión consolidada de la salud financiera y operativa del negocio.
+
+---
+
+## **4. Arquitectura**
+
+El proyecto usa una arquitectura por capas limpia basada en el patrón **BLoC**.
+
+* `/lib/core/bloc`: Lógica de negocio y gestión de estado (Auth, Connection, Summary).
+* `/lib/core/data`: Acceso a datos (`models`, `repositories`, `sources`).
+* `/lib/core/services`: Lógica de negocio específica (cálculos, proyecciones).
+* `/lib/core/utils`: Utilidades transversales (constantes, formateadores, seguridad).
+* `/lib/ui`: Capa de presentación (`pages`, `widgets`, `theme`).
+* `/lib/app.dart`: Widget raíz con inyección de dependencias (BLoCs y repositorios).
+* `/lib/main.dart`: Punto de entrada de la aplicación.
+
+---
+
+## **5. Stack Tecnológico**
 
 * **Lenguaje:** Dart (`3.8.1`)
 * **Framework:** Flutter (`3.32.3`)
-* **Android Studio:** `2024.3.2`
 * **Gestión de Estado:** `flutter_bloc`
-* **Conectividad HTTP:** `http`
 * **Base de Datos Local:** `sqflite`
 * **Gráficos:** `fl_chart`
-* **Información del Paquete:** `package_info_plus`
-* **Formateo de Fechas/Números:** `intl`
+* **Dependencias Clave:** `http`, `intl`, `package_info_plus`
 
-Se recomienda utilizar siempre las últimas versiones estables de Flutter y las dependencias mencionadas en el `pubspec.yaml`.
+---
 
-## 4. Flujo de Datos y Componentes Clave
+## **6. Flujo de Datos**
 
-### 4.1. Conexión y Autenticación
+### **6.1. Conexión y Autenticación**
 
-1.  **Configuración Inicial (`InitialSetupScreen`):** La primera vez que se abre la app, se solicita al usuario una contraseña de administrador para la app y el nombre de usuario por defecto para la API de SAINT. Estos datos se guardan de forma segura en la base de datos local.
-2.  **Gestión de Conexiones (`ConnectionSettingsScreen`):** El usuario puede añadir, editar o eliminar múltiples configuraciones de conexión a diferentes instancias de SAINT Enterprise. Cada `ApiConnection` se almacena localmente usando `sqflite` a través del `ConnectionRepository`.
-3.  **Inicio de Sesión (`LoginScreen`):**
-    * El `ConnectionBloc` carga las conexiones disponibles. El usuario selecciona una.
-    * Al pulsar "Ingresar", se dispara un evento `AuthLoginRequested` al `AuthBloc`.
-    * El `AuthBloc` utiliza el `AuthRepository` para llamar al endpoint `/login` de la `SaintApi`.
-    * Si el login es exitoso, la API devuelve un `authToken` (`Pragma`) que se almacena en el `AuthState`.
-    * La app navega a la pantalla de resumen (`ManagementSummaryScreen`).
-4.  **Modo Consolidado:** El usuario tiene la opción de autenticarse en *todas* las conexiones configuradas simultáneamente para ver un resumen consolidado de todas las empresas.
+1.  **Configuración Inicial:** Al primer uso, la app solicita una contraseña de administrador y un usuario API por defecto, que se guardan localmente.
+2.  **Gestión de Conexiones:** El usuario puede administrar múltiples conexiones a servidores SAINT, que se almacenan en `sqflite`.
+3.  **Inicio de Sesión:** El usuario selecciona una conexión y el `AuthBloc` obtiene un `authToken` (`Pragma`) de la `SaintApi`, que se guarda en el estado.
+4.  **Modo Consolidado:** Permite autenticarse en todas las conexiones activas para ver un resumen combinado.
 
-### 4.2. Resumen Gerencial
+### **6.2. Resumen Gerencial**
 
-1.  **Carga de Datos (`SummaryBloc`):**
-    * Al entrar en `ManagementSummaryScreen`, se dispara un evento `SummaryDataFetched`.
-    * El `SummaryBloc` comprueba el estado de autenticación (`AuthBloc`).
-    * Utiliza el `SummaryRepository` para realizar múltiples llamadas a la API (`getInvoices`, `getProducts`, etc.) usando el `authToken` activo.
-    * Los datos se pueden filtrar por un rango de fechas.
-2.  **Cálculo de Métricas (`ManagementSummaryCalculator`):**
-    * Una vez que el `SummaryRepository` devuelve todos los datos brutos (`SummaryData`), estos se pasan al `ManagementSummaryCalculator`.
-    * Este servicio es el cerebro del sistema: procesa las listas de facturas, productos, cuentas por cobrar, etc., para calcular las métricas finales del `ManagementSummary` (ej: utilidad bruta, ventas netas, impuestos).
-3.  **Visualización en la UI:**
-    * El `SummaryBloc` emite un nuevo `SummaryState` con el resumen calculado.
-    * La `ManagementSummaryScreen` se reconstruye y muestra los datos formateados.
-    * El usuario puede navegar a vistas de detalle para explorar las listas de facturas, cuentas por cobrar, etc.
+1.  **Carga de Datos:** El `SummaryBloc` utiliza el `authToken` para obtener los datos brutos de la API a través del `SummaryRepository`.
+2.  **Cálculo de Métricas:** El `ManagementSummaryCalculator` procesa los datos para generar las métricas del resumen gerencial.
+3.  **Visualización:** La `ManagementSummaryScreen` recibe el estado del BLoC y muestra los KPIs calculados.
 
-### 4.3. Proyección de Ventas
+---
 
-* La pantalla **`SalesForecastScreen`** utiliza los datos históricos de ventas (`allInvoices` del `SummaryState`) para generar una proyección.
-* El **`ForecastingService`** implementa un algoritmo de **Suavización Exponencial Simple (SES)** para predecir las ventas futuras.
-* El usuario puede ajustar parámetros como la **granularidad** (diaria, semanal, mensual), el **número de periodos a proyectar** y el **factor de suavización (alfa)** para refinar el modelo.
-* Los resultados se visualizan en un gráfico interactivo usando `fl_chart`, diferenciando entre datos históricos y datos proyectados.
+## **7. Guía de Inicio Rápido**
 
-## 5. Configuración y Primeros Pasos
-
-Para que un nuevo desarrollador pueda ejecutar el proyecto, debe seguir estos pasos:
-
-1.  **Clonar el Repositorio:**
+1.  **Clonar Repositorio:**
     ```bash
     git clone <url-del-repositorio>
     cd <nombre-del-proyecto>
@@ -96,19 +108,8 @@ Para que un nuevo desarrollador pueda ejecutar el proyecto, debe seguir estos pa
     ```bash
     flutter pub get
     ```
-3.  **Configurar el Entorno de Flutter:** Asegurarse de tener el SDK de Flutter instalado y configurado correctamente.
-4.  **Ejecutar la Aplicación:**
+3.  **Ejecutar la App:**
     ```bash
     flutter run
     ```
-5.  **Primera Ejecución:**
-    * La app mostrará la pantalla de configuración inicial.
-    * Deberás ingresar un **Usuario API** válido (ej: `SA`) y una **contraseña de administrador** para la aplicación. Esta contraseña se usará para proteger el acceso a la pantalla de configuración de conexiones.
-    * Luego, serás redirigido para añadir tu primera conexión a un servidor SAINT Enterprise.
-
-## 6. Puntos a Considerar para Futuros Desarrolladores
-
-* **Manejo de Errores:** La comunicación con la API se gestiona con excepciones personalizadas como `AuthenticationException` y `SessionExpiredException`, que permiten al `SummaryBloc` y `AuthBloc` reaccionar adecuadamente (ej: redirigir al login si la sesión expira).
-* **Inmutabilidad:** Los modelos de datos y los estados de los BLoCs son inmutables. Se utilizan métodos `copyWith` para generar nuevas instancias de estado, lo que es una práctica recomendada en la programación funcional y con BLoC.
-* **Seguridad:** Las contraseñas (la de administrador de la app y las de las conexiones) se gestionan con cuidado. La contraseña de administrador se hashea usando `sha256` antes de guardarse.
-* **Localización:** La app está preparada para ser localizada. Utiliza `intl` para formatear fechas y números según la configuración regional del dispositivo. Se han incluido una gran cantidad de `locales` soportados en la configuración de `MaterialApp`.
+4.  **Configuración Inicial:** En la primera ejecución, sigue las instrucciones para configurar el usuario API y la contraseña de administrador. Luego, añade tu primera conexión al servidor SAINT Enterprise.
