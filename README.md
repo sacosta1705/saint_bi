@@ -35,8 +35,9 @@ El proyecto sigue una arquitectura por capas, limpia y escalable, fuertemente in
 
 Este proyecto se construye sobre las siguientes tecnologías:
 
-* **Lenguaje:** Dart (`~3.x`)
-* **Framework:** Flutter (`~3.x`)
+* **Lenguaje:** Dart (`3.8.1`)
+* **Framework:** Flutter (`3.32.3`)
+* **Android Studio:** `2024.3.2`
 * **Gestión de Estado:** `flutter_bloc`
 * **Conectividad HTTP:** `http`
 * **Base de Datos Local:** `sqflite`
