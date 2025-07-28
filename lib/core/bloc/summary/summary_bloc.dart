@@ -191,7 +191,6 @@ class SummaryBloc extends Bloc<SummaryEvent, SummaryState> {
         totalNetSales: value.totalNetSales + element.totalNetSales,
         costOfGoodsSold: value.costOfGoodsSold + element.costOfGoodsSold,
         grossProfit: value.grossProfit + element.grossProfit,
-        operatingExpenses: value.operatingExpenses + element.operatingExpenses,
         netProfitOrLoss: value.netProfitOrLoss + element.netProfitOrLoss,
         currentInventory: value.currentInventory + element.currentInventory,
         fixtureInventory: value.fixtureInventory + element.fixtureInventory,

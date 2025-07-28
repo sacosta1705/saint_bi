@@ -11,9 +11,10 @@ import 'package:saint_bi/core/data/models/account_receivable.dart';
 import 'package:saint_bi/core/data/models/invoice.dart';
 import 'package:saint_bi/core/utils/constants.dart';
 import 'package:saint_bi/core/utils/formatters.dart';
+import 'package:saint_bi/ui/pages/analysis/analysis_hub.dart';
 import 'package:saint_bi/ui/pages/auth/login_screen.dart';
 import 'package:saint_bi/ui/pages/connection/connection_settings_screen.dart';
-import 'package:saint_bi/ui/pages/summary/sales_forecast_screen.dart';
+import 'package:saint_bi/ui/pages/analysis/sales_forecast_screen.dart';
 import 'package:saint_bi/ui/pages/transaction_details/transaction_list_screen.dart';
 import 'package:saint_bi/ui/theme/app_colors.dart';
 import 'package:saint_bi/ui/widgets/common/admin_password_dialog.dart';
@@ -336,13 +337,13 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                 "Análisis y Proyecciones",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: const Text("Estimar ventas futuras y más."),
+              subtitle: const Text("Ver proyecciones y análisis."),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const SalesForecastScreen(),
+                    builder: (context) => const AnalysisHubScreen(),
                   ),
                 );
               },

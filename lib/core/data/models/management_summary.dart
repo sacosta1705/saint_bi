@@ -13,6 +13,13 @@ class ManagementSummary extends Equatable {
   final double commissionsPayable;
   final double operatingExpenses;
   final double netProfitOrLoss;
+  final double grossProfitMargin;
+  final double netProfitMargin;
+  final double currentRatio;
+  final double quickRatio;
+  final double inventoryTurnover;
+  final double daysSalesOutstanging;
+  final double averageTicket;
 
   // --- SECCIÓN ACTIVOS Y PASIVOS ---
   final double currentInventory;
@@ -36,8 +43,6 @@ class ManagementSummary extends Equatable {
   final double purchasesIvaWithheld;
   final double purchasesIslrWithheld;
 
-  // --- CORRECCIÓN AQUÍ ---
-  // Se añade la palabra clave 'const' al constructor.
   const ManagementSummary({
     this.totalNetSalesCredit = 0.0,
     this.totalNetSalesCash = 0.0,
@@ -66,6 +71,13 @@ class ManagementSummary extends Equatable {
     this.netCreditNotes = 0.0,
     this.netDebitNotes = 0.0,
     this.fixtureInventory = 0.0,
+    this.grossProfitMargin = 0.0,
+    this.netProfitMargin = 0.0,
+    this.currentRatio = 0.0,
+    this.quickRatio = 0.0,
+    this.inventoryTurnover = 0.0,
+    this.averageTicket = 0.0,
+    this.daysSalesOutstanging = 0.0,
   });
 
   @override
@@ -97,5 +109,86 @@ class ManagementSummary extends Equatable {
     salesIslrWithheld,
     purchasesIvaWithheld,
     purchasesIslrWithheld,
+    grossProfitMargin,
+    netProfitMargin,
+    currentRatio,
+    inventoryTurnover,
+    averageTicket,
+    daysSalesOutstanging,
   ];
+
+  ManagementSummary copyWith({
+    double? totalNetSalesCredit,
+    double? totalNetSalesCash,
+    double? totalNetSales,
+    double? costOfGoodsSold,
+    double? grossProfit,
+    double? inventoryCharges,
+    double? inventoryDischarges,
+    double? fixedCosts,
+    double? commissionsPayable,
+    double? operatingExpenses,
+    double? netProfitOrLoss,
+    double? grossProfitMargin,
+    double? netProfitMargin,
+    double? currentInventory,
+    double? fixtureInventory,
+    double? overdueReceivables,
+    double? totalReceivables,
+    double? customerAdvances,
+    double? supplierAdvances,
+    double? overduePayables,
+    double? totalPayables,
+    double? netDebitNotes,
+    double? netCreditNotes,
+    double? salesVat,
+    double? purchasesVat,
+    double? salesIvaWithheld,
+    double? salesIslrWithheld,
+    double? purchasesIvaWithheld,
+    double? purchasesIslrWithheld,
+    double? currentRatio,
+    double? quickRatio,
+    double? inventoryTurnover,
+    double? averageTicket,
+    double? daysSalesOutstanging,
+  }) {
+    return ManagementSummary(
+      totalNetSalesCredit: totalNetSalesCredit ?? this.totalNetSalesCredit,
+      totalNetSalesCash: totalNetSalesCash ?? this.totalNetSalesCash,
+      totalNetSales: totalNetSales ?? this.totalNetSales,
+      costOfGoodsSold: costOfGoodsSold ?? this.costOfGoodsSold,
+      grossProfit: grossProfit ?? this.grossProfit,
+      inventoryCharges: inventoryCharges ?? this.inventoryCharges,
+      inventoryDischarges: inventoryDischarges ?? this.inventoryDischarges,
+      fixedCosts: fixedCosts ?? this.fixedCosts,
+      commissionsPayable: commissionsPayable ?? this.commissionsPayable,
+      operatingExpenses: operatingExpenses ?? this.operatingExpenses,
+      netProfitOrLoss: netProfitOrLoss ?? this.netProfitOrLoss,
+      grossProfitMargin: grossProfitMargin ?? this.grossProfitMargin,
+      netProfitMargin: netProfitMargin ?? this.netProfitMargin,
+      currentInventory: currentInventory ?? this.currentInventory,
+      fixtureInventory: fixtureInventory ?? this.fixtureInventory,
+      overdueReceivables: overdueReceivables ?? this.overdueReceivables,
+      totalReceivables: totalReceivables ?? this.totalReceivables,
+      customerAdvances: customerAdvances ?? this.customerAdvances,
+      supplierAdvances: supplierAdvances ?? this.supplierAdvances,
+      overduePayables: overduePayables ?? this.overduePayables,
+      totalPayables: totalPayables ?? this.totalPayables,
+      netDebitNotes: netDebitNotes ?? this.netDebitNotes,
+      netCreditNotes: netCreditNotes ?? this.netCreditNotes,
+      salesVat: salesVat ?? this.salesVat,
+      purchasesVat: purchasesVat ?? this.purchasesVat,
+      salesIvaWithheld: salesIvaWithheld ?? this.salesIvaWithheld,
+      salesIslrWithheld: salesIslrWithheld ?? this.salesIslrWithheld,
+      purchasesIvaWithheld: purchasesIvaWithheld ?? this.purchasesIvaWithheld,
+      purchasesIslrWithheld:
+          purchasesIslrWithheld ?? this.purchasesIslrWithheld,
+      currentRatio: currentRatio ?? this.currentRatio,
+      quickRatio: quickRatio ?? this.quickRatio,
+      inventoryTurnover: inventoryTurnover ?? this.inventoryTurnover,
+      averageTicket: averageTicket ?? this.averageTicket,
+      daysSalesOutstanging: daysSalesOutstanging ?? this.daysSalesOutstanging,
+    );
+  }
 }

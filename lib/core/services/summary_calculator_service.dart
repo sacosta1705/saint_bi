@@ -9,7 +9,6 @@ import 'package:saint_bi/core/data/models/inventory_operation.dart';
 import 'package:saint_bi/core/data/models/purchase_item.dart';
 
 class ManagementSummaryCalculator {
-  /// Calcula el resumen completo a partir de las listas de datos de la API.
   ManagementSummary calculate({
     required List<Invoice> invoices,
     required List<InvoiceItem> invoiceItems,
@@ -31,6 +30,10 @@ class ManagementSummaryCalculator {
     double salesIvaWithheld = 0.0;
     double salesIslrWithheld = 0.0;
     double costOfGoodsSold = 0.0;
+
+    final int daysInPeriod = (startDate != null && endDate != null)
+        ? endDate.difference(startDate).inDays + 1
+        : 30;
 
     // --- PREPARACIÓN DE DATOS CLAVE ---
     // Se crea un conjunto con los números de documento de las CxC pendientes.
@@ -77,6 +80,10 @@ class ManagementSummaryCalculator {
     final double totalNetSales = totalNetSalesCredit + totalNetSalesCash;
     final double grossProfit = totalNetSales - costOfGoodsSold;
 
+    final double grossProfitMargin = (totalNetSales > 0)
+        ? (grossProfit / totalNetSales) * 100
+        : 0.0;
+
     double purchasesVat = 0.0;
     for (final p in purchases) {
       purchasesVat += p.amountTax * p.sign;
@@ -117,7 +124,6 @@ class ManagementSummaryCalculator {
         .fold(0.0, (previousValue, ap) => previousValue + ap.balance);
     double fixedCosts = 0.0;
     if (startDate != null && endDate != null) {
-      final daysInPeriod = endDate.difference(startDate).inDays + 1;
       fixedCosts = (monthlyBudget / 30) * daysInPeriod;
     } else {
       fixedCosts = monthlyBudget;
@@ -142,12 +148,43 @@ class ManagementSummaryCalculator {
         .where((cxc) => cxc.type == '31')
         .fold(0.0, (sum, cxc) => sum + (cxc.amount));
 
+    final double netProfitMargin = (totalNetSales > 0)
+        ? (netProfitOrLoss / totalNetSales) * 100
+        : 0.0;
+
+    final double currentAssets = currentInventory + totalReceivables;
+    final double currentLiabilities = totalPayables;
+
+    final double currentRatio = (currentLiabilities > 0)
+        ? (currentAssets / currentLiabilities)
+        : 0.0;
+
+    final inventoryTurnover = (currentInventory > 0)
+        ? (costOfGoodsSold / currentInventory)
+        : 0.0;
+
+    final liquidAssets = totalReceivables;
+
+    final quickRatio = (currentLiabilities > 0)
+        ? (liquidAssets / currentLiabilities)
+        : 0.0;
+
+    final double daysSaleOutstanding = (totalNetSales > 0)
+        ? (totalReceivables / totalNetSales) * daysInPeriod
+        : 0.0;
+
+    final salesInvoiceCount = invoices.where((inv) => inv.type == "A").length;
+    final double averageTicket = (salesInvoiceCount > 0)
+        ? totalNetSales / salesInvoiceCount
+        : 0.0;
+
     return ManagementSummary(
       totalNetSalesCredit: totalNetSalesCredit,
       totalNetSalesCash: totalNetSalesCash,
       totalNetSales: totalNetSales,
       costOfGoodsSold: costOfGoodsSold,
       grossProfit: grossProfit,
+      grossProfitMargin: grossProfitMargin,
       inventoryCharges: inventoryCharges,
       inventoryDischarges: inventoryDischarges,
       commissionsPayable: commissionsPayable,
@@ -170,6 +207,12 @@ class ManagementSummaryCalculator {
       fixtureInventory: fixtureInventory,
       netCreditNotes: netCreditNotes,
       netDebitNotes: netDebitNotes,
+      netProfitMargin: netProfitMargin,
+      currentRatio: currentRatio,
+      inventoryTurnover: inventoryTurnover,
+      quickRatio: quickRatio,
+      daysSalesOutstanging: daysSaleOutstanding,
+      averageTicket: averageTicket,
     );
   }
 }
