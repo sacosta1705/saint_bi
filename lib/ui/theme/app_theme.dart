@@ -96,12 +96,10 @@ class AppTheme {
         primary: AppColors.primaryBlue,
         secondary: AppColors.primaryOrange,
         surface: AppColors.cardBackground,
-        background: AppColors.scaffoldBackground,
         error: AppColors.statusMessageError,
         onPrimary: AppColors.textOnPrimaryBlue,
         onSecondary: AppColors.textOnPrimaryOrange,
         onSurface: AppColors.textPrimary,
-        onBackground: AppColors.textPrimary,
         onError: Colors.white,
       ),
     );

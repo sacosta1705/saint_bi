@@ -14,7 +14,6 @@ import 'package:saint_bi/core/utils/formatters.dart';
 import 'package:saint_bi/ui/pages/analysis/analysis_hub.dart';
 import 'package:saint_bi/ui/pages/auth/login_screen.dart';
 import 'package:saint_bi/ui/pages/connection/connection_settings_screen.dart';
-import 'package:saint_bi/ui/pages/analysis/sales_forecast_screen.dart';
 import 'package:saint_bi/ui/pages/transaction_details/transaction_list_screen.dart';
 import 'package:saint_bi/ui/theme/app_colors.dart';
 import 'package:saint_bi/ui/widgets/common/admin_password_dialog.dart';

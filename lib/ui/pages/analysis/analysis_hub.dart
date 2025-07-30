@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:saint_bi/ui/pages/analysis/kpi_dashboard_screen.dart';
+import 'package:saint_bi/ui/pages/analysis/market_basket_screen.dart';
+import 'package:saint_bi/ui/pages/analysis/ols_forecast_screen.dart';
 import 'package:saint_bi/ui/pages/analysis/sales_forecast_screen.dart';
 import 'package:saint_bi/ui/theme/app_colors.dart';
 
@@ -34,6 +36,18 @@ class AnalysisHubScreen extends StatelessWidget {
         subtitle: '',
         icon: Icons.insights,
         destinationScreen: SalesForecastScreen(),
+      ),
+      const AnalysisOption(
+        title: 'Análisis de Canasta de Mercado',
+        subtitle: 'Descubre qué productos se venden juntos',
+        icon: Icons.shopping_basket,
+        destinationScreen: MarketBasketScreen(),
+      ),
+      const AnalysisOption(
+        title: 'Proyeccion de ventas (Minimos Cuardados Ordinarios)',
+        subtitle: '',
+        icon: Icons.analytics,
+        destinationScreen: OLSForecastScreen(),
       ),
     ];
 
