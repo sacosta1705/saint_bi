@@ -10,6 +10,7 @@ import 'package:saint_bi/core/data/sources/remote/saint_api.dart';
 import 'package:saint_bi/core/data/repositories/auth_repository.dart';
 import 'package:saint_bi/core/data/repositories/connection_repository.dart';
 import 'package:saint_bi/core/data/repositories/summary_repository.dart';
+import 'package:saint_bi/core/services/ai_analysis_service.dart';
 import 'package:saint_bi/core/services/summary_calculator_service.dart';
 import 'package:saint_bi/ui/pages/shared/loading_screen.dart';
 import 'package:saint_bi/ui/theme/app_theme.dart';
@@ -49,11 +50,13 @@ class App extends StatelessWidget {
               connectionRepository: context.read<ConnectionRepository>(),
             )..add(ConnectionsLoaded()),
           ),
+          RepositoryProvider<AiAnalysisService>(
+            create: (context) => AiAnalysisService(),
+          ),
           // PASO 2: Ahora podemos crear AuthBloc y pasarle el ConnectionBloc
           BlocProvider<AuthBloc>(
             create: (context) => AuthBloc(
               authRepository: context.read<AuthRepository>(),
-              // Se añade el parámetro requerido
               connectionBloc: context.read<ConnectionBloc>(),
             ),
           ),

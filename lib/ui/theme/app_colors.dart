@@ -1,34 +1,59 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Colores Principales
-  static const Color primaryBlue = Color(0xFF253279);
-  static const Color primaryOrange = Color(0xFFF36B21);
+  // Paleta Principal
+  static const Color primaryBlue = Color(0xFF0D47A1);
+  static const Color primaryDarkBlue = Color(0xFF002171);
+  static const Color accentOrange = Color(0xFFFF6F00);
 
-  // Colores de Texto
-  static const Color textPrimary = Color(0xFF212121);
-  static const Color textSecondary = Color(
-    0xFF757575,
-  ); // Ligeramente más claro para subtítulos
+  // Fondos
+  static const Color scaffoldBackground = Color(0xFFF0F2F5);
+  static const Color cardBackground = Color(0xFFFFFFFF);
+
+  // Texto
+  static const Color textPrimary = Color(0xFF1C1C1E);
+  static const Color textSecondary = Color(0xFF6E6E73);
+  static const Color textOnPrimary = Colors.white;
+
+  // Colores Semánticos
+  static const Color positiveValue = Color(0xFF28A745);
+  static const Color negativeValue = Color(0xFFDC3545);
+  static const Color neutralValue = primaryBlue;
+
+  // UI
+  static const Color iconColor = Color(0xFF8A8A8E);
+  static const Color dividerColor = Color(0xFFE5E5EA);
+
+  // Degradados para Tarjetas de KPI
+  static const Gradient kpiGradientBlue = LinearGradient(
+    colors: [Color(0xFF1E88E5), Color(0xFF0D47A1)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const Gradient kpiGradientGreen = LinearGradient(
+    colors: [Color(0xFF43A047), Color(0xFF1B5E20)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const Gradient kpiGradientOrange = LinearGradient(
+    colors: [Color(0xFFFB8C00), Color(0xFFE65100)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  static const Gradient kpiGradientRed = LinearGradient(
+    colors: [Color(0xFFE53935), Color(0xFFB71C1C)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // Colores Principales
+  static const Color primaryOrange = Color(0xFFF36B21);
   static const Color textOnPrimaryBlue = Colors.white;
   static const Color textOnPrimaryOrange = Colors.white;
   static const Color textLight = Colors.white70;
-
-  // Colores de Fondo
-  static const Color scaffoldBackground = Color(0xFFF4F6F8);
-  static const Color cardBackground = Colors.white;
   static const Color dialogBackground = Colors.white;
-
-  // Colores de Énfasis y Acento
   static const Color accentColor = Color.fromARGB(255, 241, 120, 55);
-  static const Color positiveValue = Colors.green;
-  static const Color negativeValue = Colors.red;
-  static const Color neutralValue = primaryBlue;
-
-  // Colores de UI Adicionales
-  static const Color iconColor = Color(0xFF757575);
   static const Color iconOnPrimary = Colors.white;
-  static const Color dividerColor = Color(0xFFE0E0E0);
 
   static const Color buttonPrimaryBackground = primaryBlue;
   static const Color buttonPrimaryText = textOnPrimaryBlue;

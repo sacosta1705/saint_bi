@@ -1,54 +1,43 @@
+// lib/ui/theme/app_theme.dart
 import 'package:flutter/material.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 import 'package:saint_bi/ui/theme/app_colors.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
-      primaryColor: AppColors.primaryBlue,
+      primaryColor: const Color.fromRGBO(13, 71, 161, 1),
       scaffoldBackgroundColor: AppColors.scaffoldBackground,
-
-      // fontFamily: 'Arial',
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.appBarBackground,
-        foregroundColor: AppColors.appBarForeground,
-        elevation: 2,
-        iconTheme: IconThemeData(color: AppColors.iconOnPrimary),
-        titleTextStyle: TextStyle(
-          color: AppColors.textOnPrimaryBlue,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
+      fontFamily: GoogleFonts.poppins().fontFamily,
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.primaryDarkBlue,
+        foregroundColor: AppColors.textOnPrimary,
+        elevation: 4,
+        titleTextStyle: GoogleFonts.poppins(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
         ),
       ),
-
       cardTheme: CardThemeData(
         elevation: 2,
         color: AppColors.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
-
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.buttonPrimaryBackground,
-          foregroundColor: AppColors.buttonPrimaryText,
+          backgroundColor: AppColors.accentOrange,
+          foregroundColor: AppColors.textOnPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-      ),
-
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primaryBlue,
-          side: const BorderSide(color: AppColors.primaryBlue, width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+          textStyle: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
-
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(8.0)),
@@ -71,34 +60,38 @@ class AppTheme {
         filled: true,
         fillColor: AppColors.cardBackground,
       ),
-
-      textTheme: const TextTheme(
-        displayLarge: TextStyle(
-          fontSize: 24,
+      textTheme: TextTheme(
+        displayLarge: GoogleFonts.poppins(
+          fontSize: 20,
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary,
         ),
-        headlineMedium: TextStyle(
-          fontSize: 20,
+        headlineMedium: GoogleFonts.poppins(
+          fontSize: 18,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
-        bodyLarge: TextStyle(fontSize: 16, color: AppColors.textPrimary),
-        bodyMedium: TextStyle(fontSize: 14, color: AppColors.textSecondary),
-        labelLarge: TextStyle(
+        bodyLarge: GoogleFonts.poppins(
+          fontSize: 16,
+          color: AppColors.textPrimary,
+        ),
+        bodyMedium: GoogleFonts.poppins(
+          fontSize: 14,
+          color: AppColors.textSecondary,
+        ),
+        labelLarge: GoogleFonts.poppins(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: AppColors.buttonPrimaryText,
+          color: AppColors.textOnPrimary,
         ),
       ),
-
       colorScheme: const ColorScheme.light(
         primary: AppColors.primaryBlue,
-        secondary: AppColors.primaryOrange,
+        secondary: AppColors.accentOrange,
         surface: AppColors.cardBackground,
-        error: AppColors.statusMessageError,
-        onPrimary: AppColors.textOnPrimaryBlue,
-        onSecondary: AppColors.textOnPrimaryOrange,
+        error: AppColors.negativeValue,
+        onPrimary: AppColors.textOnPrimary,
+        onSecondary: AppColors.textOnPrimary,
         onSurface: AppColors.textPrimary,
         onError: Colors.white,
       ),

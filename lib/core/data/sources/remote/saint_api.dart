@@ -16,9 +16,15 @@ class SaintApi {
     required String authtoken,
     Map<String, String>? params,
   }) async {
-    final Uri uri = Uri.parse(
-      '$baseUrl/v1/adm/$endpoint',
-    ).replace(queryParameters: params);
+    String url = '$baseUrl/v1/adm/$endpoint';
+
+    if (params != null) {
+      final queryString = params.entries
+          .map((e) => '${e.key}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      url += '?$queryString';
+    }
+    final Uri uri = Uri.parse(url);
 
     // developer.log('Enviando request a $uri con $authtoken.');
     try {
