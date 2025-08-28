@@ -183,12 +183,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
           SliverToBoxAdapter(
             child: _buildSectionHeader(context, "Detalles Financieros"),
           ),
-          _buildFinancialDetailsList(
-            summary,
-            deviceLocale,
-            state,
-            isConsolidated,
-          ),
           if (!isConsolidated)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 15),
@@ -219,6 +213,12 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                 ]),
               ),
             ),
+          _buildFinancialDetailsList(
+            summary,
+            deviceLocale,
+            state,
+            isConsolidated,
+          ),
         ],
       ),
     );

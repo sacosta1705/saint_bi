@@ -37,7 +37,7 @@ class AiAnalysisService {
       5.  **Puntos Críticos:** Identifica las 2-3 áreas de mayor riesgo o preocupación.
       6.  **Recomendaciones:** Proporciona 3 a 5 recomendaciones claras y accionables para mejorar la situación, basadas exclusivamente en los datos proporcionados.
 
-      Actúa como un asesor financiero directo y conciso.
+      Actúa como un asesor financiero directo y honesto.
         ''';
   }
 
