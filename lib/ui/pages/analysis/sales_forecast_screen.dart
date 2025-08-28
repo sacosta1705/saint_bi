@@ -349,7 +349,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
       return Container();
     }
     final style = TextStyle(
-      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+      color: Theme.of(context).colorScheme.onSurface,
       fontSize: 10,
     );
     final text = NumberFormat.compact().format(value);
@@ -516,7 +516,7 @@ class _SalesForecastScreenState extends State<SalesForecastScreen> {
 
   Widget _bottomTitleWidgets(double value, TitleMeta meta) {
     final style = TextStyle(
-      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+      color: Theme.of(context).colorScheme.onSurface,
       fontSize: 10,
     );
     String text = '';

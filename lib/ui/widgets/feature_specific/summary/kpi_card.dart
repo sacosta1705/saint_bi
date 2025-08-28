@@ -39,7 +39,7 @@ class KpiCard extends StatelessWidget {
                     child: Text(
                       title,
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textOnPrimary.withOpacity(0.9),
+                        color: AppColors.textOnPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,

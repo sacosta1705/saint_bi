@@ -29,7 +29,7 @@ class SummarySectionCard extends StatelessWidget {
           // --- Encabezado de la Tarjeta ---
           Container(
             padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-            color: AppColors.cardBackground.withOpacity(0.5),
+            color: AppColors.cardBackground,
             child: Row(
               children: [
                 Icon(icon, color: AppColors.primaryBlue, size: 22),
