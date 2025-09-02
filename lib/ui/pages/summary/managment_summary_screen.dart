@@ -202,14 +202,14 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.auto_awesome),
-                    label: const Text("Análisis con IA"),
-                    onPressed: _runAiAnalysis,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryOrange,
-                    ),
-                  ),
+                  // ElevatedButton.icon(
+                  //   icon: const Icon(Icons.auto_awesome),
+                  //   label: const Text("Análisis con IA"),
+                  //   onPressed: _runAiAnalysis,
+                  //   style: ElevatedButton.styleFrom(
+                  //     backgroundColor: AppColors.primaryOrange,
+                  //   ),
+                  // ),
                 ]),
               ),
             ),
@@ -441,7 +441,6 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
     );
   }
 
-  // *** ESTE MÉTODO HA SIDO CAMBIADO ***
   Widget _buildFinancialDetailsList(
     ManagementSummary summary,
     String locale,
@@ -495,12 +494,20 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             data: {
               "I.V.A. en Ventas": formatNumber(summary.salesVat, locale),
               "I.V.A. en Compras": formatNumber(summary.purchasesVat, locale),
-              "Retenido por Clientes": formatNumber(
+              "Retenido por Clientes (I.V.A)": formatNumber(
                 summary.salesIvaWithheld,
                 locale,
               ),
-              "Retenido a Proveedores": formatNumber(
+              "Retenido a Proveedores (I.V.A)": formatNumber(
                 summary.purchasesIvaWithheld,
+                locale,
+              ),
+              "Retenido a Proveedores (I.S.L.R)": formatNumber(
+                summary.purchasesIslrWithheld,
+                locale,
+              ),
+              "Retenido por Clientes (I.S.L.R)": formatNumber(
+                summary.salesIslrWithheld,
                 locale,
               ),
             },
@@ -509,8 +516,8 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             title: "Cuentas por Cobrar",
             icon: Icons.person_add_alt_1,
             data: {
-              "Total CxC": formatNumber(summary.totalReceivables, locale),
-              "CxC Vencidas": formatNumber(summary.overdueReceivables, locale),
+              "Total": formatNumber(summary.totalReceivables, locale),
+              "Vencidas": formatNumber(summary.overdueReceivables, locale),
               "Anticipos de Clientes": formatNumber(
                 summary.customerAdvances,
                 locale,
@@ -543,8 +550,8 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             title: "Cuentas por Pagar",
             icon: Icons.business_center,
             data: {
-              "Total CxP": formatNumber(summary.totalPayables, locale),
-              "CxP Vencidas": formatNumber(summary.overduePayables, locale),
+              "Total": formatNumber(summary.totalPayables, locale),
+              "Vencidas": formatNumber(summary.overduePayables, locale),
             },
             onTap: isConsolidated
                 ? null

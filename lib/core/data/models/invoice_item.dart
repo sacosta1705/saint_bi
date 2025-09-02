@@ -28,4 +28,16 @@ class InvoiceItem {
       tax: (json['mtotax'] as num?)?.toDouble() ?? 0.0,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'tipofac': type,
+      'numerod': docNumber,
+      'coditem': productCode,
+      'cantidad': qty,
+      'costo': cost,
+      'precio': price,
+      'mtotax': tax,
+    };
+  }
 }

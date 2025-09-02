@@ -1,12 +1,36 @@
-// lib/ui/pages/analysis/market_basket_screen.dart
+import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:saint_bi/core/bloc/summary/summary_bloc.dart';
+import 'package:saint_bi/core/data/models/invoice_item.dart';
 import 'package:saint_bi/core/services/analysis/market_basket_service.dart';
 import 'package:saint_bi/ui/theme/app_colors.dart';
 
 enum SortBy { confidence, support, lift }
+
+List<AssociationRule> _runAnalysisIsolate(Map<String, dynamic> args) {
+  final invoiceItemsJson = args['invoiceItems'] as List<dynamic>;
+  final invoiceItems = invoiceItemsJson
+      .map((json) => InvoiceItem.fromJson(json as Map<String, dynamic>))
+      .toList();
+
+  final minSupport = args['minSupport'] as double;
+  final minConfidence = args['minConfidence'] as double;
+
+  final marketBasketService = MarketBasketService();
+  return marketBasketService.analyze(
+    invoiceItems: invoiceItems,
+    minSupport: minSupport,
+    minConfidence: minConfidence,
+  );
+}
+
+Future<List<AssociationRule>> runMarketBasketAnalysisInIsolate(
+  Map<String, dynamic> analysisData,
+) {
+  return Isolate.run(() => _runAnalysisIsolate(analysisData));
+}
 
 class MarketBasketScreen extends StatefulWidget {
   const MarketBasketScreen({super.key});
@@ -15,7 +39,7 @@ class MarketBasketScreen extends StatefulWidget {
 }
 
 class _MarketBasketScreenState extends State<MarketBasketScreen> {
-  final _marketBasketService = MarketBasketService();
+  // final _marketBasketService = MarketBasketService();
   final _searchController = TextEditingController();
   List<AssociationRule> _allRules = [];
   List<AssociationRule> _filteredRules = [];
@@ -25,32 +49,54 @@ class _MarketBasketScreenState extends State<MarketBasketScreen> {
   SortBy _sortBy = SortBy.confidence;
 
   late final Map<String, String> _productNames;
+  bool _isInitialized = false;
 
   @override
-  void initState() {
-    super.initState();
-    final allProducts = context.read<SummaryBloc>().state.allProducts;
-    _productNames = {for (var p in allProducts) p.code: p.description};
-    _searchController.addListener(_filterAndSortRules);
-    Future.microtask(_runAnalysis);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isInitialized) {
+      final allProducts = context.read<SummaryBloc>().state.allProducts;
+      _productNames = {for (var p in allProducts) p.code: p.description};
+      _searchController.addListener(_filterAndSortRules);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _runAnalysis();
+        }
+      });
+
+      _isInitialized = true;
+    }
   }
 
   @override
   void dispose() {
+    _searchController.removeListener(_filterAndSortRules);
     _searchController.dispose();
     super.dispose();
   }
 
-  void _runAnalysis() {
+  void _runAnalysis() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
     final summaryState = context.read<SummaryBloc>().state;
-    final rules = _marketBasketService.analyze(
-      invoiceItems: summaryState.allInvoiceItems,
-      minSupport: _minSupport,
-      minConfidence: _minConfidence,
-    );
+
+    final invoiceItemsasMaps = summaryState.allInvoiceItems
+        .map((item) => item.toMap())
+        .toList();
+
+    final double minSupport = _minSupport;
+    final double minConfidence = _minConfidence;
+
+    final rules = await runMarketBasketAnalysisInIsolate({
+      'invoiceItems': invoiceItemsasMaps,
+      'minSupport': minSupport,
+      'minConfidence': minConfidence,
+    });
+
+    if (!mounted) return;
 
     setState(() {
       _allRules = rules;

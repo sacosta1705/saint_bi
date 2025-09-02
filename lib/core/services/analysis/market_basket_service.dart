@@ -1,5 +1,7 @@
 // lib/core/services/analysis/market_basket_service.dart
 
+import 'dart:collection';
+
 import 'package:collection/collection.dart';
 import 'package:saint_bi/core/data/models/invoice_item.dart';
 
@@ -150,27 +152,43 @@ class MarketBasketService {
     List<Set<String>> transactions,
     double minSupport,
   ) {
+    const setEquality = SetEquality<String>();
+
     final numTransactions = transactions.length;
-    Map<Set<String>, int> c1 = {};
+
+    Map<Set<String>, int> c1 = HashMap(
+      equals: setEquality.equals,
+      hashCode: setEquality.hash,
+    );
     for (var transaction in transactions) {
       for (var item in transaction) {
         final itemset = {item};
         c1.update(itemset, (value) => value + 1, ifAbsent: () => 1);
       }
     }
-    Map<Set<String>, double> l1 = {};
+    Map<Set<String>, double> l1 = HashMap(
+      equals: setEquality.equals,
+      hashCode: setEquality.hash,
+    );
+
     c1.forEach((itemset, count) {
       final support = count / numTransactions;
       if (support >= minSupport) {
         l1[itemset] = support;
       }
     });
+
     Map<Set<String>, double> allFrequentItemsets = Map.from(l1);
     Map<Set<String>, double> lk = l1;
+
     int k = 2;
+
     while (lk.isNotEmpty) {
       final Set<Set<String>> ck = _generateCandidates(lk.keys.toSet(), k);
-      Map<Set<String>, int> candidateCounts = {};
+      Map<Set<String>, int> candidateCounts = HashMap(
+        equals: setEquality.equals,
+        hashCode: setEquality.hash,
+      );
       for (var transaction in transactions) {
         for (var candidate in ck) {
           if (transaction.containsAll(candidate)) {
@@ -182,7 +200,7 @@ class MarketBasketService {
           }
         }
       }
-      lk = {};
+      lk = HashMap(equals: setEquality.equals, hashCode: setEquality.hash);
       candidateCounts.forEach((candidate, count) {
         final support = count / numTransactions;
         if (support >= minSupport) {
