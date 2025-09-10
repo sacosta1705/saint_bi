@@ -1,3 +1,13 @@
+var accountPayableTypes = {
+  '10': 'Factura a credito',
+  '21': 'Nota de Débito',
+  '35': 'Nota de Crédito',
+  '30': 'Nota de Credito',
+  '41': 'Pago',
+  '50': 'Anticipo',
+  '81': 'Retención IVA',
+};
+
 class AccountPayable {
   final String docNumber;
   final double amount;

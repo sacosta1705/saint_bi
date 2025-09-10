@@ -1,8 +1,12 @@
-/// Clase que representa una deuda de un cliente hacia la empresa.
-///
-/// El hecho de que exista un registro en este servicio representa una deuda
-/// pendiente del cliente.
-///
+var accountReceivableTypes = {
+  '10': 'Factura a credito',
+  '20': 'Nota de Débito',
+  '25': 'Nota de Crédito',
+  '31': 'Nota de Credito',
+  '41': 'Pago',
+  '50': 'Anticipo',
+};
+
 class AccountReceivable {
   /// El numero de la factura asociada a la cual esta relacionada la deuda.
   ///

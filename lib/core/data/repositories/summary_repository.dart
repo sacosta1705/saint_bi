@@ -132,4 +132,26 @@ class SummaryRepository {
       configuration: configuration,
     );
   }
+
+  Future<List<Invoice>> fetchInvoicesForYear({
+    required String baseUrl,
+    required String authToken,
+    required int year,
+  }) async {
+    final dateParams = {
+      'fechae>': '${year - 1}-12-31',
+      'fechae<': '${year + 1}-01-01',
+    };
+
+    final result = await _apiClient.getInvoices(
+      baseUrl: baseUrl,
+      authtoken: authToken,
+      params: dateParams,
+    );
+
+    final invoices = List.from(
+      result,
+    ).map<Invoice>((e) => Invoice.fromJson(e)).toList();
+    return invoices;
+  }
 }

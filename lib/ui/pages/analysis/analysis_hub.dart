@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:saint_bi/ui/pages/analysis/kpi_dashboard_screen.dart';
 import 'package:saint_bi/ui/pages/analysis/market_basket_screen.dart';
+import 'package:saint_bi/ui/pages/analysis/monthly_sales_screen.dart';
 import 'package:saint_bi/ui/pages/analysis/ols_forecast_screen.dart';
 import 'package:saint_bi/ui/pages/analysis/sales_forecast_screen.dart';
 import 'package:saint_bi/ui/theme/app_colors.dart';
@@ -29,7 +30,13 @@ class AnalysisHubScreen extends StatelessWidget {
         title: 'Indicadores de gestión',
         subtitle: '',
         icon: Icons.monetization_on,
-        destinationScreen: KpiDashboardScreen(), // <-- Tu nueva pantalla
+        destinationScreen: KpiDashboardScreen(),
+      ),
+      const AnalysisOption(
+        title: 'Ventas por mes',
+        subtitle: 'Grafico de barras de ventas mensuales por año.',
+        icon: Icons.bar_chart,
+        destinationScreen: MonthlySalesScreen(),
       ),
       const AnalysisOption(
         title: 'Proyección de Ventas (Suavización Exponencial Simple)',

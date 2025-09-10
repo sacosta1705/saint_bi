@@ -1,3 +1,12 @@
+var purchaseTypes = {
+  'H': 'Compra',
+  'I': 'Devolución de compra',
+  'J': 'Nota de entrega',
+  'K': 'Devolución nota de entrega',
+  'L': 'Orden de Compra',
+  'S': 'Cotización',
+};
+
 class Purchase {
   final String uniqueNum;
   final String type;

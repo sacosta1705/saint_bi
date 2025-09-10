@@ -21,6 +21,7 @@ import 'package:saint_bi/ui/pages/transaction_details/transaction_list_screen.da
 import 'package:saint_bi/ui/theme/app_colors.dart';
 import 'package:saint_bi/ui/widgets/common/admin_password_dialog.dart';
 import 'package:saint_bi/ui/widgets/feature_specific/summary/kpi_card.dart';
+import 'package:saint_bi/ui/widgets/feature_specific/summary/sales_composition_pie_chart.dart';
 import 'package:saint_bi/ui/widgets/feature_specific/summary/summary_section_card.dart';
 import 'package:saint_bi/ui/widgets/feature_specific/summary/transaction_list_item.dart';
 
@@ -201,20 +202,12 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
                       backgroundColor: AppColors.primaryDarkBlue,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  // ElevatedButton.icon(
-                  //   icon: const Icon(Icons.auto_awesome),
-                  //   label: const Text("Análisis con IA"),
-                  //   onPressed: _runAiAnalysis,
-                  //   style: ElevatedButton.styleFrom(
-                  //     backgroundColor: AppColors.primaryOrange,
-                  //   ),
-                  // ),
                 ]),
               ),
             ),
           _buildFinancialDetailsList(
             summary,
+            state.previousSummary,
             deviceLocale,
             state,
             isConsolidated,
@@ -443,6 +436,7 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
 
   Widget _buildFinancialDetailsList(
     ManagementSummary summary,
+    ManagementSummary previousSummary,
     String locale,
     SummaryState state,
     bool isConsolidated,
@@ -451,24 +445,23 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverList(
         delegate: SliverChildListDelegate([
+          SalesCompositionPieChart(summary: summary),
           SummarySectionCard(
             title: "Operaciones",
             icon: Icons.show_chart,
             data: {
-              "Ventas a Crédito": formatNumber(
-                summary.totalNetSalesCredit,
-                locale,
-              ),
-              "Ventas de Contado": formatNumber(
-                summary.totalNetSalesCash,
-                locale,
-              ),
-              "Costo de Ventas": formatNumber(summary.costOfGoodsSold, locale),
-              "Gastos y Costos": formatNumber(summary.fixedCosts, locale),
-              "Utilidad Neta (Aprox)": formatNumber(
-                summary.netProfitOrLoss,
-                locale,
-              ),
+              "Ventas a Crédito": summary.totalNetSalesCredit,
+              "Ventas de Contado": summary.totalNetSalesCash,
+              "Costo de Ventas": summary.costOfGoodsSold,
+              "Gastos y Costos": summary.fixedCosts,
+              "Utilidad Neta (Aprox)": summary.netProfitOrLoss,
+            },
+            previousData: {
+              "Ventas a Crédito": previousSummary.totalNetSalesCredit,
+              "Ventas de Contado": previousSummary.totalNetSalesCash,
+              "Costo de Ventas": previousSummary.costOfGoodsSold,
+              "Gastos y Costos": previousSummary.fixedCosts,
+              "Utilidad Neta (Aprox)": previousSummary.netProfitOrLoss,
             },
             onTap: isConsolidated
                 ? null
@@ -492,36 +485,37 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             title: "Impuestos",
             icon: Icons.receipt_long,
             data: {
-              "I.V.A. en Ventas": formatNumber(summary.salesVat, locale),
-              "I.V.A. en Compras": formatNumber(summary.purchasesVat, locale),
-              "Retenido por Clientes (I.V.A)": formatNumber(
-                summary.salesIvaWithheld,
-                locale,
-              ),
-              "Retenido a Proveedores (I.V.A)": formatNumber(
-                summary.purchasesIvaWithheld,
-                locale,
-              ),
-              "Retenido a Proveedores (I.S.L.R)": formatNumber(
-                summary.purchasesIslrWithheld,
-                locale,
-              ),
-              "Retenido por Clientes (I.S.L.R)": formatNumber(
-                summary.salesIslrWithheld,
-                locale,
-              ),
+              "I.V.A. en Ventas": summary.salesVat,
+              "I.V.A. en Compras": summary.purchasesVat,
+              "Retenido por Clientes (I.V.A)": summary.salesIvaWithheld,
+              "Retenido a Proveedores (I.V.A)": summary.purchasesIvaWithheld,
+              "Retenido a Proveedores (I.S.L.R)": summary.purchasesIslrWithheld,
+              "Retenido por Clientes (I.S.L.R)": summary.salesIslrWithheld,
+            },
+            previousData: {
+              "I.V.A. en Ventas": previousSummary.salesVat,
+              "I.V.A. en Compras": previousSummary.purchasesVat,
+              "Retenido por Clientes (I.V.A)": previousSummary.salesIvaWithheld,
+              "Retenido a Proveedores (I.V.A)":
+                  previousSummary.purchasesIvaWithheld,
+              "Retenido a Proveedores (I.S.L.R)":
+                  previousSummary.purchasesIslrWithheld,
+              "Retenido por Clientes (I.S.L.R)":
+                  previousSummary.salesIslrWithheld,
             },
           ),
           SummarySectionCard(
             title: "Cuentas por Cobrar",
             icon: Icons.person_add_alt_1,
             data: {
-              "Total": formatNumber(summary.totalReceivables, locale),
-              "Vencidas": formatNumber(summary.overdueReceivables, locale),
-              "Anticipos de Clientes": formatNumber(
-                summary.customerAdvances,
-                locale,
-              ),
+              "Total": summary.totalReceivables,
+              "Vencidas": summary.overdueReceivables,
+              "Anticipos de Clientes": summary.customerAdvances,
+            },
+            previousData: {
+              "Total": previousSummary.totalReceivables,
+              "Vencidas": previousSummary.overdueReceivables,
+              "Anticipos de Clientes": previousSummary.customerAdvances,
             },
             onTap: isConsolidated
                 ? null
@@ -550,8 +544,12 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
             title: "Cuentas por Pagar",
             icon: Icons.business_center,
             data: {
-              "Total": formatNumber(summary.totalPayables, locale),
-              "Vencidas": formatNumber(summary.overduePayables, locale),
+              "Total": summary.totalPayables,
+              "Vencidas": summary.overduePayables,
+            },
+            previousData: {
+              "Total": previousSummary.totalPayables,
+              "Vencidas": previousSummary.overduePayables,
             },
             onTap: isConsolidated
                 ? null

@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'package:saint_bi/core/bloc/auth/auth_bloc.dart';
 import 'package:saint_bi/core/bloc/connection/connection_bloc.dart';
+import 'package:saint_bi/core/bloc/monthly_sales/monthly_sales_bloc.dart';
 import 'package:saint_bi/core/bloc/summary/summary_bloc.dart';
 import 'package:saint_bi/core/data/sources/local/database_service.dart';
 import 'package:saint_bi/core/data/sources/remote/saint_api.dart';
@@ -44,7 +45,6 @@ class App extends StatelessWidget {
       ],
       child: MultiBlocProvider(
         providers: [
-          // PASO 1: Mover ConnectionBloc ANTES de AuthBloc
           BlocProvider<ConnectionBloc>(
             create: (context) => ConnectionBloc(
               connectionRepository: context.read<ConnectionRepository>(),
@@ -53,7 +53,6 @@ class App extends StatelessWidget {
           RepositoryProvider<AiAnalysisService>(
             create: (context) => AiAnalysisService(),
           ),
-          // PASO 2: Ahora podemos crear AuthBloc y pasarle el ConnectionBloc
           BlocProvider<AuthBloc>(
             create: (context) => AuthBloc(
               authRepository: context.read<AuthRepository>(),
@@ -66,6 +65,13 @@ class App extends StatelessWidget {
               authBloc: context.read<AuthBloc>(),
               connectionBloc: context.read<ConnectionBloc>(),
               calculator: context.read<ManagementSummaryCalculator>(),
+            ),
+          ),
+          BlocProvider<MonthlySalesBloc>(
+            create: (context) => MonthlySalesBloc(
+              summaryRepository: context.read<SummaryRepository>(),
+              authBloc: context.read<AuthBloc>(),
+              connectionBloc: context.read<ConnectionBloc>(),
             ),
           ),
         ],

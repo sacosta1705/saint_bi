@@ -1,3 +1,12 @@
+var purchaseItemsTypes = {
+  'H': 'Compra',
+  'I': 'Devolución de compra',
+  'J': 'Nota de entrega',
+  'K': 'Devolución nota de entrega',
+  'L': 'Orden de Compra',
+  'S': 'Cotización',
+};
+
 class PurchaseItem {
   final String docNumber;
   final String itemCode;

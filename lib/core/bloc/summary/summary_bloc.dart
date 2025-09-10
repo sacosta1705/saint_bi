@@ -133,14 +133,35 @@ class SummaryBloc extends Bloc<SummaryEvent, SummaryState> {
     emit(state.copyWith(status: SummaryStatus.loading));
 
     try {
-      final summaryData = await _summaryRepository.fetchAllData(
-        baseUrl: connectionState.activeConnection!.baseUrl,
-        authToken: authState.loginResponse!.authToken!,
-        configId: connectionState.activeConnection!.configId,
-        startDate: event.startDate,
-        endDate: event.endDate,
-      );
+      DateTime? previousStartDate;
+      DateTime? previousEndDate;
 
+      if (event.startDate != null && event.endDate != null) {
+        final duration = event.endDate!.difference(event.startDate!);
+        previousEndDate = event.startDate!.subtract(const Duration(days: 1));
+        previousStartDate = previousEndDate.subtract(duration);
+      }
+
+      final results = await Future.wait([
+        _summaryRepository.fetchAllData(
+          baseUrl: connectionState.activeConnection!.baseUrl,
+          authToken: authState.loginResponse!.authToken!,
+          configId: connectionState.activeConnection!.configId,
+          startDate: event.startDate,
+          endDate: event.endDate,
+        ),
+
+        if (previousEndDate != null && previousStartDate != null)
+          _summaryRepository.fetchAllData(
+            baseUrl: connectionState.activeConnection!.baseUrl,
+            authToken: authState.loginResponse!.authToken!,
+            configId: connectionState.activeConnection!.configId,
+            startDate: previousStartDate,
+            endDate: previousEndDate,
+          ),
+      ]);
+
+      final summaryData = results[0];
       final calculatedSummary = _calculator.calculate(
         invoices: summaryData.invoices,
         invoiceItems: summaryData.invoiceItems,
@@ -155,10 +176,30 @@ class SummaryBloc extends Bloc<SummaryEvent, SummaryState> {
         endDate: event.endDate,
       );
 
+      ManagementSummary previousSummary = const ManagementSummary();
+      if (results.length > 1) {
+        final previousSummaryData = results[1];
+        previousSummary = _calculator.calculate(
+          invoices: previousSummaryData.invoices,
+          invoiceItems: previousSummaryData.invoiceItems,
+          products: previousSummaryData.products,
+          receivables: previousSummaryData.receivables,
+          payables: previousSummaryData.payables,
+          purchases: previousSummaryData.purchases,
+          inventoryOps: previousSummaryData.inventoryOps,
+          purchaseItems: previousSummaryData.purchaseItems,
+          monthlyBudget:
+              previousSummaryData.configuration?.monthlyBudget ?? 0.0,
+          startDate: previousStartDate!,
+          endDate: previousEndDate!,
+        );
+      }
+
       emit(
         state.copyWith(
           status: SummaryStatus.success,
           summary: calculatedSummary,
+          previousSummary: previousSummary,
           allInvoices: summaryData.invoices,
           allInvoiceItems: summaryData.invoiceItems,
           allReceivables: summaryData.receivables,

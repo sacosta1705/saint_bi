@@ -1,3 +1,12 @@
+var invoiceItemTypes = {
+  'A': 'Factura',
+  'B': 'Devolución',
+  'C': 'Nota de Entrega',
+  'E': 'Pedido',
+  'F': 'Presupuesto',
+  'G': 'Documento en espera',
+};
+
 class InvoiceItem {
   final String type;
   final String docNumber;

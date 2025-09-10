@@ -5,6 +5,7 @@ enum SummaryStatus { initial, loading, success, failure }
 class SummaryState extends Equatable {
   final SummaryStatus status;
   final ManagementSummary summary;
+  final ManagementSummary previousSummary;
   final DateTime? startDate;
   final DateTime? endDate;
   final String? error;
@@ -20,6 +21,7 @@ class SummaryState extends Equatable {
   const SummaryState({
     this.status = SummaryStatus.initial,
     this.summary = const ManagementSummary(),
+    this.previousSummary = const ManagementSummary(),
     this.startDate,
     this.endDate,
     this.error,
@@ -34,6 +36,7 @@ class SummaryState extends Equatable {
   SummaryState copyWith({
     SummaryStatus? status,
     ManagementSummary? summary,
+    ManagementSummary? previousSummary,
     DateTime? startDate,
     DateTime? endDate,
     String? error,
@@ -47,6 +50,7 @@ class SummaryState extends Equatable {
     return SummaryState(
       status: status ?? this.status,
       summary: summary ?? this.summary,
+      previousSummary: previousSummary ?? this.previousSummary,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       error: error,
@@ -63,6 +67,7 @@ class SummaryState extends Equatable {
   List<Object?> get props => [
     status,
     summary,
+    previousSummary,
     startDate,
     endDate,
     error,
