@@ -1,4 +1,4 @@
-// lib/ui/pages/summary/managment_summary_screen.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -34,10 +34,35 @@ class ManagementSummaryScreen extends StatefulWidget {
 }
 
 class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
+  Timer? _pollingTimer;
+
   @override
   void initState() {
     super.initState();
     _fetchInitialData();
+    _startPolling();
+  }
+
+  void _stopPolling() {
+    _pollingTimer?.cancel();
+    _pollingTimer = null;
+  }
+
+  void _startPolling() {
+    _stopPolling();
+    final connection = context
+        .read<connection_bloc.ConnectionBloc>()
+        .state
+        .activeConnection;
+
+    if (connection != null && connection.pollingIntervalSeconds > 0) {
+      _pollingTimer = Timer.periodic(
+        Duration(seconds: connection.pollingIntervalSeconds),
+        (timer) {
+          if (mounted) _fetchInitialData();
+        },
+      );
+    }
   }
 
   Future<void> _runAiAnalysis() async {
@@ -109,55 +134,65 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
     final authState = context.watch<AuthBloc>().state;
     final bool isConsolidated = authState.status == AuthStatus.consolidated;
 
-    return BlocListener<AuthBloc, AuthState>(
+    return BlocListener<
+      connection_bloc.ConnectionBloc,
+      connection_bloc.ConnectionState
+    >(
       listener: (context, state) {
-        if (state.status == AuthStatus.unauthenticated) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const LoginScreen()),
-            (route) => false,
-          );
-        }
+        _startPolling();
       },
-      child: Scaffold(
-        backgroundColor: AppColors.scaffoldBackground,
-        body: SafeArea(
-          child:
-              BlocBuilder<
-                connection_bloc.ConnectionBloc,
-                connection_bloc.ConnectionState
-              >(
-                builder: (context, connectionState) {
-                  if (connectionState.activeConnection == null &&
-                      !isConsolidated &&
-                      connectionState.status !=
-                          connection_bloc.ConnectionStatus.loading) {
-                    return _buildErrorState(
-                      AppConstants.noConnectionSelectedMessage,
-                    );
-                  }
-
-                  return BlocBuilder<SummaryBloc, SummaryState>(
-                    builder: (context, summaryState) {
-                      if (summaryState.status == SummaryStatus.loading &&
-                          summaryState.summary.totalNetSales == 0.0) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      if (summaryState.status == SummaryStatus.failure) {
-                        return _buildErrorState(
-                          summaryState.error ?? "Error desconocido",
-                        );
-                      }
-
-                      return _buildScrollView(
-                        context,
-                        summaryState,
-                        isConsolidated,
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state.status == AuthStatus.unauthenticated) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+            );
+          }
+        },
+        child: Scaffold(
+          backgroundColor: AppColors.scaffoldBackground,
+          body: SafeArea(
+            child:
+                BlocBuilder<
+                  connection_bloc.ConnectionBloc,
+                  connection_bloc.ConnectionState
+                >(
+                  builder: (context, connectionState) {
+                    if (connectionState.activeConnection == null &&
+                        !isConsolidated &&
+                        connectionState.status !=
+                            connection_bloc.ConnectionStatus.loading) {
+                      return _buildErrorState(
+                        AppConstants.noConnectionSelectedMessage,
                       );
-                    },
-                  );
-                },
-              ),
+                    }
+
+                    return BlocBuilder<SummaryBloc, SummaryState>(
+                      builder: (context, summaryState) {
+                        if (summaryState.status == SummaryStatus.loading &&
+                            summaryState.summary.totalNetSales == 0.0) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        if (summaryState.status == SummaryStatus.failure) {
+                          return _buildErrorState(
+                            summaryState.error ?? "Error desconocido",
+                          );
+                        }
+
+                        return _buildScrollView(
+                          context,
+                          summaryState,
+                          isConsolidated,
+                        );
+                      },
+                    );
+                  },
+                ),
+          ),
         ),
       ),
     );

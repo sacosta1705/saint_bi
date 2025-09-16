@@ -11,6 +11,7 @@ enum AuthStatus {
 class AuthState extends Equatable {
   final AuthStatus status;
   final LoginResponse? loginResponse;
+  
   final String? error;
   final Map<int, String> activeTokens;
 

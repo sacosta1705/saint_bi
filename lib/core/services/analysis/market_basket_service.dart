@@ -1,5 +1,3 @@
-// lib/core/services/analysis/market_basket_service.dart
-
 import 'dart:collection';
 
 import 'package:collection/collection.dart';
@@ -7,14 +5,16 @@ import 'package:saint_bi/core/data/models/invoice_item.dart';
 
 // Modelo para representar una regla de asociación.
 class AssociationRule {
-  final Set<String> antecedent; // Lo que el cliente ya tiene en la canasta
-  final Set<String> consequent; // Lo que probablemente comprará
-  final double
-  support; // Frecuencia del conjunto de ítems en todas las transacciones
-  final double
-  confidence; // Probabilidad de comprar el consecuente si ya se tiene el antecedente
-  final double
-  lift; // Qué tan fuerte es la relación, independientemente de la popularidad
+  // Lo que el cliente ya tiene en la canasta
+  final Set<String> antecedent;
+  // Lo que probablemente comprará
+  final Set<String> consequent;
+  // Frecuencia del conjunto de ítems en todas las transacciones
+  final double support;
+  // Probabilidad de comprar el consecuente si ya se tiene el antecedente
+  final double confidence;
+  // Qué tan fuerte es la relación, independientemente de la popularidad
+  final double lift;
 
   AssociationRule({
     required this.antecedent,
@@ -71,7 +71,6 @@ class MarketBasketService {
     return bestRules;
   }
 
-  /// **NUEVO MÉTODO DE FILTRADO**
   /// Se queda con la mejor regla para cada par de productos.
   List<AssociationRule> _filterBestRules(List<AssociationRule> allRules) {
     final Map<String, AssociationRule> bestRulesMap = {};
@@ -215,10 +214,10 @@ class MarketBasketService {
 
   Set<Set<String>> _generateCandidates(Set<Set<String>> lk_1, int k) {
     Set<Set<String>> candidates = {};
-    List<Set<String>> lk_1_list = lk_1.toList();
-    for (int i = 0; i < lk_1_list.length; i++) {
-      for (int j = i + 1; j < lk_1_list.length; j++) {
-        Set<String> union = lk_1_list[i].union(lk_1_list[j]);
+    List<Set<String>> lk1List = lk_1.toList();
+    for (int i = 0; i < lk1List.length; i++) {
+      for (int j = i + 1; j < lk1List.length; j++) {
+        Set<String> union = lk1List[i].union(lk1List[j]);
         if (union.length == k) {
           candidates.add(union);
         }

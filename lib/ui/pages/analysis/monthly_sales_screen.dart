@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:saint_bi/core/bloc/monthly_sales/monthly_sales_bloc.dart';
-import 'package:saint_bi/core/utils/chart_utils.dart'; // <-- IMPORTAR NUEVA UTILIDAD
+import 'package:saint_bi/core/utils/chart_utils.dart';
 import 'package:saint_bi/core/utils/formatters.dart';
-import 'package:saint_bi/ui/theme/app_colors.dart';
 
 class MonthlySalesScreen extends StatefulWidget {
   const MonthlySalesScreen({super.key});
