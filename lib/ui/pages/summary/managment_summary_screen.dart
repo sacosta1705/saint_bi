@@ -20,6 +20,7 @@ import 'package:saint_bi/ui/pages/connection/connection_settings_screen.dart';
 import 'package:saint_bi/ui/pages/transaction_details/transaction_list_screen.dart';
 import 'package:saint_bi/ui/theme/app_colors.dart';
 import 'package:saint_bi/ui/widgets/common/admin_password_dialog.dart';
+import 'package:saint_bi/ui/widgets/common/info_dialog.dart';
 import 'package:saint_bi/ui/widgets/feature_specific/summary/kpi_card.dart';
 import 'package:saint_bi/ui/widgets/feature_specific/summary/sales_composition_pie_chart.dart';
 import 'package:saint_bi/ui/widgets/feature_specific/summary/summary_section_card.dart';
@@ -41,6 +42,12 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
     super.initState();
     _fetchInitialData();
     _startPolling();
+  }
+
+  @override
+  void dispose() {
+    _stopPolling();
+    super.dispose();
   }
 
   void _stopPolling() {
@@ -213,11 +220,19 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
           _buildSliverAppBar(context, isConsolidated, state),
           SliverToBoxAdapter(child: _buildDateFilter(context, state)),
           SliverToBoxAdapter(
-            child: _buildSectionHeader(context, "Indicadores Clave"),
+            child: _buildSectionHeader(
+              context,
+              "Indicadores Clave",
+              "Un vistazo rápido a las métricas más importantes del negocio, como ganancias, ventas, deudas y valor del inventario.",
+            ),
           ),
-          _buildKpiCarousel(summary, deviceLocale),
+          _buildKpiGrid(summary, deviceLocale),
           SliverToBoxAdapter(
-            child: _buildSectionHeader(context, "Detalles Financieros"),
+            child: _buildSectionHeader(
+              context,
+              "Detalles Financieros",
+              "Un desglose de las operaciones, impuestos y cuentas por cobrar/pagar para entender a fondo la salud financiera de la empresa.",
+            ),
           ),
           if (!isConsolidated)
             SliverPadding(
@@ -416,55 +431,80 @@ class _ManagementSummaryScreenState extends State<ManagementSummaryScreen> {
     }
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+  // WIDGET MODIFICADO
+  Widget _buildSectionHeader(
+    BuildContext context,
+    String title,
+    String infoContent,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
-      child: Text(
-        title,
-        style: Theme.of(
-          context,
-        ).textTheme.headlineMedium?.copyWith(color: AppColors.primaryDarkBlue),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: AppColors.primaryDarkBlue,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: AppColors.primaryBlue),
+            onPressed: () {
+              showInfoDialog(
+                context: context,
+                title: title,
+                content: infoContent,
+              );
+            },
+            tooltip: 'Más información',
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildKpiCarousel(ManagementSummary summary, String locale) {
-    return SliverToBoxAdapter(
-      child: SizedBox(
-        height: 150,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          children: [
-            KpiCard(
-              title: "Utilidad Bruta",
-              value: formatNumber(summary.grossProfit, locale),
-              icon: Icons.trending_up,
-              gradient: AppColors.kpiGradientGreen,
-            ),
-            KpiCard(
-              title: "Ventas Netas",
-              value: formatNumber(summary.totalNetSales, locale),
-              icon: Icons.monetization_on,
-              gradient: AppColors.kpiGradientBlue,
-            ),
-            KpiCard(
-              title: "CxC Vencidas",
-              value: formatNumber(summary.overdueReceivables, locale),
-              icon: Icons.warning_amber_rounded,
-              gradient: AppColors.kpiGradientRed,
-            ),
-            KpiCard(
-              title: "Inventario Total",
-              value: formatNumber(
-                summary.currentInventory - summary.fixtureInventory,
-                locale,
-              ),
-              icon: Icons.inventory_2_outlined,
-              gradient: AppColors.kpiGradientOrange,
-            ),
-          ],
+  Widget _buildKpiGrid(ManagementSummary summary, String locale) {
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.5,
         ),
+        delegate: SliverChildListDelegate([
+          KpiCard(
+            title: "Utilidad Bruta",
+            value: formatNumber(summary.grossProfit, locale),
+            icon: Icons.trending_up,
+            gradient: AppColors.kpiGradientGreen,
+          ),
+          KpiCard(
+            title: "Ventas Netas",
+            value: formatNumber(summary.totalNetSales, locale),
+            icon: Icons.monetization_on,
+            gradient: AppColors.kpiGradientBlue,
+          ),
+          KpiCard(
+            title: "CxC Vencidas",
+            value: formatNumber(summary.overdueReceivables, locale),
+            icon: Icons.warning_amber_rounded,
+            gradient: AppColors.kpiGradientRed,
+          ),
+          KpiCard(
+            title: "Inventario Total",
+            value: formatNumber(
+              summary.currentInventory - summary.fixtureInventory,
+              locale,
+            ),
+            icon: Icons.inventory_2_outlined,
+            gradient: AppColors.kpiGradientOrange,
+          ),
+        ]),
       ),
     );
   }

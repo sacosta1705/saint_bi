@@ -41,12 +41,13 @@ class KpiCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: AppColors.textOnPrimary,
                         fontWeight: FontWeight.bold,
+                        fontSize: 11,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Icon(icon, color: Colors.white70, size: 24),
+                  Icon(icon, color: Colors.white70, size: 18),
                 ],
               ),
               FittedBox(

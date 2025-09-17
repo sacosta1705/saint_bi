@@ -8,8 +8,8 @@
     * [X] Crear `MarketBasketService` para implementar el algoritmo Apriori o FP-Growth sobre los ítems de las facturas.
     * [X] Crear la pantalla `market_basket_screen.dart` para visualizar las reglas de asociación de productos.
 
-* [] **Unificacion de los modelos de proyeccion de ventas:**
-    * [] Sobreponer el grafico de las proyecciones de ventas por minimo cuadrado y suavizacion exponencial. De manera que sea un solo grafico de proyecciones.
+* [X] **Unificacion de los modelos de proyeccion de ventas:**
+    * [X] Sobreponer el grafico de las proyecciones de ventas por minimo cuadrado y suavizacion exponencial. De manera que sea un solo grafico de proyecciones.
 
 ### **1.2. Indicadores de Gestión (KPIs)**
 
@@ -17,7 +17,7 @@
 * [X] **Ticket Promedio:** Calcular y mostrar el valor promedio por factura de venta.
 * [X] **Rotación y Días de Inventario:** Calcular y mostrar ambos KPIs en una nueva sección de inventario.
 * [X] **Días de Cuentas por Cobrar (DSO):** Calcular y mostrar este indicador en una nueva sección de cobranza.
-* [] **Cambiar el slider de los KPI's principales de horizontal a vertical.**
+* [X] **Cambiar el slider de los KPI's principales de horizontal a vertical.**
 
 ### **1.3. Funcionalidades de la Aplicación**
 
