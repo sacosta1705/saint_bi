@@ -4,45 +4,37 @@
 
 ### **1.1. Modelos Estadísticos**
 
-* [ ] **Suavización Exponencial Doble (Holt):**
-    * [ ] Implementar el método `calculateHolt()` en `ForecastingService` para modelar tendencias.
-    * [ ] Crear la pantalla `holt_forecast_screen.dart` con un slider para el parámetro beta (tendencia).
-    * [ ] Añadir opción en el menú de análisis para acceder a la nueva proyección.
+* [X] **Análisis de Canasta de Mercado:**
+    * [X] Crear `MarketBasketService` para implementar el algoritmo Apriori o FP-Growth sobre los ítems de las facturas.
+    * [X] Crear la pantalla `market_basket_screen.dart` para visualizar las reglas de asociación de productos.
 
-* [ ] **Suavización Exponencial Triple (Holt-Winters):**
-    * [ ] Implementar el método `calculateHoltWinters()` en `ForecastingService` para modelar estacionalidad.
-    * [ ] Crear la pantalla `holt_winters_forecast_screen.dart` con controles para el parámetro gamma (estacionalidad) y la longitud del período.
-    * [ ] Validar que existan datos suficientes para el análisis estacional.
-
-* [ ] **Análisis de Canasta de Mercado:**
-    * [ ] Crear `MarketBasketService` para implementar el algoritmo Apriori o FP-Growth sobre los ítems de las facturas.
-    * [ ] Crear la pantalla `market_basket_screen.dart` para visualizar las reglas de asociación de productos.
-
-* [ ] **Segmentación de Clientes (Clustering):**
-    * [ ] Crear `CustomerSegmentationService` para calcular métricas RFM (Recencia, Frecuencia, Monto).
-    * [ ] Aplicar el algoritmo K-Means para agrupar clientes y mostrar los segmentos en una nueva pantalla (`customer_segmentation_screen.dart`).
-
-* [ ] **Análisis de Regresión Múltiple:**
-    * [ ] Crear `RegressionService` para analizar la relación entre variables (ej. impacto de comisiones en ventas).
-    * [ ] Desarrollar la pantalla `regression_analysis_screen.dart` que permita al usuario seleccionar variables y ver los resultados del modelo.
+* [] **Unificacion de los modelos de proyeccion de ventas:**
+    * [] Sobreponer el grafico de las proyecciones de ventas por minimo cuadrado y suavizacion exponencial. De manera que sea un solo grafico de proyecciones.
 
 ### **1.2. Indicadores de Gestión (KPIs)**
 
-* [ ] **Márgenes de Utilidad:** Calcular y mostrar los márgenes de utilidad bruta y neta en el resumen gerencial.
-* [ ] **Ticket Promedio:** Calcular y mostrar el valor promedio por factura de venta.
-* [ ] **Rotación y Días de Inventario:** Calcular y mostrar ambos KPIs en una nueva sección de inventario.
-* [ ] **Días de Cuentas por Cobrar (DSO):** Calcular y mostrar este indicador en una nueva sección de cobranza.
+* [X] **Márgenes de Utilidad:** Calcular y mostrar los márgenes de utilidad bruta y neta en el resumen gerencial.
+* [X] **Ticket Promedio:** Calcular y mostrar el valor promedio por factura de venta.
+* [X] **Rotación y Días de Inventario:** Calcular y mostrar ambos KPIs en una nueva sección de inventario.
+* [X] **Días de Cuentas por Cobrar (DSO):** Calcular y mostrar este indicador en una nueva sección de cobranza.
+* [] **Cambiar el slider de los KPI's principales de horizontal a vertical.**
 
 ### **1.3. Funcionalidades de la Aplicación**
 
-* [ ] **Consolidación Selectiva:**
-    * [ ] Añadir la opción `includeInConsolidation` a la tabla y modelo de `ApiConnection`.
-    * [ ] Agregar un `Switch` en la pantalla de configuración para activar o desactivar cada empresa del consolidado.
-    * [ ] Modificar el `SummaryBloc` para que solo consolide las conexiones marcadas.
+* [] **Consolidación Selectiva:**
+    * [] Añadir la opción `includeInConsolidation` a la tabla y modelo de `ApiConnection`.
+    * [] Agregar un `Switch` en la pantalla de configuración para activar o desactivar cada empresa del consolidado.
+    * [] Modificar el `SummaryBloc` para que solo consolide las conexiones marcadas.
+* [] **Popup explicativo de cada aspecto de la aplicacion:**
+    * [] Agregar un pequeño boton en cada en forma de '(i)' donde al presionarlo se muestre un pequeña explicacion de cada KPI, grafico y modelo estadistico.
 
 ---
 
 ## **2. Versiones**
+
+### **Version 1.2.0**
+* Agregada funcionalidad de comparacion de periodos. Al seleccionar un numero de dias en el filtro de fechas, se calcula automaticamente el mismo numero de dias del periodo anterior y se coloca el porcentaje de diferencia en cada uno de las variables calculadas.
+* Agregado grafico de dona donde se comparan las ventas a credito y a contado.
 
 ### **Versión 1.1.0**
 * Agregada la posibilidad de consultar el resumen gerencial consolidado, sumando los datos de todas las conexiones configuradas.

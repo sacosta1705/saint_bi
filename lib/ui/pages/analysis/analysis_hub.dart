@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saint_bi/ui/pages/analysis/combined_forecast_screen.dart';
 import 'package:saint_bi/ui/pages/analysis/kpi_dashboard_screen.dart';
 import 'package:saint_bi/ui/pages/analysis/market_basket_screen.dart';
 import 'package:saint_bi/ui/pages/analysis/monthly_sales_screen.dart';
@@ -39,22 +40,16 @@ class AnalysisHubScreen extends StatelessWidget {
         destinationScreen: MonthlySalesScreen(),
       ),
       const AnalysisOption(
-        title: 'Proyección de Ventas (Suavización Exponencial Simple)',
-        subtitle: '',
-        icon: Icons.insights,
-        destinationScreen: SalesForecastScreen(),
-      ),
-      const AnalysisOption(
         title: 'Análisis de Canasta de Mercado',
         subtitle: 'Descubre qué productos se venden juntos',
         icon: Icons.shopping_basket,
         destinationScreen: MarketBasketScreen(),
       ),
       const AnalysisOption(
-        title: 'Proyeccion de ventas (Minimos Cuardados Ordinarios)',
+        title: 'Proyeccion de ventas.',
         subtitle: '',
         icon: Icons.analytics,
-        destinationScreen: OLSForecastScreen(),
+        destinationScreen: CombinedForecastScreen(),
       ),
     ];
 

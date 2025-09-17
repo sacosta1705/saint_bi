@@ -104,4 +104,4 @@ flutter:
       fonts:
         - asset: assets/fonts/The-Sans-Correspondence.ttf
         - asset: assets/fonts/The-Sans-Correspondence-Bold.ttf
-          weight: 800e
+          weight: 800
